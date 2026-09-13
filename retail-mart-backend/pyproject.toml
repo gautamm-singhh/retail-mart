@@ -22,4 +22,4 @@ members = [
 ]
 
 [tool.vercel]
-entrypoint = "run.py"
+entrypoint = "run:app"
