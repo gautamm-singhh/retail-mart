@@ -21,5 +21,3 @@ members = [
     "retail-mart-backend",
 ]
 
-[tool.vercel]
-entrypoint = "run:app"
