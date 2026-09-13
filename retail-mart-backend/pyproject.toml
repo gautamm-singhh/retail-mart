@@ -1,0 +1,22 @@
+[project]
+name = "retail-mart-backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Gautam Kumar Singh", email = "gautamkumarsing01@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+retail-mart-backend = "retail_mart_backend:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.workspace]
+members = [
+    "retail-mart-backend",
+]

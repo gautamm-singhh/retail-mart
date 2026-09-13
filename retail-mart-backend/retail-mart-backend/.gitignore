@@ -1,0 +1,19 @@
+# Virtual environments
+.venv/
+venv/
+vemv/
+env/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite3
+instance/
+.pytest_cache/
+
+# Environment files & secrets
+.env
+.env.*
+!.env.example
+*.log

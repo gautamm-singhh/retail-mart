@@ -1,0 +1,834 @@
+{
+  "info": {
+    "name": "Retail Mart Backend",
+    "description": "Week 2 - API Development. Run 'Login' first (it saves {{accessToken}} to the collection variables automatically); every other request is pre-wired to send it as a Bearer token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.accessToken) { pm.collectionVariables.set('accessToken', data.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sorav@retailmart.dev\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Staff\",\n  \"email\": \"new.staff@example.com\",\n  \"password\": \"secret123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Signup (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Customer\",\n  \"email\": \"test.shopper@example.com\",\n  \"password\": \"secret123\",\n  \"phone\": \"+919000000000\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup"
+          }
+        },
+        {
+          "name": "OTP: Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/otp/request"
+          }
+        },
+        {
+          "name": "OTP: Verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"code\": \"123456\",\n  \"name\": \"Ananya Rao\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/otp/verify"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/u-001"
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test.user@example.com\",\n  \"role\": \"Staff\",\n  \"status\": \"active\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Manager\"\n}"
+            },
+            "url": "{{baseUrl}}/users/u-005"
+          }
+        },
+        {
+          "name": "Toggle User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": "{{baseUrl}}/users/u-005/status"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/u-999"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/categories"
+          }
+        },
+        {
+          "name": "Get Category",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/categories/c-01"
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Books\"\n}"
+            },
+            "url": "{{baseUrl}}/categories"
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": "{{baseUrl}}/categories/c-07"
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/categories/c-99"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "List Products by Category",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products?category=Apparel"
+          }
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/p-1001"
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Novel\",\n  \"sku\": \"BOK-001\",\n  \"category\": \"Books\",\n  \"description\": \"A test product.\",\n  \"price\": 399,\n  \"stock\": 10,\n  \"status\": \"active\",\n  \"imageUrl\": \"https://picsum.photos/seed/BOK-001/600/600\"\n}"
+            },
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 549,\n  \"stock\": 20\n}"
+            },
+            "url": "{{baseUrl}}/products/p-1001"
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/products/p-9999"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders"
+          }
+        },
+        {
+          "name": "Get Order",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/ORD-58421"
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": \"Test Customer\",\n  \"customerEmail\": \"test.customer@example.com\",\n  \"items\": [\n    { \"productName\": \"Yoga Mat 6mm\", \"quantity\": 1, \"price\": 799 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/orders"
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Processing\"\n}"
+            },
+            "url": "{{baseUrl}}/orders/ORD-58423/status"
+          }
+        },
+        {
+          "name": "Update Order Payment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentStatus\": \"Paid\"\n}"
+            },
+            "url": "{{baseUrl}}/orders/ORD-58423/payment-status"
+          }
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/orders/ORD-99999"
+          }
+        },
+        {
+          "name": "Download Invoice (PDF)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/ORD-58421/invoice"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "List Payments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Get Payment",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments/PAY-90211"
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-58423\",\n  \"method\": \"UPI\"\n}"
+            },
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Update Payment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Paid\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/PAY-90213/status"
+          }
+        },
+        {
+          "name": "Download Receipt (PDF)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments/PAY-90211/receipt"
+          }
+        },
+        {
+          "name": "RazorPay: Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"PAY-90213\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/razorpay/order"
+          }
+        },
+        {
+          "name": "RazorPay: Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"PAY-90213\",\n  \"razorpayOrderId\": \"order_mock_xxx\",\n  \"razorpayPaymentId\": \"pay_mock_xxx\",\n  \"razorpaySignature\": \"mocksig\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/razorpay/verify"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Receipts",
+      "item": [
+        {
+          "name": "List Receipts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/receipts"
+          }
+        },
+        {
+          "name": "Create Receipt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"PAY-90211\"\n}"
+            },
+            "url": "{{baseUrl}}/receipts"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipments / Delivery",
+      "item": [
+        {
+          "name": "List Shipments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/shipments"
+          }
+        },
+        {
+          "name": "Get Shipment",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/shipments/SHP-77003"
+          }
+        },
+        {
+          "name": "Create Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-58423\",\n  \"courier\": \"Bluedart\",\n  \"trackingNumber\": \"BD9999999\",\n  \"expectedDelivery\": \"2026-09-01\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments"
+          }
+        },
+        {
+          "name": "Update Shipment Status (Delivery workflow)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Shipped\",\n  \"location\": \"Regional hub\"\n}"
+            },
+            "url": "{{baseUrl}}/shipments/SHP-77003/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Summary Cards",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/dashboard/summary"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Campaigns",
+      "item": [
+        {
+          "name": "List Campaigns",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/campaigns"
+          }
+        },
+        {
+          "name": "Get Campaign",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/campaigns/CMP-90001"
+          }
+        },
+        {
+          "name": "Create Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Flash Sale\",\n  \"discountType\": \"percentage\",\n  \"discountValue\": 15,\n  \"startDate\": \"2026-09-01\"\n}"
+            },
+            "url": "{{baseUrl}}/campaigns"
+          }
+        },
+        {
+          "name": "Update Campaign",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": "{{baseUrl}}/campaigns/CMP-90001"
+          }
+        },
+        {
+          "name": "Delete Campaign",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/campaigns/CMP-99999"
+          }
+        },
+        {
+          "name": "Send Campaign Email Blast",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/campaigns/CMP-90001/send"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Communications",
+      "item": [
+        {
+          "name": "Send Generic Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"someone@example.com\",\n  \"subject\": \"Hi\",\n  \"body\": \"Testing\"\n}"
+            },
+            "url": "{{baseUrl}}/communications/send"
+          }
+        },
+        {
+          "name": "Resend Order Confirmation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/communications/orders/ORD-58421/confirmation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Daily Sales",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reports/daily"
+          }
+        },
+        {
+          "name": "Monthly Sales",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reports/monthly"
+          }
+        },
+        {
+          "name": "Year End Sales",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reports/yearly"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Projections (statistical)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/analytics/projections?period=monthly&periodsAhead=3"
+          }
+        },
+        {
+          "name": "AI Projections",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/analytics/ai-projections?period=monthly&periodsAhead=3"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses (Customer)",
+      "item": [
+        {
+          "name": "List My Addresses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/addresses"
+          }
+        },
+        {
+          "name": "Add Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Work\",\n  \"line1\": \"5th Floor, Tech Park\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\",\n  \"postalCode\": \"560103\"\n}"
+            },
+            "url": "{{baseUrl}}/addresses"
+          }
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isDefault\": true\n}"
+            },
+            "url": "{{baseUrl}}/addresses/ADDR-00001"
+          }
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/addresses/ADDR-99999"
+          }
+        }
+      ]
+    },
+    {
+      "name": "My Orders (Customer)",
+      "item": [
+        {
+          "name": "List My Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/mine"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
