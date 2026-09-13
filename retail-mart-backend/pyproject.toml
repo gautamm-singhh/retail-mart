@@ -20,3 +20,6 @@ build-backend = "uv_build"
 members = [
     "retail-mart-backend",
 ]
+
+[tool.vercel]
+entrypoint = "run.py"
