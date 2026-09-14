@@ -12,9 +12,12 @@ class BaseConfig:
     # Default to SQLite so the API runs with zero setup. Point
     # DATABASE_URL at MySQL to match the ERD/production schema, e.g.
     # mysql+pymysql://user:password@localhost:3306/retail_mart
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'retail_mart.db')}"
-    )
+    _raw_db_url = (os.environ.get("DATABASE_URL") or "").strip()
+    if _raw_db_url.startswith("mysql://"):
+        _raw_db_url = "mysql+pymysql://" + _raw_db_url[len("mysql://"):]
+    elif _raw_db_url.startswith("postgres://"):
+        _raw_db_url = "postgresql://" + _raw_db_url[len("postgres://"):]
+    SQLALCHEMY_DATABASE_URI = _raw_db_url or f"sqlite:///{os.path.join(BASE_DIR, 'retail_mart.db')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-change-me")
@@ -28,7 +31,8 @@ class BaseConfig:
     # of sent - the app works out of the box, and wiring up real email is
     # purely an env-var change (no code change).
     SMTP_HOST = os.environ.get("SMTP_HOST")
-    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+    _raw_smtp_port = (os.environ.get("SMTP_PORT") or "").strip()
+    SMTP_PORT = int(_raw_smtp_port) if _raw_smtp_port.isdigit() else 587
     SMTP_USERNAME = os.environ.get("SMTP_USERNAME")
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
     MAIL_FROM = os.environ.get("MAIL_FROM", "no-reply@retailmart.dev")
