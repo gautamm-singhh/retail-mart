@@ -7,7 +7,20 @@ authors = [
     { name = "Gautam Kumar Singh", email = "gautamkumarsing01@gmail.com" }
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "cryptography==43.0.1",
+    "flask==3.0.3",
+    "flask-cors==4.0.1",
+    "flask-jwt-extended==4.6.0",
+    "flask-sqlalchemy==3.1.1",
+    "google-generativeai==0.8.3",
+    "gunicorn==22.0.0",
+    "pymysql==1.1.1",
+    "python-dotenv==1.0.1",
+    "reportlab==4.2.5",
+    "requests==2.32.3",
+    "twilio==9.3.7",
+]
 
 [project.scripts]
 retail-mart-backend = "retail_mart_backend:main"
