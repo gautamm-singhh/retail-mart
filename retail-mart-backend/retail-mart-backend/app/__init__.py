@@ -91,3 +91,10 @@ def create_app(config_name: str | None = None) -> Flask:
         return jsonify({"error": "Internal server error"}), 500
 
     return app
+
+
+def __getattr__(name):
+    if name == "app":
+        from run import app as running_app
+        return running_app
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
