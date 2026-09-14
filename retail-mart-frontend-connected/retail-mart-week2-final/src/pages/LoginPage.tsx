@@ -100,12 +100,6 @@ export default function LoginPage() {
             </Button>
           </form>
         </Card>
-
-        <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-          <p className="font-medium text-ink-700 dark:text-slate-300">Admin credentials</p>
-          <p className="mt-1">Email: {DEMO_CREDENTIALS.email}</p>
-          <p>Password: {DEMO_CREDENTIALS.password}</p>
-        </div>
       </div>
     </div>
   );
