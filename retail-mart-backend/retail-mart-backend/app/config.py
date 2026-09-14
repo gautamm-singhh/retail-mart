@@ -90,7 +90,10 @@ class BaseConfig:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
     JWT_TOKEN_LOCATION = ["headers"]
 
-    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")
+    _cors_raw = os.environ.get("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5174,http://127.0.0.1:5173")
+    _parsed_origins = {o.strip() for o in _cors_raw.split(",") if o.strip()}
+    # Always allow standard local Vite ports (5173, 5174) for seamless local dev
+    CORS_ORIGINS = list(_parsed_origins | {"http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://127.0.0.1:5173"})
 
     # --- Email (see app/utils/email.py) ---------------------------------
     # If SMTP_HOST is unset, emails are just logged to the console instead
