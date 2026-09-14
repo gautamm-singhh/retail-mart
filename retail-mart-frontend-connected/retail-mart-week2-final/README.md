@@ -80,9 +80,9 @@ Real JWT authentication against the `retail-mart-backend` Flask API:
 ```
 
 - **Seeded accounts** live in the backend's `seed.py` (see that project's
-  README for the full list) and are shown directly on the login screen:
-  - Email: `sorav@retailmart.dev`
-  - Password: `password123`
+  README for role structures):
+  - Admin: `admin@retailmart.dev`
+  - Customer: `customer@example.com`
 - `src/features/auth/AuthContext.tsx` provides `isAuthenticated`,
   `currentUser`, `login()`, and `logout()`. `login()` calls
   `POST /api/auth/login` and stores the returned JWT.
@@ -404,8 +404,7 @@ a Customer** specifically.
 **To run it:** start `retail-mart-backend` (see its README — `python
 seed.py && python run.py`, defaults to `http://localhost:4000`), then set
 `VITE_API_BASE_URL` in this project's `.env` (copy `.env.example`) and run
-`npm run dev`. Sign in with any seeded account, e.g.
-`sorav@retailmart.dev` / `password123`.
+`npm run dev`. Sign in with any seeded account (e.g. `admin@retailmart.dev`).
 
 The test suite (`npm test`) doesn't need the backend running — it uses an
 in-memory fake API (`src/test/mockApi.ts`) that mirrors the real backend's

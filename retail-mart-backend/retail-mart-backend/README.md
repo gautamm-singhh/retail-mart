@@ -30,7 +30,7 @@ By default this runs on **SQLite** (zero setup, file `retail_mart.db`).
 To use MySQL instead (matching the ERD's target database), set in `.env`:
 
 ```
-DATABASE_URL=mysql+pymysql://retail_mart:password@localhost:3306/retail_mart
+DATABASE_URL=mysql+pymysql://<user>:<password>@localhost:3306/retail_mart
 ```
 
 then run `pip install -r requirements.txt` (PyMySQL is already included)
@@ -65,7 +65,7 @@ Every other endpoint requires that Bearer token. Role gates:
 `Admin` > `Manager` > `Staff` (see each blueprint in `app/routes/` for the
 exact `@roles_required(...)` on each route).
 
-Seeded users (see `seed.py`), all with password `password123`:
+Seeded roles and test accounts (see `seed.py` for initialization):
 
 | Email | Role |
 |---|---|
