@@ -1,9 +1,79 @@
 import os
+import tempfile
+import urllib.parse
 from datetime import timedelta
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
+
+
+def _configure_database():
+    raw_url = (os.environ.get("DATABASE_URL") or "").strip()
+    if not raw_url:
+        return f"sqlite:///{os.path.join(BASE_DIR, 'retail_mart.db')}", {}
+
+    if raw_url.startswith("mysql://"):
+        raw_url = "mysql+pymysql://" + raw_url[len("mysql://"):]
+    elif raw_url.startswith("postgres://"):
+        raw_url = "postgresql://" + raw_url[len("postgres://"):]
+
+    engine_options = {}
+
+    if "mysql" in raw_url:
+        parsed = urllib.parse.urlparse(raw_url)
+        query_params = urllib.parse.parse_qs(parsed.query)
+
+        # Detect SSL intent from query string (?ssl-mode=REQUIRED), host (Aiven), or env var
+        ssl_mode_keys = ["ssl-mode", "ssl_mode", "sslmode", "ssl"]
+        ssl_requested = (
+            any(k in query_params for k in ssl_mode_keys)
+            or "aivencloud.com" in (parsed.hostname or "")
+            or os.environ.get("MYSQL_SSL", "").lower() in ("true", "1", "required")
+        )
+
+        # PyMySQL does not accept ssl-mode/ssl_mode/sslmode as connection kwargs; strip them from URL
+        filtered_params = {
+            k: v for k, v in query_params.items()
+            if k not in ["ssl-mode", "ssl_mode", "sslmode"]
+        }
+        new_query = urllib.parse.urlencode(filtered_params, doseq=True)
+        cleaned_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
+
+        if ssl_requested:
+            ca_content = (
+                os.environ.get("MYSQL_CA_CERT")
+                or os.environ.get("AIVEN_CA_CERT")
+                or os.environ.get("CA_CERT")
+                or ""
+            ).strip()
+
+            if ca_content:
+                ca_path = os.path.join(tempfile.gettempdir(), "aiven_ca.pem")
+                with open(ca_path, "w", encoding="utf-8") as f:
+                    f.write(ca_content)
+                engine_options["connect_args"] = {
+                    "ssl": {
+                        "ca": ca_path,
+                        "check_hostname": True,
+                        "verify_mode": "required",
+                    }
+                }
+            else:
+                # SSL encrypted TLS connection (fallback for self-signed Aiven Project CA when CA cert not mounted)
+                engine_options["connect_args"] = {
+                    "ssl": {
+                        "check_hostname": False,
+                        "verify_mode": "none",
+                    }
+                }
+
+        return cleaned_url, engine_options
+
+    return raw_url, engine_options
+
+
+_DB_URI, _DB_ENGINE_OPTIONS = _configure_database()
 
 
 class BaseConfig:
@@ -12,12 +82,8 @@ class BaseConfig:
     # Default to SQLite so the API runs with zero setup. Point
     # DATABASE_URL at MySQL to match the ERD/production schema, e.g.
     # mysql+pymysql://user:password@localhost:3306/retail_mart
-    _raw_db_url = (os.environ.get("DATABASE_URL") or "").strip()
-    if _raw_db_url.startswith("mysql://"):
-        _raw_db_url = "mysql+pymysql://" + _raw_db_url[len("mysql://"):]
-    elif _raw_db_url.startswith("postgres://"):
-        _raw_db_url = "postgresql://" + _raw_db_url[len("postgres://"):]
-    SQLALCHEMY_DATABASE_URI = _raw_db_url or f"sqlite:///{os.path.join(BASE_DIR, 'retail_mart.db')}"
+    SQLALCHEMY_DATABASE_URI = _DB_URI
+    SQLALCHEMY_ENGINE_OPTIONS = _DB_ENGINE_OPTIONS
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-change-me")
