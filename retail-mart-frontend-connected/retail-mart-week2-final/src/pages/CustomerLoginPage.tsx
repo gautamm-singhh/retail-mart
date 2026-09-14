@@ -232,12 +232,6 @@ export default function CustomerLoginPage() {
             Create an account
           </Link>
         </p>
-
-        <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-          <p className="font-medium text-ink-700 dark:text-slate-300">Seeded customer account</p>
-          <p className="mt-1">Email: ananya.rao@example.com / Password: password123</p>
-          <p>Phone: +919876543210 (any code shown in the backend&apos;s console works in dev mode)</p>
-        </div>
       </div>
     </div>
   );

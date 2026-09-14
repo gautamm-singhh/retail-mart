@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, type RouteObject } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
 import StorefrontLayout from "@/layouts/StorefrontLayout";
 import LoginPage from "@/pages/LoginPage";
@@ -60,18 +60,18 @@ import { ROUTES } from "@/constants/routes";
 // ":id" segment regardless of declaration order, so this never collides
 // with /payments/:id. The same is true of /orders/mine vs /orders/:id on
 // the backend.
-export const router = createBrowserRouter([
+export const routes: RouteObject[] = [
+  { path: ROUTES.root, element: <Navigate to={ROUTES.shopLogin} replace /> },
   { path: ROUTES.login, element: <LoginPage /> },
   { path: ROUTES.shopLogin, element: <CustomerLoginPage /> },
   { path: ROUTES.signup, element: <SignupPage /> },
+  { path: "/signup", element: <Navigate to={ROUTES.signup} replace /> },
   {
     element: <ProtectedRoute allowedRoles={["Admin", "Manager", "Staff"]} />,
     children: [
       {
-        path: ROUTES.root,
         element: <AdminLayout />,
         children: [
-          { index: true, element: <Navigate to={ROUTES.dashboard} replace /> },
           { path: ROUTES.dashboard.slice(1), element: <DashboardPage /> },
           { path: ROUTES.users.slice(1), element: <UsersPage /> },
           { path: `${ROUTES.users.slice(1)}/:id`, element: <UserDetailsPage /> },
@@ -91,7 +91,6 @@ export const router = createBrowserRouter([
           { path: ROUTES.reports.slice(1), element: <ReportsPage /> },
           { path: ROUTES.analytics.slice(1), element: <AnalyticsPage /> },
           { path: ROUTES.profile.slice(1), element: <ProfilePage /> },
-          { path: "*", element: <NotFoundPage /> },
         ],
       },
     ],
@@ -115,4 +114,7 @@ export const router = createBrowserRouter([
       { path: "*", element: <NotFoundPage /> },
     ],
   },
-]);
+  { path: "*", element: <NotFoundPage /> },
+];
+
+export const router = createBrowserRouter(routes);

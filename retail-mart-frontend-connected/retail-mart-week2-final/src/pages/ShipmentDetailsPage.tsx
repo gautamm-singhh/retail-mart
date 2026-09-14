@@ -23,6 +23,7 @@ export default function ShipmentDetailsPage() {
   const [pendingStatus, setPendingStatus] = useState<ShipmentStatus | null>(null);
   const [trackingData, setTrackingData] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const shipment = shipments.find((s) => s.id === id);
 
@@ -99,14 +100,17 @@ export default function ShipmentDetailsPage() {
   const allowedNextStatuses = SHIPMENT_STATUS_TRANSITIONS[shipment.status];
 
   async function handleConfirmStatusChange() {
-    if (!pendingStatus || !shipment) return;
+    if (!pendingStatus || !shipment || isUpdating) return;
+    setIsUpdating(true);
+    const targetStatus = pendingStatus;
     try {
-      await updateStatus(shipment.id, pendingStatus);
-      showToast(`Shipment marked as ${pendingStatus}.`);
+      await updateStatus(shipment.id, targetStatus);
+      showToast(`Shipment marked as ${targetStatus}.`);
+      setPendingStatus(null);
     } catch {
       showToast("That status change is not allowed.", "error");
     } finally {
-      setPendingStatus(null);
+      setIsUpdating(false);
     }
   }
 
@@ -254,6 +258,7 @@ export default function ShipmentDetailsPage() {
                   key={status}
                   variant="secondary"
                   size="sm"
+                  disabled={isUpdating}
                   onClick={() => setPendingStatus(status)}
                 >
                   Mark as {status}
@@ -272,11 +277,14 @@ export default function ShipmentDetailsPage() {
 
       <ConfirmDialog
         isOpen={Boolean(pendingStatus)}
+        isLoading={isUpdating}
         title="Update shipment status"
         description={`Mark ${shipment.id} as "${pendingStatus}"? This updates the shipment via the backend API.`}
         confirmLabel="Update status"
         onConfirm={handleConfirmStatusChange}
-        onCancel={() => setPendingStatus(null)}
+        onCancel={() => {
+          if (!isUpdating) setPendingStatus(null);
+        }}
       />
     </div>
   );

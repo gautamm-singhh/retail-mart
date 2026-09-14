@@ -44,17 +44,18 @@ def _get_active_email_config():
     }
 
 
-def _get_smtp_connection(host: str, port: int):
+def _get_smtp_connection(host: str, port: int, timeout: int = 7):
     """
     Returns an active, secured SMTP connection for either SSL (465) or STARTTLS (587/25).
     Correctly executes EHLO handshakes and uses default SSL context for full RFC 3207 and Gmail compliance.
+    Default timeout of 7s ensures connection timeouts are caught gracefully within serverless execution limits.
     """
     context = ssl.create_default_context()
     if port == 465:
-        server = smtplib.SMTP_SSL(host, port, timeout=15, context=context)
+        server = smtplib.SMTP_SSL(host, port, timeout=timeout, context=context)
         server.ehlo()
         return server
-    server = smtplib.SMTP(host, port, timeout=15)
+    server = smtplib.SMTP(host, port, timeout=timeout)
     server.ehlo()
     server.starttls(context=context)
     server.ehlo()
@@ -215,7 +216,7 @@ def send_email(
         return True
     except Exception as ex:  # noqa: BLE001 - a failed notification must never crash the request
         if current_app:
-            current_app.logger.warning("Failed to send email to %s: %s", to, ex)
+            current_app.logger.warning("Failed to send email to %s: [%s] %s", to, type(ex).__name__, ex)
         return False
 
 

@@ -17,7 +17,7 @@ export const ROUTES = {
   reports: "/reports",
   analytics: "/analytics",
   profile: "/profile",
-  signup: "/signup",
+  signup: "/shop/signup",
   // Storefront (Week 4) - a separate portal from the admin console above,
   // with its own layout (StorefrontLayout) and its own nav. See the
   // router's comment for why these are a sibling route tree, not nested

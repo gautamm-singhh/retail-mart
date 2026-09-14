@@ -124,6 +124,10 @@ def update_shipment_status(shipment_id):
     if new_status not in SHIPMENT_STATUSES:
         return jsonify({"error": f"status must be one of {SHIPMENT_STATUSES}"}), 400
 
+    if new_status == shipment.status:
+        # Idempotent: already in requested status, avoid duplicate events and redundant emails
+        return jsonify(shipment.to_dict()), 200
+
     allowed = SHIPMENT_STATUS_TRANSITIONS.get(shipment.status, [])
     if new_status not in allowed:
         return jsonify(
