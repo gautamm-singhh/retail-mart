@@ -100,8 +100,8 @@ def create_order():
 
     recipient_email = order.customer_email or (order.user.email if order.user else None)
     if recipient_email:
-        subject, body = order_confirmation_email(order)
-        send_email(recipient_email, subject, body)  # best-effort - see app/utils/email.py
+        subject, body, html_body = order_confirmation_email(order)
+        send_email(recipient_email, subject, body, html_body=html_body, sender="orders")  # best-effort - see app/utils/email.py
 
     return jsonify(order.to_dict()), 201
 

@@ -13,6 +13,7 @@ interface FormState {
   to: string;
   subject: string;
   body: string;
+  sender: "support" | "orders" | "marketing";
 }
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -28,7 +29,12 @@ export default function CommunicationsPage() {
   const { isSending, sendEmail } = useCommunications();
   const { showToast } = useToast();
 
-  const [values, setValues] = useState<FormState>({ to: "", subject: "", body: "" });
+  const [values, setValues] = useState<FormState>({
+    to: "",
+    subject: "",
+    body: "",
+    sender: "support",
+  });
   const [errors, setErrors] = useState<FormErrors>({});
 
   function validate(candidate: FormState): FormErrors {
@@ -50,10 +56,11 @@ export default function CommunicationsPage() {
         to: values.to.trim(),
         subject: values.subject.trim(),
         body: values.body.trim(),
+        sender: values.sender,
       });
       if (sent) {
-        showToast("Email sent successfully.");
-        setValues({ to: "", subject: "", body: "" });
+        showToast(`Email dispatched successfully via ${values.sender} sender.`);
+        setValues({ to: "", subject: "", body: "", sender: "support" });
         setErrors({});
       } else {
         showToast(
@@ -78,22 +85,22 @@ export default function CommunicationsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStatCard
           label="SMTP Gateway"
-          value="Connected"
-          subtext="smtp.gmail.com (Port 587)"
+          value="3 Senders Active"
+          subtext="Support, Orders, Marketing (Port 587)"
           accentColor="emerald"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <AdminStatCard
           label="Encryption Standard"
           value="STARTTLS"
-          subtext="SSL/TLS Handshake verified"
+          subtext="Gmail Port 587 • RFC 3207 Verified"
           accentColor="blue"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
         />
         <AdminStatCard
           label="Notification Triggers"
-          value="7 Auto-Events"
-          subtext="Order, Shipped, Delivered, Receipt"
+          value="10 Auto-Templates"
+          subtext="Order, Shipped, Track, Campaign, Thank-You"
           accentColor="purple"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
         />
@@ -104,11 +111,26 @@ export default function CommunicationsPage() {
           <div className="border-b border-slate-100 pb-4 dark:border-slate-800">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Compose Direct Message</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Send priority administrative emails directly through the configured SMTP provider.
+              Send priority administrative emails directly through the configured multi-sender SMTP provider.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Sender Identity *
+              </label>
+              <select
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                value={values.sender}
+                onChange={(e) => setValues((v) => ({ ...v, sender: e.target.value as "support" | "orders" | "marketing" }))}
+              >
+                <option value="support">Retail Mart Support (retailmart.support@gmail.com)</option>
+                <option value="orders">Retail Mart Orders (retailmart.orders@gmail.com)</option>
+                <option value="marketing">Retail Mart Marketing (retailmart.marketing@gmail.com)</option>
+              </select>
+            </div>
+
             <Input
               label="Recipient email *"
               type="email"
@@ -149,31 +171,47 @@ export default function CommunicationsPage() {
             Pre-compiled HTML templates triggered automatically on order and shipment milestones:
           </p>
 
-          <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 dark:border-slate-800 dark:bg-slate-800/30">
+          <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span>Order Confirmation Email</span>
+              <span>Welcome / Account Ready (Support)</span>
             </li>
-            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 dark:border-slate-800 dark:bg-slate-800/30">
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span>Payment Receipt with PDF</span>
+              <span>Order Confirmation (Orders)</span>
             </li>
-            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 dark:border-slate-800 dark:bg-slate-800/30">
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span>Payment Receipt with PDF (Orders)</span>
+            </li>
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
               <span className="h-2 w-2 rounded-full bg-blue-500" />
-              <span>Shipment Dispatched & AWB</span>
+              <span>Shipment Tracking Available (Orders)</span>
             </li>
-            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 dark:border-slate-800 dark:bg-slate-800/30">
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              <span>Order Shipped (Orders)</span>
+            </li>
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
               <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <span>Out for Delivery Alert</span>
+              <span>Out for Delivery Alert (Orders)</span>
             </li>
-            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 dark:border-slate-800 dark:bg-slate-800/30">
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span>Delivered & Thank You Note</span>
+              <span>Order Delivered (Orders)</span>
+            </li>
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
+              <span className="h-2 w-2 rounded-full bg-purple-500" />
+              <span>Customer Thank You Note (Support)</span>
+            </li>
+            <li className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-800/30">
+              <span className="h-2 w-2 rounded-full bg-indigo-500" />
+              <span>Marketing Campaign Blast (Marketing)</span>
             </li>
           </ul>
 
           <div className="mt-auto rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300">
-            <span className="font-semibold text-slate-800 dark:text-white">Diagnostics:</span> Host: smtp.gmail.com:587 • TLS Encrypted. Credentials loaded from server environment.
+            <span className="font-semibold text-slate-800 dark:text-white">Diagnostics:</span> Host: smtp.gmail.com:587 • STARTTLS • 3 Sender identities configured.
           </div>
         </Card>
       </div>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; line-height: 1.3;">
+  Your Package Has Been Delivered!
+</h1>
+
+<p style="margin: 0 0 16px 0; color: #475569; font-size: 15px;">
+  Hi <strong>{{ customer_name }}</strong>, your shipment for order <strong style="color: #0f172a;">#{{ order_id }}</strong> has been delivered successfully to your doorstep!
+</p>
+
+<!-- Delivery Confirmation Card -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin: 20px 0; padding: 18px 20px;">
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #166534; width: 140px; font-weight: 600;">Order ID:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #0f172a; font-weight: 600;">{{ order_id }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #166534; font-weight: 600;">Delivered By:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #0f172a; font-weight: 600;">{{ courier }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #166534; font-weight: 600;">Tracking / AWB #:</td>
+    <td style="padding: 6px 8px; font-size: 15px; color: #15803d; font-weight: 700; font-family: monospace;">{{ tracking_number }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #166534; font-weight: 600;">Delivery Status:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #15803d; font-weight: 700;">&#10004; Delivered Successfully</td>
+  </tr>
+</table>
+
+<p style="margin: 0 0 20px 0; color: #475569; font-size: 14px; line-height: 1.6;">
+  Please check your items. If you have any questions regarding your package, need to initiate a return, or require assistance, our customer support team is always available to help you.
+</p>
+
+<!-- Support Box -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0; padding: 14px 18px;">
+  <tr>
+    <td>
+      <span style="font-size: 13px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">
+        Need Post-Delivery Support?
+      </span>
+      <span style="font-size: 13px; color: #64748b; line-height: 1.4;">
+        Contact our dedicated support desk directly at <a href="mailto:retailmart.support@gmail.com" style="color: #0284c7; text-decoration: none; font-weight: 600;">retailmart.support@gmail.com</a>.
+      </span>
+    </td>
+  </tr>
+</table>
+
+<div style="text-align: center; margin: 24px 0 16px 0;">
+  <a href="{{ orders_url | default('http://localhost:5173/orders') }}" class="btn" style="background-color: #059669; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-block;">
+    View Order &amp; Invoice &rarr;
+  </a>
+</div>
+
+<p style="margin: 20px 0 0 0; color: #64748b; font-size: 13px;">
+  Warm regards,<br>
+  <strong style="color: #334155;">Retail Mart Orders Team</strong> &bull; retailmart.orders@gmail.com
+</p>
+{% endblock %}

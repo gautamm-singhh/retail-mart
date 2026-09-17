@@ -4,6 +4,7 @@ export interface SendEmailPayload {
   to: string;
   subject: string;
   body: string;
+  sender?: "support" | "orders" | "marketing";
 }
 
 export interface SendEmailResponse {

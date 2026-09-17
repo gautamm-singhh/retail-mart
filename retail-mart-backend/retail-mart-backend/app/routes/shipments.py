@@ -100,6 +100,14 @@ def create_shipment():
     shipment.tracking_history.append(ShipmentStatusEvent(status="Pending", date=date.today()))
     db.session.add(shipment)
     db.session.commit()
+
+    # Dedicated shipment tracking email (best-effort)
+    customer_email = getattr(order, "customer_email", None) or (order.user.email if getattr(order, "user", None) else None)
+    if customer_email:
+        from app.utils.email import send_email, shipment_tracking_email
+        track_sub, track_body, track_html = shipment_tracking_email(shipment)
+        send_email(customer_email, track_sub, track_body, html_body=track_html, sender="orders")
+
     return jsonify(shipment.to_dict()), 201
 
 
@@ -178,20 +186,20 @@ def update_shipment_status(shipment_id):
                 shipment_thank_you_email,
             )
             if new_status == "Shipped":
-                subject, body = shipment_shipped_email(shipment)
-                send_email(customer_email, subject, body)
+                subject, body, html_body = shipment_shipped_email(shipment)
+                send_email(customer_email, subject, body, html_body=html_body, sender="orders")
                 if location:
-                    arr_sub, arr_body = shipment_arrived_email(shipment, location)
-                    send_email(customer_email, arr_sub, arr_body)
+                    arr_sub, arr_body, arr_html = shipment_arrived_email(shipment, location)
+                    send_email(customer_email, arr_sub, arr_body, html_body=arr_html, sender="orders")
             elif new_status == "Out for Delivery":
-                subject, body = shipment_out_for_delivery_email(shipment)
-                send_email(customer_email, subject, body)
+                subject, body, html_body = shipment_out_for_delivery_email(shipment)
+                send_email(customer_email, subject, body, html_body=html_body, sender="orders")
             elif new_status == "Delivered":
-                subject, body = shipment_delivered_email(shipment)
-                send_email(customer_email, subject, body)
-                # Send dedicated delivery thank-you email
-                ty_sub, ty_body = shipment_thank_you_email(shipment)
-                send_email(customer_email, ty_sub, ty_body)
+                subject, body, html_body = shipment_delivered_email(shipment)
+                send_email(customer_email, subject, body, html_body=html_body, sender="orders")
+                # Send dedicated delivery thank-you email from support identity
+                ty_sub, ty_body, ty_html = shipment_thank_you_email(shipment)
+                send_email(customer_email, ty_sub, ty_body, html_body=ty_html, sender="support")
 
     return jsonify(shipment.to_dict())
 

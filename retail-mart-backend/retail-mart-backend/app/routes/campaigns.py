@@ -127,10 +127,10 @@ def send_campaign(campaign_id):
     users = User.query.filter_by(status="active").all()
     # Extract valid recipient email addresses from database
     recipients = [u.email.strip() for u in users if u.email and u.email.strip()]
-    subject, body = campaign_email(campaign)
+    subject, body, html_body = campaign_email(campaign)
 
     from app.utils.email import send_bulk_email
-    sent = send_bulk_email(recipients, subject, body)
+    sent = send_bulk_email(recipients, subject, body, html_body=html_body, sender="marketing")
 
     # If campaign was scheduled, transition it to active upon send
     if campaign.status == "scheduled":

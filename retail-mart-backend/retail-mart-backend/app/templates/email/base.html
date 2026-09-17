@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{{ subject | default('Retail Mart Notification') }}</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    table { border-collapse: collapse !important; }
+    body { margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 100%;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 8px;
+      background-color: #059669;
+      color: #ffffff !important;
+      letter-spacing: 0.2px;
+    }
+    .btn:hover {
+      background-color: #047857;
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 24px 12px;">
+    <tr>
+      <td align="center">
+        <!-- Main Card Container (Max 600px) -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
+          
+          <!-- Header Bar -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 28px 32px; text-align: left; border-bottom: 3px solid #10b981;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td>
+                    <span style="font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; display: inline-block;">
+                      Retail <span style="color: #10b981;">Mart</span>
+                    </span>
+                    <span style="display: block; font-size: 12px; font-weight: 500; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;">
+                      Smart Retail &amp; Logistics Platform
+                    </span>
+                  </td>
+                  {% if header_badge %}
+                  <td align="right" style="vertical-align: middle;">
+                    <span style="background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.5px;">
+                      {{ header_badge }}
+                    </span>
+                  </td>
+                  {% endif %}
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Main Content Area -->
+          <tr>
+            <td style="padding: 32px 32px 28px 32px; line-height: 1.6; font-size: 15px; color: #334155;">
+              {% block content %}
+              {% endblock %}
+            </td>
+          </tr>
+
+          <!-- Security Callout -->
+          <tr>
+            <td style="padding: 0 32px 24px 32px;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border-left: 4px solid #64748b; border-radius: 0 6px 6px 0; padding: 12px 16px;">
+                <tr>
+                  <td style="font-size: 12px; color: #64748b; line-height: 1.5;">
+                    <strong style="color: #475569;">Security Note:</strong> Retail Mart will never ask you for your account password or OTP. Keep your authentication credentials private at all times.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer Area -->
+          <tr>
+            <td style="background-color: #0f172a; padding: 24px 32px; color: #94a3b8; font-size: 12px; line-height: 1.6; border-top: 1px solid #1e293b;">
+              {% block footer %}
+                {% if is_marketing %}
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="text-align: center; padding-bottom: 12px; color: #cbd5e1;">
+                      You received this email because you are registered for promotional updates with Retail Mart.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="text-align: center; color: #64748b; font-size: 11px;">
+                      Retail Mart Marketing &bull; retailmart.marketing@gmail.com<br>
+                      To manage your preferences or unsubscribe from promotions, visit your account profile settings.
+                    </td>
+                  </tr>
+                </table>
+                {% else %}
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="color: #cbd5e1; font-size: 12px;">
+                      <strong>Need help with your order?</strong>
+                    </td>
+                    <td align="right" style="color: #38bdf8; font-size: 12px;">
+                      <a href="mailto:retailmart.support@gmail.com" style="color: #38bdf8; text-decoration: none;">retailmart.support@gmail.com</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding-top: 12px; color: #64748b; font-size: 11px; text-align: center; border-top: 1px solid #1e293b; margin-top: 12px;">
+                      &copy; 2026 Retail Mart Inc. All rights reserved. &bull; Bengaluru, Karnataka, India
+                    </td>
+                  </tr>
+                </table>
+                {% endif %}
+              {% endblock %}
+            </td>
+          </tr>
+
+        </table>
+        <!-- End Main Card -->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

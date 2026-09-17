@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; line-height: 1.3;">
+  Thank You for Shopping with Retail Mart!
+</h1>
+
+<p style="margin: 0 0 16px 0; color: #475569; font-size: 15px;">
+  Dear <strong>{{ first_name }}</strong>,
+</p>
+
+<p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">
+  Your package for order <strong style="color: #0f172a;">#{{ order_id }}</strong> has been successfully delivered and completed. We wanted to take a moment to express our sincere appreciation for choosing Retail Mart for your shopping.
+</p>
+
+<!-- Appreciation Highlight Box -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0; padding: 18px 20px;">
+  <tr>
+    <td>
+      <span style="font-size: 14px; font-weight: 700; color: #059669; display: block; margin-bottom: 6px;">
+        &#10024; We Value Your Feedback
+      </span>
+      <span style="font-size: 13px; color: #475569; line-height: 1.5; display: block;">
+        How was your shopping experience? We strive to provide the best quality products and fastest deliveries. Your reviews and ratings help our community make great choices and help us keep improving.
+      </span>
+    </td>
+  </tr>
+</table>
+
+<p style="margin: 0 0 24px 0; color: #475569; font-size: 14px; line-height: 1.6;">
+  If you have any questions or need post-delivery support, our customer service team is always here for you. We look forward to welcoming you back soon!
+</p>
+
+<div style="text-align: center; margin: 26px 0 16px 0;">
+  <a href="{{ review_url | default('http://localhost:5173/orders') }}" class="btn" style="background-color: #059669; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-block;">
+    Review Your Purchased Items &rarr;
+  </a>
+</div>
+
+<p style="margin: 24px 0 0 0; color: #64748b; font-size: 13px; line-height: 1.6;">
+  Warm regards,<br>
+  <strong style="color: #334155;">The Retail Mart Support Team</strong><br>
+  <span style="color: #94a3b8; font-size: 12px;">Retail Mart Customer Care &bull; retailmart.support@gmail.com</span>
+</p>
+{% endblock %}

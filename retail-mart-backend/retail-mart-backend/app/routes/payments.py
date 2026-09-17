@@ -44,8 +44,15 @@ def _email_receipt(payment: Payment) -> None:
         return
     receipt = _get_or_create_receipt(payment)
     pdf_buffer = build_receipt_pdf(payment, receipt)
-    subject, body = receipt_email(payment)
-    send_email(to, subject, body, attachments=[(f"receipt-{payment.id}.pdf", pdf_buffer.getvalue(), "application/pdf")])
+    subject, body, html_body = receipt_email(payment)
+    send_email(
+        to,
+        subject,
+        body,
+        html_body=html_body,
+        sender="orders",
+        attachments=[(f"receipt-{payment.id}.pdf", pdf_buffer.getvalue(), "application/pdf")],
+    )
 
 
 def _is_payment_owner(payment: Payment) -> bool:

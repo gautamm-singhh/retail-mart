@@ -96,12 +96,28 @@ class BaseConfig:
     CORS_ORIGINS = list(_parsed_origins | {"http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://127.0.0.1:5173"})
 
     # --- Email (see app/utils/email.py) ---------------------------------
-    # If SMTP_HOST is unset, emails are just logged to the console instead
-    # of sent - the app works out of the box, and wiring up real email is
-    # purely an env-var change (no code change).
-    SMTP_HOST = os.environ.get("SMTP_HOST")
+    # Multi-sender Gmail SMTP configuration (support, orders, marketing).
+    # All 3 senders share SMTP_HOST (default smtp.gmail.com) and SMTP_PORT (default 587).
+    SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     _raw_smtp_port = (os.environ.get("SMTP_PORT") or "").strip()
     SMTP_PORT = int(_raw_smtp_port) if _raw_smtp_port.isdigit() else 587
+
+    # Support Sender (Signups, Post-delivery thank-you, General support)
+    SMTP_SUPPORT_USERNAME = os.environ.get("SMTP_SUPPORT_USERNAME")
+    SMTP_SUPPORT_PASSWORD = os.environ.get("SMTP_SUPPORT_PASSWORD")
+    MAIL_SUPPORT_FROM = os.environ.get("MAIL_SUPPORT_FROM", "Retail Mart Support <retailmart.support@gmail.com>")
+
+    # Orders Sender (Order confirmations, Receipts, Shipment tracking/dispatches)
+    SMTP_ORDERS_USERNAME = os.environ.get("SMTP_ORDERS_USERNAME")
+    SMTP_ORDERS_PASSWORD = os.environ.get("SMTP_ORDERS_PASSWORD")
+    MAIL_ORDERS_FROM = os.environ.get("MAIL_ORDERS_FROM", "Retail Mart Orders <retailmart.orders@gmail.com>")
+
+    # Marketing Sender (Campaign blasts, Festival promotions, Bulk mail)
+    SMTP_MARKETING_USERNAME = os.environ.get("SMTP_MARKETING_USERNAME")
+    SMTP_MARKETING_PASSWORD = os.environ.get("SMTP_MARKETING_PASSWORD")
+    MAIL_MARKETING_FROM = os.environ.get("MAIL_MARKETING_FROM", "Retail Mart Marketing <retailmart.marketing@gmail.com>")
+
+    # Legacy / Dev fallback settings
     SMTP_USERNAME = os.environ.get("SMTP_USERNAME")
     SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
     MAIL_FROM = os.environ.get("MAIL_FROM", "no-reply@retailmart.dev")

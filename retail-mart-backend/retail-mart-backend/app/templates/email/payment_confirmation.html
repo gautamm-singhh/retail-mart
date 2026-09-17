@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; line-height: 1.3;">
+  Payment Received &amp; Confirmed!
+</h1>
+
+<p style="margin: 0 0 16px 0; color: #475569; font-size: 15px;">
+  Hi <strong>{{ customer_name }}</strong>, we have successfully processed your payment for order <strong style="color: #0f172a;">#{{ order_id }}</strong>. Your transaction receipt is confirmed and your official tax invoice is attached to this email as a PDF.
+</p>
+
+<!-- Payment Details Card -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0; padding: 18px 20px;">
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #64748b; width: 140px; font-weight: 600;">Payment ID:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #0f172a; font-weight: 600;">{{ payment_id }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #64748b; font-weight: 600;">Order ID:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #0f172a;">{{ order_id }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #64748b; font-weight: 600;">Amount Paid:</td>
+    <td style="padding: 6px 8px; font-size: 16px; color: #059669; font-weight: 700;">Rs. {{ amount }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #64748b; font-weight: 600;">Payment Method:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #0f172a;">{{ method }}</td>
+  </tr>
+  {% if payment_date %}
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #64748b; font-weight: 600;">Payment Date:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #0f172a;">{{ payment_date }}</td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td style="padding: 6px 8px; font-size: 13px; color: #64748b; font-weight: 600;">Status:</td>
+    <td style="padding: 6px 8px; font-size: 14px; color: #059669; font-weight: 600;">&#10003; Paid &amp; Verified</td>
+  </tr>
+</table>
+
+<!-- PDF Notice Box -->
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f0fdf4; border: 1px dashed #86efac; border-radius: 8px; margin: 20px 0; padding: 14px 18px;">
+  <tr>
+    <td>
+      <span style="font-size: 14px; font-weight: 600; color: #166534; display: block; margin-bottom: 4px;">
+        &square; Official Receipt Attached
+      </span>
+      <span style="font-size: 13px; color: #15803d; line-height: 1.4;">
+        A copy of your PDF receipt (<strong>receipt-{{ payment_id }}.pdf</strong>) has been generated and attached to this email for your financial and tax records.
+      </span>
+    </td>
+  </tr>
+</table>
+
+<div style="text-align: center; margin: 24px 0 16px 0;">
+  <a href="{{ orders_url | default('http://localhost:5173/orders') }}" class="btn" style="background-color: #059669; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-block;">
+    View Order &amp; Invoice &rarr;
+  </a>
+</div>
+
+<p style="margin: 20px 0 0 0; color: #64748b; font-size: 13px;">
+  Thank you for your business,<br>
+  <strong style="color: #334155;">Retail Mart Orders &amp; Billing Team</strong> &bull; retailmart.orders@gmail.com
+</p>
+{% endblock %}

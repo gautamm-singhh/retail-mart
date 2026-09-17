@@ -118,8 +118,8 @@ def signup():
     # Send welcome email (best-effort, never blocks account creation or exposes secrets)
     if user.email:
         from app.utils.email import send_email, welcome_email
-        subject, body = welcome_email(user)
-        send_email(user.email, subject, body)
+        subject, body, html_body = welcome_email(user)
+        send_email(user.email, subject, body, html_body=html_body, sender="support")
 
     return jsonify({"accessToken": _issue_token(user), "user": user.to_dict()}), 201
 
