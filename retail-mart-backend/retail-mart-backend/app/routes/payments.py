@@ -10,7 +10,7 @@ from app.utils.decorators import roles_required
 from app.utils.ids import random_suffix
 from app.utils.pdf import build_receipt_pdf
 from app.utils.razorpay_client import get_razorpay_client, is_razorpay_live
-from app.utils.email import send_email, receipt_email
+from app.utils.email import send_email, receipt_email, ensure_delivery_result
 
 payments_bp = Blueprint("payments", __name__)
 
@@ -39,19 +39,36 @@ def _email_receipt(payment: Payment) -> None:
     through. Best-effort: a failed send is logged, never blocks the
     response (see app/utils/email.py).
     """
-    to = payment.order.customer_email if payment.order else None
+    to = (payment.order.customer_email or "").strip() if payment.order and payment.order.customer_email else None
+    if not to and payment.order and getattr(payment.order, "user", None) and payment.order.user.email:
+        to = payment.order.user.email.strip()
+
     if not to:
+        current_app.logger.warning("[EMAIL TRIGGER] Flow=PAYMENT Event=payment_receipt PaymentId=%s - SKIPPED: No recipient email found", payment.id)
         return
+
     receipt = _get_or_create_receipt(payment)
     pdf_buffer = build_receipt_pdf(payment, receipt)
     subject, body, html_body = receipt_email(payment)
-    send_email(
+    current_app.logger.info("[EMAIL TRIGGER] Flow=PAYMENT Event=payment_receipt PaymentId=%s OrderId=%s Amount=%s", payment.id, payment.order_id, payment.amount)
+    current_app.logger.info("[EMAIL RECIPIENT] %s", to)
+    current_app.logger.info("[EMAIL SENDER] orders")
+    raw_result = send_email(
         to,
         subject,
         body,
         html_body=html_body,
         sender="orders",
         attachments=[(f"receipt-{payment.id}.pdf", pdf_buffer.getvalue(), "application/pdf")],
+    )
+    result = ensure_delivery_result(raw_result)
+    current_app.logger.info(
+        "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+        result.get("success"),
+        result.get("stage"),
+        result.get("message"),
+        result.get("refused_recipients"),
+        result.get("message_id"),
     )
 
 

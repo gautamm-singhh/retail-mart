@@ -1,7 +1,7 @@
 import random
 from datetime import datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 from app.extensions import db
@@ -117,9 +117,20 @@ def signup():
 
     # Send welcome email (best-effort, never blocks account creation or exposes secrets)
     if user.email:
-        from app.utils.email import send_email, welcome_email
+        from app.utils.email import send_email, welcome_email, ensure_delivery_result
         subject, body, html_body = welcome_email(user)
-        send_email(user.email, subject, body, html_body=html_body, sender="support")
+        current_app.logger.info("[EMAIL TRIGGER] Flow=AUTH Event=welcome_signup UserId=%s", user.id)
+        current_app.logger.info("[EMAIL RECIPIENT] %s", user.email)
+        current_app.logger.info("[EMAIL SENDER] support")
+        welcome_res = ensure_delivery_result(send_email(user.email, subject, body, html_body=html_body, sender="support"))
+        current_app.logger.info(
+            "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+            welcome_res.get("success"),
+            welcome_res.get("stage"),
+            welcome_res.get("message"),
+            welcome_res.get("refused_recipients"),
+            welcome_res.get("message_id"),
+        )
 
     return jsonify({"accessToken": _issue_token(user), "user": user.to_dict()}), 201
 

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 
 from app.extensions import db
 from app.models.campaign import Campaign, CAMPAIGN_DISCOUNT_TYPES, CAMPAIGN_STATUSES
@@ -125,16 +125,69 @@ def send_campaign(campaign_id):
         return jsonify({"error": "Campaign not found"}), 404
 
     users = User.query.filter_by(status="active").all()
-    # Extract valid recipient email addresses from database
-    recipients = [u.email.strip() for u in users if u.email and u.email.strip()]
+    valid_recipients = []
+    invalid_recipients = []
+    for u in users:
+        raw_email = (u.email or "").strip()
+        if not raw_email:
+            continue
+        if "@" in raw_email and "." in raw_email.split("@")[-1] and not raw_email.startswith("@"):
+            valid_recipients.append(raw_email)
+        else:
+            invalid_recipients.append(raw_email)
+
+    if not valid_recipients:
+        current_app.logger.warning(
+            "[EMAIL TRIGGER] Flow=CAMPAIGNS Event=send_campaign CampaignId=%s - ABORTED: No valid active user emails found (invalid=%s)",
+            campaign.id,
+            invalid_recipients,
+        )
+        return jsonify({
+            "error": "No valid recipient email addresses found among active users",
+            "campaignId": campaign.id,
+            "recipients": 0,
+            "sent": 0,
+            "invalidRecipients": invalid_recipients,
+        }), 400
+
     subject, body, html_body = campaign_email(campaign)
 
+    current_app.logger.info(
+        "[EMAIL TRIGGER] Flow=CAMPAIGNS Event=send_campaign CampaignId=%s TotalActive=%d ValidRecipients=%d InvalidRecipients=%d",
+        campaign.id,
+        len(users),
+        len(valid_recipients),
+        len(invalid_recipients),
+    )
+    current_app.logger.info("[EMAIL RECIPIENT] Count=%d List=%s", len(valid_recipients), valid_recipients)
+    current_app.logger.info("[EMAIL SENDER] marketing")
+
     from app.utils.email import send_bulk_email
-    sent = send_bulk_email(recipients, subject, body, html_body=html_body, sender="marketing")
+    sent, refused_map = send_bulk_email(
+        valid_recipients,
+        subject,
+        body,
+        html_body=html_body,
+        sender="marketing",
+        return_diagnostics=True,
+    )
+
+    current_app.logger.info(
+        "[EMAIL RESULT] SentCount=%d RefusedCount=%d RefusedDetails=%s",
+        sent,
+        len(refused_map),
+        refused_map,
+    )
 
     # If campaign was scheduled, transition it to active upon send
     if campaign.status == "scheduled":
         campaign.status = "active"
         db.session.commit()
 
-    return jsonify({"campaignId": campaign.id, "recipients": len(recipients), "sent": sent})
+    return jsonify({
+        "campaignId": campaign.id,
+        "recipients": len(valid_recipients),
+        "sent": sent,
+        "refused": refused_map,
+        "invalidRecipients": invalid_recipients,
+    })

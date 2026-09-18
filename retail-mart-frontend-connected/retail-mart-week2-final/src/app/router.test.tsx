@@ -62,13 +62,15 @@ describe("Application Routing & Entry Point Tests", () => {
     expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();
   });
 
-  it("3. Direct navigation to '/login' renders Admin Login page", () => {
+  it("3. Direct navigation to '/login' redirects to '/shop/login' (Customer Login)", () => {
     const { router } = renderWithProviders(["/login"]);
 
-    expect(router.state.location.pathname).toBe("/login");
-    expect(screen.getByRole("heading", { name: /retail mart admin/i })).toBeInTheDocument();
-    expect(screen.getByText(/sign in to the operations console/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
+    // /login now redirects to /shop/login
+    expect(router.state.location.pathname).toBe("/shop/login");
+    expect(screen.getByRole("heading", { name: /sign in to retail mart/i })).toBeInTheDocument();
+    expect(screen.getByText(/shop the best deals, track your orders, and more/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mobile otp/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();
   });
 
   it("4. Clicking 'Create an account' from Customer Login navigates to /shop/signup", async () => {

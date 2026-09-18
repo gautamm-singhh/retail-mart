@@ -1,6 +1,6 @@
 from datetime import date
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity
 
 from app.extensions import db
@@ -8,6 +8,7 @@ from app.models.shipment import Shipment, ShipmentStatusEvent, SHIPMENT_STATUS_T
 from app.models.order import Order
 from app.utils.decorators import roles_required
 from app.utils.ids import random_suffix
+from app.utils.email import ensure_delivery_result
 
 shipments_bp = Blueprint("shipments", __name__)
 
@@ -102,11 +103,24 @@ def create_shipment():
     db.session.commit()
 
     # Dedicated shipment tracking email (best-effort)
-    customer_email = getattr(order, "customer_email", None) or (order.user.email if getattr(order, "user", None) else None)
+    customer_email = (getattr(order, "customer_email", None) or "").strip() or (order.user.email.strip() if getattr(order, "user", None) and order.user.email else None)
     if customer_email:
         from app.utils.email import send_email, shipment_tracking_email
         track_sub, track_body, track_html = shipment_tracking_email(shipment)
-        send_email(customer_email, track_sub, track_body, html_body=track_html, sender="orders")
+        current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=shipment_created ShipmentId=%s OrderId=%s", shipment.id, order.id)
+        current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+        current_app.logger.info("[EMAIL SENDER] orders")
+        track_result = ensure_delivery_result(send_email(customer_email, track_sub, track_body, html_body=track_html, sender="orders"))
+        current_app.logger.info(
+            "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+            track_result.get("success"),
+            track_result.get("stage"),
+            track_result.get("message"),
+            track_result.get("refused_recipients"),
+            track_result.get("message_id"),
+        )
+    else:
+        current_app.logger.warning("[EMAIL TRIGGER] Flow=SHIPPING Event=shipment_created ShipmentId=%s - SKIPPED: No recipient email", shipment.id)
 
     return jsonify(shipment.to_dict()), 201
 
@@ -125,14 +139,59 @@ def update_shipment_status(shipment_id):
         return jsonify({"error": "Shipment not found"}), 404
 
     data = request.get_json(silent=True) or {}
-    new_status = data.get("status")
+    raw_status = data.get("status")
     location = data.get("location")
     note = data.get("note")
+
+    STATUS_NORMALIZATION = {
+        "pending": "Pending",
+        "packed": "Packed",
+        "shipped": "Shipped",
+        "arrived": "Shipped",
+        "reached": "Shipped",
+        "arrived_at_hub": "Shipped",
+        "out_for_delivery": "Out for Delivery",
+        "out for delivery": "Out for Delivery",
+        "delivered": "Delivered",
+    }
+    normalized_key = (raw_status or "").strip().lower()
+    new_status = STATUS_NORMALIZATION.get(normalized_key, raw_status)
+    is_arrival_event = normalized_key in ("arrived", "reached", "arrived_at_hub")
 
     if new_status not in SHIPMENT_STATUSES:
         return jsonify({"error": f"status must be one of {SHIPMENT_STATUSES}"}), 400
 
     if new_status == shipment.status:
+        # Check if this is an arrival checkpoint on an already shipped shipment
+        if new_status == "Shipped" and (location or is_arrival_event):
+            arrival_loc = location or "Destination Hub"
+            shipment.tracking_history.append(
+                ShipmentStatusEvent(
+                    status="Shipped",
+                    date=date.today(),
+                    location=arrival_loc,
+                    note=note or "Shipment reached transit hub",
+                )
+            )
+            db.session.commit()
+            customer_email = (getattr(shipment.order, "customer_email", None) or "").strip() or (shipment.order.user.email.strip() if getattr(shipment.order, "user", None) and shipment.order.user.email else None)
+            if customer_email:
+                from app.utils.email import send_email, shipment_arrived_email
+                arr_sub, arr_body, arr_html = shipment_arrived_email(shipment, arrival_loc)
+                current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=status_arrived ShipmentId=%s Location=%s", shipment.id, arrival_loc)
+                current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+                current_app.logger.info("[EMAIL SENDER] orders")
+                arr_result = ensure_delivery_result(send_email(customer_email, arr_sub, arr_body, html_body=arr_html, sender="orders"))
+                current_app.logger.info(
+                    "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                    arr_result.get("success"),
+                    arr_result.get("stage"),
+                    arr_result.get("message"),
+                    arr_result.get("refused_recipients"),
+                    arr_result.get("message_id"),
+                )
+            return jsonify(shipment.to_dict()), 200
+
         # Idempotent: already in requested status, avoid duplicate events and redundant emails
         return jsonify(shipment.to_dict()), 200
 
@@ -175,7 +234,7 @@ def update_shipment_status(shipment_id):
     # A failed send is logged but never prevents the status update from completing.
     # Packed is intentionally excluded (internal warehouse step, not customer-facing).
     if new_status in ("Shipped", "Out for Delivery", "Delivered") and shipment.order:
-        customer_email = getattr(shipment.order, "customer_email", None) or (shipment.order.user.email if getattr(shipment.order, "user", None) else None)
+        customer_email = (getattr(shipment.order, "customer_email", None) or "").strip() or (shipment.order.user.email.strip() if getattr(shipment.order, "user", None) and shipment.order.user.email else None)
         if customer_email:
             from app.utils.email import (
                 send_email,
@@ -187,19 +246,77 @@ def update_shipment_status(shipment_id):
             )
             if new_status == "Shipped":
                 subject, body, html_body = shipment_shipped_email(shipment)
-                send_email(customer_email, subject, body, html_body=html_body, sender="orders")
-                if location:
-                    arr_sub, arr_body, arr_html = shipment_arrived_email(shipment, location)
-                    send_email(customer_email, arr_sub, arr_body, html_body=arr_html, sender="orders")
+                current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=status_shipped ShipmentId=%s", shipment.id)
+                current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+                current_app.logger.info("[EMAIL SENDER] orders")
+                shipped_res = ensure_delivery_result(send_email(customer_email, subject, body, html_body=html_body, sender="orders"))
+                current_app.logger.info(
+                    "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                    shipped_res.get("success"),
+                    shipped_res.get("stage"),
+                    shipped_res.get("message"),
+                    shipped_res.get("refused_recipients"),
+                    shipped_res.get("message_id"),
+                )
+                if location or is_arrival_event:
+                    arrival_loc = location or "Destination Hub"
+                    arr_sub, arr_body, arr_html = shipment_arrived_email(shipment, arrival_loc)
+                    current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=status_arrived ShipmentId=%s Location=%s", shipment.id, arrival_loc)
+                    current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+                    current_app.logger.info("[EMAIL SENDER] orders")
+                    arr_res = ensure_delivery_result(send_email(customer_email, arr_sub, arr_body, html_body=arr_html, sender="orders"))
+                    current_app.logger.info(
+                        "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                        arr_res.get("success"),
+                        arr_res.get("stage"),
+                        arr_res.get("message"),
+                        arr_res.get("refused_recipients"),
+                        arr_res.get("message_id"),
+                    )
             elif new_status == "Out for Delivery":
                 subject, body, html_body = shipment_out_for_delivery_email(shipment)
-                send_email(customer_email, subject, body, html_body=html_body, sender="orders")
+                current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=status_out_for_delivery ShipmentId=%s", shipment.id)
+                current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+                current_app.logger.info("[EMAIL SENDER] orders")
+                ofd_res = ensure_delivery_result(send_email(customer_email, subject, body, html_body=html_body, sender="orders"))
+                current_app.logger.info(
+                    "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                    ofd_res.get("success"),
+                    ofd_res.get("stage"),
+                    ofd_res.get("message"),
+                    ofd_res.get("refused_recipients"),
+                    ofd_res.get("message_id"),
+                )
             elif new_status == "Delivered":
                 subject, body, html_body = shipment_delivered_email(shipment)
-                send_email(customer_email, subject, body, html_body=html_body, sender="orders")
+                current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=status_delivered ShipmentId=%s", shipment.id)
+                current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+                current_app.logger.info("[EMAIL SENDER] orders")
+                del_res = ensure_delivery_result(send_email(customer_email, subject, body, html_body=html_body, sender="orders"))
+                current_app.logger.info(
+                    "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                    del_res.get("success"),
+                    del_res.get("stage"),
+                    del_res.get("message"),
+                    del_res.get("refused_recipients"),
+                    del_res.get("message_id"),
+                )
                 # Send dedicated delivery thank-you email from support identity
                 ty_sub, ty_body, ty_html = shipment_thank_you_email(shipment)
-                send_email(customer_email, ty_sub, ty_body, html_body=ty_html, sender="support")
+                current_app.logger.info("[EMAIL TRIGGER] Flow=SHIPPING Event=status_delivered_thank_you ShipmentId=%s", shipment.id)
+                current_app.logger.info("[EMAIL RECIPIENT] %s", customer_email)
+                current_app.logger.info("[EMAIL SENDER] support")
+                ty_res = ensure_delivery_result(send_email(customer_email, ty_sub, ty_body, html_body=ty_html, sender="support"))
+                current_app.logger.info(
+                    "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                    ty_res.get("success"),
+                    ty_res.get("stage"),
+                    ty_res.get("message"),
+                    ty_res.get("refused_recipients"),
+                    ty_res.get("message_id"),
+                )
+        else:
+            current_app.logger.warning("[EMAIL TRIGGER] Flow=SHIPPING Event=status_%s ShipmentId=%s - SKIPPED: No recipient email found", new_status, shipment.id)
 
     return jsonify(shipment.to_dict())
 

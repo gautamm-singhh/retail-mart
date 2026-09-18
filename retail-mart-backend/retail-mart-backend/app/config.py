@@ -117,10 +117,6 @@ class BaseConfig:
     SMTP_MARKETING_PASSWORD = os.environ.get("SMTP_MARKETING_PASSWORD")
     MAIL_MARKETING_FROM = os.environ.get("MAIL_MARKETING_FROM", "Retail Mart Marketing <retailmart.marketing@gmail.com>")
 
-    # Legacy / Dev fallback settings
-    SMTP_USERNAME = os.environ.get("SMTP_USERNAME")
-    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-    MAIL_FROM = os.environ.get("MAIL_FROM", "no-reply@retailmart.dev")
 
     # --- RazorPay (see app/utils/razorpay_client.py) --------------------
     # If unset, a mock client simulates RazorPay's API so checkout still

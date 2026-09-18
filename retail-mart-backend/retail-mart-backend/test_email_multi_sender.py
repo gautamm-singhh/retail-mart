@@ -199,7 +199,7 @@ class TestMultiSenderEmailSystem(unittest.TestCase):
         self.assertEqual(mock_server.send_message.call_count, 3)
 
     def test_missing_sender_configuration_dev_fallback(self):
-        # When unconfigured, send_email falls back to dev console logging without crashing
+        # When unconfigured, send_email returns failure with stage='unconfigured' without crashing
         with patch.dict(os.environ, {
             "SMTP_HOST": "",
             "SMTP_SUPPORT_USERNAME": "",
@@ -221,11 +221,14 @@ class TestMultiSenderEmailSystem(unittest.TestCase):
             self.app.config["SMTP_MARKETING_USERNAME"] = None
             self.app.config["SMTP_MARKETING_PASSWORD"] = None
 
-            sent = send_email("test@example.com", "Dev Subj", "Dev Body", sender="support")
-            self.assertTrue(sent)
+            res = send_email("test@example.com", "Dev Subj", "Dev Body", sender="support")
+            self.assertFalse(res)
+            self.assertEqual(res["stage"], "unconfigured")
+            self.assertFalse(res["success"])
+            self.assertFalse(res["sent"])
 
             bulk_sent = send_bulk_email(["a@test.com", "b@test.com"], "Subj", "Body", sender="marketing")
-            self.assertEqual(bulk_sent, 2)
+            self.assertEqual(bulk_sent, 0)
 
             # Status check gracefully indicates dev mode
             status = test_smtp_connection()
@@ -245,9 +248,12 @@ class TestMultiSenderEmailSystem(unittest.TestCase):
         mock_server.login.side_effect = smtplib.SMTPAuthenticationError(535, b"Authentication failed")
         mock_get_conn.return_value.__enter__.return_value = mock_server
 
-        # send_email must return False and NEVER raise unhandled exception
-        sent = send_email("test@example.com", "Subj", "Body", sender="support")
-        self.assertFalse(sent)
+        # send_email must return False and capture stage='login' without unhandled exception
+        result = send_email("test@example.com", "Subj", "Body", sender="support")
+        self.assertFalse(result)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["stage"], "login")
+        self.assertIn("SMTPAuthenticationError", result["error"])
 
         # Diagnostics must capture auth failure without exposing passwords
         diag = test_single_sender_smtp("support")
@@ -255,6 +261,48 @@ class TestMultiSenderEmailSystem(unittest.TestCase):
         self.assertFalse(diag["connected"])
         self.assertEqual(diag["status"], "Authentication Failed")
         self.assertEqual(diag["connectionResult"], "failed")
+
+    @patch("app.utils.email._get_smtp_connection")
+    @patch.dict(os.environ, {
+        "SMTP_HOST": "smtp.gmail.com",
+        "SMTP_PORT": "587",
+        "SMTP_SUPPORT_USERNAME": "support@retailmart.dev",
+        "SMTP_SUPPORT_PASSWORD": "valid-password",
+    })
+    def test_successful_smtp_submission_returns_structured_result(self, mock_get_conn):
+        mock_server = MagicMock()
+        mock_server.send_message.return_value = {}  # Empty dict indicates all recipients accepted
+        mock_get_conn.return_value.__enter__.return_value = mock_server
+
+        result = send_email("customer@example.com", "Subject", "Body", sender="support")
+        self.assertTrue(result)
+        self.assertTrue(result["success"])
+        self.assertTrue(result["sent"])
+        self.assertEqual(result["stage"], "send")
+        self.assertEqual(result["refused_recipients"], [])
+        self.assertTrue(result["message_id"].startswith("<") and result["message_id"].endswith(">"))
+        self.assertIn("accepted", result["message"].lower())
+
+    @patch("app.utils.email._get_smtp_connection")
+    @patch.dict(os.environ, {
+        "SMTP_HOST": "smtp.gmail.com",
+        "SMTP_PORT": "587",
+        "SMTP_SUPPORT_USERNAME": "support@retailmart.dev",
+        "SMTP_SUPPORT_PASSWORD": "valid-password",
+    })
+    def test_refused_recipient_detected_in_result(self, mock_get_conn):
+        mock_server = MagicMock()
+        # Mock send_message returning refused recipient dict
+        mock_server.send_message.return_value = {"bad_recipient@example.com": (550, b"User not found")}
+        mock_get_conn.return_value.__enter__.return_value = mock_server
+
+        result = send_email("bad_recipient@example.com", "Subject", "Body", sender="support")
+        self.assertFalse(result)
+        self.assertFalse(result["success"])
+        self.assertFalse(result["sent"])
+        self.assertEqual(result["stage"], "send")
+        self.assertEqual(result["refused_recipients"], ["bad_recipient@example.com"])
+        self.assertEqual(result["error"], "RecipientsRefused")
 
     @patch.dict(os.environ, {
         "SMTP_HOST": "smtp.gmail.com",

@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
 import StorefrontLayout from "@/layouts/StorefrontLayout";
-import LoginPage from "@/pages/LoginPage";
 import CustomerLoginPage from "@/pages/CustomerLoginPage";
 import SignupPage from "@/pages/SignupPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -62,7 +61,7 @@ import { ROUTES } from "@/constants/routes";
 // the backend.
 export const routes: RouteObject[] = [
   { path: ROUTES.root, element: <Navigate to={ROUTES.shopLogin} replace /> },
-  { path: ROUTES.login, element: <LoginPage /> },
+  { path: ROUTES.login, element: <Navigate to={ROUTES.shopLogin} replace /> },
   { path: ROUTES.shopLogin, element: <CustomerLoginPage /> },
   { path: ROUTES.signup, element: <SignupPage /> },
   { path: "/signup", element: <Navigate to={ROUTES.signup} replace /> },

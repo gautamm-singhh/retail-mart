@@ -25,6 +25,7 @@ import os
 import smtplib
 import ssl
 import socket
+import uuid
 from email.message import EmailMessage
 from typing import Literal
 
@@ -76,11 +77,18 @@ SENDER_METADATA: dict[EmailSender, dict[str, str]] = {
 def _get_sender_config(sender: EmailSender = "support") -> dict:
     """
     Retrieves the active SMTP configuration for the specified sender identity.
-    Reads from environment variables and falls back to current_app.config where available.
-    Supports fallback to legacy SMTP_USERNAME/SMTP_PASSWORD for development convenience.
+    Reads strictly from identity-specific environment variables or current_app.config.
+    Does not fall back to legacy single-sender variables.
     Never exposes passwords or sensitive secrets.
+
+    Note: Changes to local .env require restarting the backend process.
     """
-    meta = SENDER_METADATA.get(sender, SENDER_METADATA["support"])
+    if sender not in SENDER_METADATA:
+        raise ValueError(
+            f"Invalid sender '{sender}'. Valid identities are: 'support', 'orders', 'marketing'."
+        )
+
+    meta = SENDER_METADATA[sender]
 
     # Shared SMTP host & port across all three accounts
     if "SMTP_HOST" in os.environ:
@@ -98,7 +106,7 @@ def _get_sender_config(sender: EmailSender = "support") -> dict:
     except (TypeError, ValueError):
         port = 587
 
-    # Identity-specific username and password
+    # Identity-specific username and password - strictly from designated sender variables
     if meta["username_var"] in os.environ:
         username = os.environ.get(meta["username_var"], "").strip() or None
     elif current_app and current_app.config.get(meta["username_var"]) is not None:
@@ -118,19 +126,6 @@ def _get_sender_config(sender: EmailSender = "support") -> dict:
         or (current_app.config.get(meta["from_var"]) if current_app else None)
         or ""
     ).strip() or meta["default_from"]
-
-    # Development fallback: check legacy SMTP_USERNAME / SMTP_PASSWORD only if specific variables are NOT in os.environ
-    if not username and meta["username_var"] not in os.environ:
-        if "SMTP_USERNAME" in os.environ:
-            username = os.environ.get("SMTP_USERNAME", "").strip() or None
-        elif current_app and current_app.config.get("SMTP_USERNAME") is not None:
-            username = str(current_app.config.get("SMTP_USERNAME", "")).strip() or None
-
-    if not password and meta["password_var"] not in os.environ:
-        if "SMTP_PASSWORD" in os.environ:
-            password = os.environ.get("SMTP_PASSWORD", "").strip() or None
-        elif current_app and current_app.config.get("SMTP_PASSWORD") is not None:
-            password = str(current_app.config.get("SMTP_PASSWORD", "")).strip() or None
 
     return {
         "sender": sender,
@@ -340,6 +335,61 @@ def test_smtp_connection(sender: EmailSender | None = None) -> dict:
     }
 
 
+class EmailDeliveryResult(dict):
+    """
+    Structured delivery result returned by send_email().
+    Inherits from dict so it can be serialized directly with jsonify(result)
+    or accessed with result["stage"], while implementing __bool__() so that:
+        bool(result) == True if and only if success is True.
+    This preserves 100% backward compatibility with legacy `if send_email(...)` checks.
+    """
+
+    def __init__(
+        self,
+        success: bool,
+        stage: str,
+        message: str,
+        sender: str,
+        recipient: str,
+        refused_recipients: list[str] | None = None,
+        message_id: str | None = None,
+        error: str | None = None,
+    ):
+        super().__init__(
+            success=success,
+            sent=success,  # alias for backward compatibility with frontend consumers
+            stage=stage,
+            message=message,
+            sender=sender,
+            recipient=recipient,
+            refused_recipients=refused_recipients or [],
+            message_id=message_id,
+            error=error,
+        )
+
+    def __bool__(self) -> bool:
+        return bool(self.get("success", False))
+
+    @property
+    def success(self) -> bool:
+        return bool(self.get("success", False))
+
+
+def ensure_delivery_result(result) -> dict:
+    """Safely normalizes any result (EmailDeliveryResult, dict, or bool) into a diagnostic dictionary."""
+    if isinstance(result, dict):
+        return dict(result)
+    return {
+        "success": bool(result),
+        "sent": bool(result),
+        "stage": "send" if result else "unknown",
+        "message": "Message dispatched successfully" if result else "Message delivery failed",
+        "refused_recipients": [],
+        "message_id": None,
+        "error": None if result else "DeliveryFailed",
+    }
+
+
 def send_email(
     to: str,
     subject: str,
@@ -347,14 +397,15 @@ def send_email(
     html_body: str | None = None,
     attachments: list[tuple[str, bytes, str]] | None = None,
     sender: EmailSender = "support",
-) -> bool:
+) -> EmailDeliveryResult:
     """
     Sends a single transactional email through the designated sender identity.
-    Returns True if sent (or logged in dev mode) successfully, False if send attempt failed.
-    Callers should treat False as best-effort ("log and move on", never rollback business transactions).
-
-    `sender` must be explicitly chosen from: 'support' | 'orders' | 'marketing'.
-    `attachments` is a list of (filename, bytes, mimetype) tuples.
+    Returns an EmailDeliveryResult object with detailed stage diagnostics:
+      - stage: 'unconfigured' | 'connect' | 'login' | 'send'
+      - success: bool (and bool(result) evaluates to this)
+      - message: human-readable delivery status description
+      - refused_recipients: list of rejected recipients
+      - message_id: generated RFC 5322 Message-ID
     """
     cfg = _get_sender_config(sender)
     host = cfg["host"]
@@ -363,22 +414,38 @@ def send_email(
     password = cfg["password"]
     mail_from = cfg["mail_from"]
 
+    # STAGE 0: Check required environment configuration
     if not host or not username or not password:
-        # Dev fallback: no SMTP credentials configured, safely log to console
-        attachment_note = f" (+{len(attachments)} attachment(s))" if attachments else ""
+        missing = []
+        if not host:
+            missing.append("SMTP_HOST")
+        if not username:
+            missing.append(f"SMTP_{sender.upper()}_USERNAME")
+        if not password:
+            missing.append(f"SMTP_{sender.upper()}_PASSWORD")
+        err_msg = f"SMTP credentials for '{sender}' identity are not configured (missing: {', '.join(missing)})."
         if current_app:
-            current_app.logger.info(
-                "[DEV EMAIL][%s] from=%s to=%s subject=%r%s\n%s",
+            current_app.logger.warning(
+                "[SMTP UNCONFIGURED][%s] Cannot deliver email to %s: %s",
                 sender.upper(),
-                mail_from,
                 to,
-                subject,
-                attachment_note,
-                body,
+                err_msg,
             )
-        return True
+        return EmailDeliveryResult(
+            success=False,
+            stage="unconfigured",
+            message=err_msg,
+            sender=sender,
+            recipient=to,
+            error="Missing SMTP credentials",
+        )
+
+    # Generate standard RFC 5322 Message-ID
+    domain = host if (host and "." in host and not host.startswith("127.")) else "retailmart.dev"
+    message_id = f"<{uuid.uuid4()}@{domain}>"
 
     message = EmailMessage()
+    message["Message-ID"] = message_id
     message["Subject"] = subject
     message["From"] = mail_from
     message["To"] = to
@@ -389,21 +456,110 @@ def send_email(
         maintype, _, subtype = mimetype.partition("/")
         message.add_attachment(file_bytes, maintype=maintype, subtype=subtype or "octet-stream", filename=filename)
 
+    # STAGE 1, 2, 3: Connect, Login, Send
+    stage = "connect"
+    if current_app:
+        current_app.logger.info(
+            "[SMTP CONNECT][%s] Connecting to %s:%s (STARTTLS)...",
+            sender.upper(),
+            host,
+            port,
+        )
+
     try:
         with _get_smtp_connection(host, port) as server:
+            stage = "login"
+            if current_app:
+                current_app.logger.info("[SMTP LOGIN][%s] Authenticating as %s...", sender.upper(), username)
             server.login(username, password)
-            server.send_message(message)
-        return True
-    except Exception as ex:  # noqa: BLE001 - a failed notification must never crash the request
-        if current_app:
-            current_app.logger.warning(
-                "Failed to send email [%s] to %s: [%s] %s",
-                sender,
-                to,
-                type(ex).__name__,
-                ex,
+            if current_app:
+                current_app.logger.info("[SMTP LOGIN SUCCESS][%s] Authentication accepted.", sender.upper())
+
+            stage = "send"
+            if current_app:
+                current_app.logger.info(
+                    "[SMTP SEND][%s] Transmitting message to %s (Message-ID: %s)...",
+                    sender.upper(),
+                    to,
+                    message_id,
+                )
+            refused = server.send_message(message)
+
+            # Inspect refused recipients dictionary returned by send_message
+            if isinstance(refused, dict) and len(refused) > 0:
+                refused_list = list(refused.keys())
+                msg = f"SMTP server rejected recipient(s): {refused}"
+                if current_app:
+                    current_app.logger.warning("[SMTP REFUSED RECIPIENTS][%s] %s", sender.upper(), msg)
+                return EmailDeliveryResult(
+                    success=False,
+                    stage="send",
+                    message=msg,
+                    sender=sender,
+                    recipient=to,
+                    refused_recipients=refused_list,
+                    message_id=message_id,
+                    error="RecipientsRefused",
+                )
+
+            if current_app:
+                current_app.logger.info(
+                    "[SMTP SEND SUCCESS][%s] Message accepted by SMTP server for %s (Message-ID: %s)",
+                    sender.upper(),
+                    to,
+                    message_id,
+                )
+            return EmailDeliveryResult(
+                success=True,
+                stage="send",
+                message="Message accepted by SMTP server for delivery.",
+                sender=sender,
+                recipient=to,
+                refused_recipients=[],
+                message_id=message_id,
             )
-        return False
+
+    except smtplib.SMTPAuthenticationError as auth_err:
+        err_str = f"Authentication failed for {username}: (code {auth_err.smtp_code})"
+        if current_app:
+            current_app.logger.warning("[SMTP LOGIN FAILED][%s] %s", sender.upper(), err_str)
+        return EmailDeliveryResult(
+            success=False,
+            stage="login",
+            message="SMTP authentication failed. Verify 16-character App Password.",
+            sender=sender,
+            recipient=to,
+            message_id=message_id,
+            error=f"SMTPAuthenticationError: {auth_err.smtp_code}",
+        )
+    except smtplib.SMTPRecipientsRefused as rec_err:
+        refused_list = list(rec_err.recipients.keys())
+        err_str = f"All recipients refused by SMTP server: {rec_err.recipients}"
+        if current_app:
+            current_app.logger.warning("[SMTP REFUSED RECIPIENTS][%s] %s", sender.upper(), err_str)
+        return EmailDeliveryResult(
+            success=False,
+            stage="send",
+            message=err_str,
+            sender=sender,
+            recipient=to,
+            refused_recipients=refused_list,
+            message_id=message_id,
+            error="SMTPRecipientsRefused",
+        )
+    except Exception as ex:
+        err_str = f"Failed at {stage} stage during SMTP delivery to {to}: {type(ex).__name__} - {ex}"
+        if current_app:
+            current_app.logger.warning("[SMTP %s FAILED][%s] %s", stage.upper(), sender.upper(), err_str)
+        return EmailDeliveryResult(
+            success=False,
+            stage=stage,
+            message=f"SMTP {stage} failed: {type(ex).__name__}",
+            sender=sender,
+            recipient=to,
+            message_id=message_id,
+            error=type(ex).__name__,
+        )
 
 
 def send_bulk_email(
@@ -412,16 +568,17 @@ def send_bulk_email(
     body: str,
     html_body: str | None = None,
     sender: EmailSender = "marketing",
-) -> int:
+    return_diagnostics: bool = False,
+) -> int | tuple[int, dict]:
     """
     Sends an email to multiple recipients in a single authenticated SMTP session
     using the designated sender identity (default: 'marketing').
     Avoids opening and closing the socket for each recipient, preventing rate limits
     and connection timeouts during campaign blasts.
-    Returns the number of successfully delivered emails.
+    Returns the number of successfully delivered emails (or (sent_count, refused_dict) if return_diagnostics=True).
     """
     if not recipients:
-        return 0
+        return (0, {}) if return_diagnostics else 0
 
     cfg = _get_sender_config(sender)
     host = cfg["host"]
@@ -431,44 +588,87 @@ def send_bulk_email(
     mail_from = cfg["mail_from"]
 
     if not host or not username or not password:
-        # Dev fallback: log to console
-        for to in recipients:
-            if current_app:
-                current_app.logger.info(
-                    "[DEV BULK EMAIL][%s] from=%s to=%s subject=%r\n%s",
-                    sender.upper(),
-                    mail_from,
-                    to,
-                    subject,
-                    body,
-                )
-        return len(recipients)
+        if current_app:
+            current_app.logger.warning(
+                "[SMTP BULK UNCONFIGURED][%s] Missing credentials. Cannot deliver campaign to %d recipients.",
+                sender.upper(),
+                len(recipients),
+            )
+        return (0, {}) if return_diagnostics else 0
 
     sent_count = 0
+    refused_map = {}
+
+    if current_app:
+        current_app.logger.info(
+            "[EMAIL TRIGGER] Flow=BULK_EMAIL Event=batch_send Sender=%s TotalRecipients=%d",
+            sender,
+            len(recipients),
+        )
+
     try:
         with _get_smtp_connection(host, port) as server:
             server.login(username, password)
             for to in recipients:
                 if not to or not to.strip():
                     continue
+                clean_to = to.strip()
+
+                # Basic email sanity check to prevent SMTP command corruption
+                if "@" not in clean_to or "." not in clean_to.split("@")[-1]:
+                    refused_map[clean_to] = "InvalidEmailFormat"
+                    if current_app:
+                        current_app.logger.warning("[EMAIL RECIPIENT] %s (INVALID FORMAT)", clean_to)
+                        current_app.logger.info("[EMAIL SENDER] %s", sender)
+                        current_app.logger.warning("[EMAIL RESULT] Success=False Recipient=%s Reason=InvalidFormat", clean_to)
+                    continue
+
+                if current_app:
+                    current_app.logger.info("[EMAIL RECIPIENT] %s", clean_to)
+                    current_app.logger.info("[EMAIL SENDER] %s", sender)
+
                 try:
                     message = EmailMessage()
                     message["Subject"] = subject
                     message["From"] = mail_from
-                    message["To"] = to.strip()
+                    message["To"] = clean_to
+                    domain = host if (host and "." in host and not host.startswith("127.")) else "retailmart.dev"
+                    message["Message-ID"] = f"<{uuid.uuid4()}@{domain}>"
                     message.set_content(body)
                     if html_body:
                         message.add_alternative(html_body, subtype="html")
-                    server.send_message(message)
-                    sent_count += 1
+                    refused = server.send_message(message)
+                    if isinstance(refused, dict) and len(refused) > 0:
+                        refused_map[clean_to] = refused
+                        if current_app:
+                            current_app.logger.warning(
+                                "[EMAIL RESULT] Success=False Recipient=%s Refused=%s",
+                                clean_to,
+                                refused,
+                            )
+                    else:
+                        sent_count += 1
+                        if current_app:
+                            current_app.logger.info(
+                                "[EMAIL RESULT] Success=True Recipient=%s Message=Delivered to SMTP server",
+                                clean_to,
+                            )
                 except Exception as send_err:
+                    refused_map[clean_to] = str(send_err)
                     if current_app:
-                        current_app.logger.warning("Failed bulk delivery to recipient %s: %s", to, send_err)
+                        current_app.logger.warning(
+                            "[EMAIL RESULT] Success=False Recipient=%s Error=%s",
+                            clean_to,
+                            send_err,
+                        )
     except Exception as ex:
         if current_app:
             current_app.logger.exception("Bulk campaign delivery session failed [%s]: %s", sender, ex)
 
+    if return_diagnostics:
+        return sent_count, refused_map
     return sent_count
+
 
 
 # ==============================================================================

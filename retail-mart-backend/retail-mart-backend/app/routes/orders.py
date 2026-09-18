@@ -1,6 +1,6 @@
 from datetime import datetime, date
 
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from app.extensions import db
@@ -9,7 +9,7 @@ from app.models.payment import Payment, PaymentStatusEvent
 from app.utils.decorators import roles_required
 from app.utils.ids import next_sequential_id, random_suffix
 from app.utils.pdf import build_invoice_pdf
-from app.utils.email import send_email, order_confirmation_email
+from app.utils.email import send_email, order_confirmation_email, ensure_delivery_result
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -98,10 +98,24 @@ def create_order():
     db.session.add(payment)
     db.session.commit()
 
-    recipient_email = order.customer_email or (order.user.email if order.user else None)
+    recipient_email = (order.customer_email or "").strip() or (order.user.email.strip() if getattr(order, "user", None) and order.user.email else None)
     if recipient_email:
         subject, body, html_body = order_confirmation_email(order)
-        send_email(recipient_email, subject, body, html_body=html_body, sender="orders")  # best-effort - see app/utils/email.py
+        current_app.logger.info("[EMAIL TRIGGER] Flow=ORDER Event=order_created OrderId=%s", order.id)
+        current_app.logger.info("[EMAIL RECIPIENT] %s", recipient_email)
+        current_app.logger.info("[EMAIL SENDER] orders")
+        raw_result = send_email(recipient_email, subject, body, html_body=html_body, sender="orders")
+        result = ensure_delivery_result(raw_result)
+        current_app.logger.info(
+            "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+            result.get("success"),
+            result.get("stage"),
+            result.get("message"),
+            result.get("refused_recipients"),
+            result.get("message_id"),
+        )
+    else:
+        current_app.logger.warning("[EMAIL TRIGGER] Flow=ORDER Event=order_created OrderId=%s - SKIPPED: No recipient email found", order.id)
 
     return jsonify(order.to_dict()), 201
 
