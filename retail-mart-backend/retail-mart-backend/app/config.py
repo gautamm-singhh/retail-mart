@@ -10,6 +10,48 @@ load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
 
 def _configure_database():
     raw_url = (os.environ.get("DATABASE_URL") or "").strip()
+
+    # If DATABASE_URL is not set directly, assemble from individual DB_* / MYSQL_* env vars if present
+    if not raw_url:
+        host = (
+            os.environ.get("DB_HOST")
+            or os.environ.get("MYSQL_HOST")
+            or os.environ.get("MYSQLHOST")
+            or os.environ.get("AIVEN_HOST")
+            or ""
+        ).strip()
+        if host:
+            user = (
+                os.environ.get("DB_USER")
+                or os.environ.get("MYSQL_USER")
+                or os.environ.get("MYSQLUSER")
+                or os.environ.get("AIVEN_USER")
+                or "avnadmin"
+            ).strip()
+            password = (
+                os.environ.get("DB_PASSWORD")
+                or os.environ.get("MYSQL_PASSWORD")
+                or os.environ.get("MYSQLPASSWORD")
+                or os.environ.get("AIVEN_PASSWORD")
+                or ""
+            ).strip()
+            port = (
+                os.environ.get("DB_PORT")
+                or os.environ.get("MYSQL_PORT")
+                or os.environ.get("MYSQLPORT")
+                or os.environ.get("AIVEN_PORT")
+                or "3306"
+            ).strip()
+            dbname = (
+                os.environ.get("DB_NAME")
+                or os.environ.get("MYSQL_DATABASE")
+                or os.environ.get("MYSQLDATABASE")
+                or os.environ.get("AIVEN_DATABASE")
+                or "retail_mart"
+            ).strip()
+            quoted_password = urllib.parse.quote_plus(password)
+            raw_url = f"mysql+pymysql://{user}:{quoted_password}@{host}:{port}/{dbname}"
+
     if not raw_url:
         return f"sqlite:///{os.path.join(BASE_DIR, 'retail_mart.db')}", {}
 
@@ -18,7 +60,16 @@ def _configure_database():
     elif raw_url.startswith("postgres://"):
         raw_url = "postgresql://" + raw_url[len("postgres://"):]
 
-    engine_options = {}
+    engine_options = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+    }
+
+    # In serverless environments (e.g. Vercel), NullPool prevents stale pooled sockets
+    is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+    if is_serverless:
+        from sqlalchemy.pool import NullPool
+        engine_options["poolclass"] = NullPool
 
     if "mysql" in raw_url:
         parsed = urllib.parse.urlparse(raw_url)
@@ -40,7 +91,10 @@ def _configure_database():
         new_query = urllib.parse.urlencode(filtered_params, doseq=True)
         cleaned_url = urllib.parse.urlunparse(parsed._replace(query=new_query))
 
+        connect_args = {"connect_timeout": 10}
+
         if ssl_requested:
+            import ssl
             ca_content = (
                 os.environ.get("MYSQL_CA_CERT")
                 or os.environ.get("AIVEN_CA_CERT")
@@ -48,26 +102,23 @@ def _configure_database():
                 or ""
             ).strip()
 
+            ssl_ctx = ssl.create_default_context()
             if ca_content:
-                ca_path = os.path.join(tempfile.gettempdir(), "aiven_ca.pem")
-                with open(ca_path, "w", encoding="utf-8") as f:
-                    f.write(ca_content)
-                engine_options["connect_args"] = {
-                    "ssl": {
-                        "ca": ca_path,
-                        "check_hostname": True,
-                        "verify_mode": "required",
-                    }
-                }
+                ca_content = ca_content.replace("\\n", "\n")
+                try:
+                    ssl_ctx.load_verify_locations(cadata=ca_content)
+                    ssl_ctx.check_hostname = True
+                    ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+                except Exception:
+                    ssl_ctx.check_hostname = False
+                    ssl_ctx.verify_mode = ssl.CERT_NONE
             else:
-                # SSL encrypted TLS connection (fallback for self-signed Aiven Project CA when CA cert not mounted)
-                engine_options["connect_args"] = {
-                    "ssl": {
-                        "check_hostname": False,
-                        "verify_mode": "none",
-                    }
-                }
+                ssl_ctx.check_hostname = False
+                ssl_ctx.verify_mode = ssl.CERT_NONE
 
+            connect_args["ssl"] = ssl_ctx
+
+        engine_options["connect_args"] = connect_args
         return cleaned_url, engine_options
 
     return raw_url, engine_options
@@ -90,10 +141,22 @@ class BaseConfig:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
     JWT_TOKEN_LOCATION = ["headers"]
 
-    _cors_raw = os.environ.get("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5174,http://127.0.0.1:5173")
+    _cors_raw = os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5174,http://127.0.0.1:5173,https://retail-mart-frontend.vercel.app"
+    )
     _parsed_origins = {o.strip() for o in _cors_raw.split(",") if o.strip()}
-    # Always allow standard local Vite ports (5173, 5174) for seamless local dev
-    CORS_ORIGINS = list(_parsed_origins | {"http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://127.0.0.1:5173"})
+    # Always allow standard local Vite ports (5173, 5174) and production frontend
+    CORS_ORIGINS = list(
+        _parsed_origins
+        | {
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://127.0.0.1:5173",
+            "https://retail-mart-frontend.vercel.app",
+        }
+    )
 
     # --- Email (see app/utils/email.py) ---------------------------------
     # Multi-sender Gmail SMTP configuration (support, orders, marketing).

@@ -18,6 +18,12 @@ from app.extensions import db, jwt
 
 
 def create_app(config_name: str | None = None) -> Flask:
+    import os
+
+    # Under Vercel serverless execution, ensure production configuration is active
+    if not config_name and os.environ.get("VERCEL"):
+        config_name = "production"
+
     app = Flask(__name__)
     app.config.from_object(get_config(config_name))
 
@@ -75,7 +81,47 @@ def create_app(config_name: str | None = None) -> Flask:
     # --- health check ---------------------------------------------------
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "service": "retail-mart-backend"})
+        res = {"status": "ok", "service": "retail-mart-backend"}
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            res["database"] = "connected"
+        except Exception as exc:
+            res["database"] = "disconnected"
+            res["db_error"] = type(exc).__name__
+        return jsonify(res)
+
+    # --- safe database diagnostics --------------------------------------
+    @app.get("/api/db-diagnostics")
+    def db_diagnostics():
+        from sqlalchemy import inspect
+        report = {
+            "status": "testing",
+            "database_configured": bool(os.environ.get("DATABASE_URL") or os.environ.get("DB_HOST") or os.environ.get("MYSQL_HOST")),
+            "dialect": db.engine.dialect.name,
+            "driver": db.engine.driver,
+        }
+        try:
+            # 1. Simple connection and SELECT 1 check
+            db.session.execute(db.text("SELECT 1"))
+            report["select_1"] = "ok"
+
+            # 2. Schema inspection
+            insp = inspect(db.engine)
+            tables = sorted(insp.get_table_names())
+            report["tables_found"] = tables
+            expected = ["users", "products", "categories", "orders", "payments", "shipments", "couriers", "campaigns", "wishlist_items"]
+            report["expected_tables_present"] = all(t in tables for t in expected)
+
+            # 3. Simple table read
+            from app.models.user import User
+            report["user_count"] = User.query.count()
+            report["status"] = "healthy"
+            return jsonify(report), 200
+        except Exception as exc:
+            report["status"] = "error"
+            report["error_type"] = type(exc).__name__
+            report["error_message"] = str(exc).split("\n")[0]
+            return jsonify(report), 500
 
     # --- error handlers ---------------------------------------------------
     @app.errorhandler(404)
@@ -87,8 +133,20 @@ def create_app(config_name: str | None = None) -> Flask:
         return jsonify({"error": str(e.description) if hasattr(e, "description") else "Bad request"}), 400
 
     @app.errorhandler(500)
-    def server_error(_e):
-        return jsonify({"error": "Internal server error"}), 500
+    def server_error(e):
+        app.logger.error("500 Internal server error: %s", str(e), exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e) if app.config.get("DEBUG") else "An internal server error occurred."
+        }), 500
+
+    @app.errorhandler(Exception)
+    def handle_unhandled_exception(e):
+        app.logger.error("Unhandled exception: %s", str(e), exc_info=True)
+        return jsonify({
+            "error": "Internal server error",
+            "message": str(e) if app.config.get("DEBUG") else "An internal server error occurred."
+        }), 500
 
     return app
 

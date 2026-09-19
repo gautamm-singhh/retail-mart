@@ -4,7 +4,13 @@
  */
 import { getAuthToken } from "@/features/auth/authStorage";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+const API_BASE_URL =
+  import.meta.env.PROD
+    ? (!configuredBaseUrl || configuredBaseUrl.includes("localhost") || configuredBaseUrl.includes("127.0.0.1")
+        ? "https://retail-mart-iota.vercel.app/api"
+        : configuredBaseUrl)
+    : (configuredBaseUrl || "http://localhost:4000/api");
 
 export interface ApiClientConfig {
   baseUrl: string;

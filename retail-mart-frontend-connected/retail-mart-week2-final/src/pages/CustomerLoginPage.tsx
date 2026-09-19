@@ -437,8 +437,12 @@ export default function CustomerLoginPage({ initialMode }: CustomerLoginPageProp
       }
       setBtnState("done");
       setTimeout(() => redirectAfterAuth(user.role), 900);
-    } catch {
-      setError("Couldn't reach the server. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Invalid email or password.");
+      } else {
+        setError("Couldn't reach the server. Please try again.");
+      }
       setBtnState("idle");
       triggerShake();
     } finally {
@@ -463,8 +467,12 @@ export default function CustomerLoginPage({ initialMode }: CustomerLoginPageProp
         setOtpStep("code");
         setBtnState("idle");
       }, 700);
-    } catch {
-      setError("Couldn't send a code to that number. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Couldn't send a code to that number. Please try again.");
+      } else {
+        setError("Couldn't reach the server. Please try again.");
+      }
       setBtnState("idle");
       triggerShake();
     } finally {
@@ -486,8 +494,12 @@ export default function CustomerLoginPage({ initialMode }: CustomerLoginPageProp
       await verifyOtp(phone, code, nameForOtp || undefined);
       setBtnState("done");
       setTimeout(() => redirectAfterAuth("Customer"), 900);
-    } catch {
-      setError("That code is invalid or has expired. Please request a new one.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "That code is invalid or has expired. Please request a new one.");
+      } else {
+        setError("Couldn't reach the server. Please try again.");
+      }
       setBtnState("idle");
       triggerShake();
     } finally {

@@ -9,7 +9,10 @@ load_dotenv(os.path.join(BASE_DIR, ".env"), override=True)
 
 from app import create_app
 
-app = create_app(os.environ.get("FLASK_ENV", "development"))
+env = os.environ.get("FLASK_ENV")
+if not env and (os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")):
+    env = "production"
+app = create_app(env or "development")
 
 if __name__ == "__main__":
     from migrate import run_migration
