@@ -116,6 +116,17 @@ export default function ShipmentDetailsPage() {
 
   const ext = trackingData?.externalTracking;
 
+  const STAGES: { key: ShipmentStatus; label: string; icon: string }[] = [
+    { key: "Pending", label: "Created", icon: "📋" },
+    { key: "Packed", label: "Packed", icon: "📦" },
+    { key: "Shipped", label: "Shipped", icon: "🚚" },
+    { key: "Out for Delivery", label: "Out for Delivery", icon: "🛵" },
+    { key: "Delivered", label: "Delivered", icon: "🎉" },
+  ];
+
+  const currentStageIndex = STAGES.findIndex((s) => s.key === shipment.status);
+  const historyMap = new Map(shipment.trackingHistory.map((h) => [h.status, h.date]));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -136,6 +147,75 @@ export default function ShipmentDetailsPage() {
           </div>
         }
       />
+
+      {/* Visual Logistics Milestone Stepper Timeline */}
+      <Card className="p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Fulfillment Journey
+          </h3>
+          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            {shipment.status === "Delivered" ? "Completed" : "In Progress"}
+          </span>
+        </div>
+        <div className="relative">
+          <div className="grid grid-cols-5 gap-2">
+            {STAGES.map((stage, idx) => {
+              const isCompleted = idx < currentStageIndex;
+              const isCurrent = idx === currentStageIndex;
+              const timestamp = historyMap.get(stage.key);
+
+              return (
+                <div key={stage.key} className="flex flex-col items-center text-center relative">
+                  {/* Connecting horizontal line */}
+                  {idx < STAGES.length - 1 && (
+                    <div
+                      className={`absolute top-4 left-1/2 w-full h-1 -z-0 transition-colors duration-300 ${
+                        idx < currentStageIndex
+                          ? "bg-emerald-500 dark:bg-emerald-400"
+                          : "bg-slate-200 dark:bg-slate-700"
+                      }`}
+                    />
+                  )}
+
+                  {/* Stage Node */}
+                  <div
+                    className={`relative z-10 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-sm font-bold shadow-xs transition-all duration-300 ${
+                      isCompleted
+                        ? "bg-emerald-600 text-white shadow-emerald-500/20"
+                        : isCurrent
+                        ? "bg-emerald-500 text-white ring-4 ring-emerald-100 dark:ring-emerald-950/80 animate-pulse"
+                        : "border-2 border-slate-200 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-800"
+                    }`}
+                  >
+                    {isCompleted ? "✓" : stage.icon}
+                  </div>
+
+                  {/* Label */}
+                  <span
+                    className={`mt-2.5 text-[11px] sm:text-xs font-bold leading-tight ${
+                      isCurrent
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : isCompleted
+                        ? "text-slate-900 dark:text-white"
+                        : "text-slate-400 dark:text-slate-500"
+                    }`}
+                  >
+                    {stage.label}
+                  </span>
+
+                  {/* Timestamp if available */}
+                  {timestamp && (
+                    <span className="mt-0.5 hidden text-[10px] text-slate-400 sm:block">
+                      {formatDate(timestamp)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2">

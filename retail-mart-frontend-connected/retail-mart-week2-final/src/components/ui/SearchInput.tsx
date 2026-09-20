@@ -16,7 +16,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
     const inputId = id ?? generatedId;
 
     return (
-      <div className="relative">
+      <div className="group relative">
         <label htmlFor={inputId} className="sr-only">
           {label}
         </label>
@@ -24,7 +24,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           aria-hidden="true"
           viewBox="0 0 20 20"
           fill="none"
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors duration-150 group-focus-within:text-brand-500 dark:group-focus-within:text-brand-400"
         >
           <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
           <path
@@ -39,9 +39,13 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           id={inputId}
           type="search"
           className={cn(
-            "h-10 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm text-ink-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
-            "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-            "focus-visible:border-brand-500 dark:focus-visible:border-emerald-500",
+            "h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm",
+            "text-slate-900 placeholder:text-slate-400",
+            "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500",
+            "shadow-xs",
+            "transition-all duration-200 ease-out",
+            "focus-visible:outline-none focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20",
+            "dark:focus-visible:border-brand-400 dark:focus-visible:ring-brand-500/25",
             className,
           )}
           {...props}

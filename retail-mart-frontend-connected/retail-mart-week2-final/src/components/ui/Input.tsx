@@ -21,11 +21,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const errorId = `${inputId}-error`;
 
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {label && (
           <label
             htmlFor={inputId}
-            className={cn("text-sm font-medium text-ink-800 dark:text-slate-200", hideLabel && "sr-only")}
+            className={cn("text-sm font-medium text-slate-700 dark:text-slate-200", hideLabel && "sr-only")}
           >
             {label}
           </label>
@@ -36,16 +36,27 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            "h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-ink-900 shadow-sm transition-colors",
-            "placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500",
-            "focus-visible:border-brand-500 dark:focus-visible:border-brand-400",
-            error && "border-danger-600 dark:border-rose-500",
+            // Geometry
+            "h-11 w-full rounded-xl border px-3.5 text-sm",
+            // Colors
+            "bg-white text-slate-900 placeholder:text-slate-400",
+            "dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500",
+            // Border
+            "border-slate-200 dark:border-slate-700",
+            // Shadow
+            "shadow-xs",
+            // Focus
+            "transition-all duration-200 ease-out",
+            "focus-visible:outline-none focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20",
+            "dark:focus-visible:border-brand-400 dark:focus-visible:ring-brand-500/25",
+            // Error
+            error && "border-danger-600 focus-visible:border-danger-600 focus-visible:ring-danger-600/20 dark:border-danger-500",
             className,
           )}
           {...props}
         />
         {error && (
-          <p id={errorId} className="text-xs text-danger-600">
+          <p id={errorId} className="text-xs font-medium text-danger-600 dark:text-danger-400">
             {error}
           </p>
         )}

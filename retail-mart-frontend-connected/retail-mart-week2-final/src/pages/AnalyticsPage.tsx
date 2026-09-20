@@ -30,17 +30,28 @@ export default function AnalyticsPage() {
     setIsLoading(true);
     setError(null);
 
-    // Timeout safety: if AI projection takes > 10s or fails, fall back to statistical projection gracefully
-    const executeFetch = async () => {
+    // Timeout safety: backend Gemini inference takes ~12-16s. Set 25s client timeout.
+    // If AI fails or times out, fall back gracefully to statistical projection with honest state.
+    const executeFetch = async (): Promise<SalesProjection> => {
       if (mode === "ai") {
         try {
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("AI timeout")), 10000),
+            setTimeout(() => reject(new Error("AI projection request timed out")), 25000),
           );
           return await Promise.race([fetchAiProjections(period), timeoutPromise]);
-        } catch {
-          // Fall back seamlessly to standard statistical projection
-          return await fetchProjections(period);
+        } catch (err) {
+          // Fall back gracefully to standard statistical projection with honest fallback narrative
+          try {
+            const fallbackData = await fetchProjections(period);
+            return {
+              ...fallbackData,
+              aiGenerated: false,
+              narrative:
+                "AI predictive service was temporarily unavailable or timed out. Switched to mathematical linear regression model.",
+            };
+          } catch {
+            throw err;
+          }
         }
       }
       return await fetchProjections(period);
@@ -62,7 +73,7 @@ export default function AnalyticsPage() {
     };
   }, [period, mode, reloadToken]);
 
-  // Derived real analytics metrics
+  // Derived real analytics metrics (NO hardcoded multipliers or synthetic numbers)
   const metrics = useMemo(() => {
     const history = projection?.history || [];
     const forecast = projection?.forecast || [];
@@ -71,11 +82,9 @@ export default function AnalyticsPage() {
     const totalHistoryOrders = history.reduce((sum, h) => sum + h.orderCount, 0);
 
     const peakProjectedRevenue =
-      forecast.length > 0
-        ? forecast[forecast.length - 1].projectedRevenue
-        : totalHistoryRevenue * 1.4;
+      forecast.length > 0 ? forecast[forecast.length - 1].projectedRevenue : 0;
 
-    let growthRate = 0;
+    let growthRate: number | null = null;
     if (history.length > 0 && forecast.length > 0) {
       const latestHistoryRev = history[history.length - 1].revenue;
       if (latestHistoryRev > 0) {
@@ -234,12 +243,14 @@ export default function AnalyticsPage() {
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Projected Peak</span>
               <p className="mt-0.5 text-2xl font-black text-purple-600 dark:text-purple-400">
-                {formatCurrency(metrics.peakProjectedRevenue)}
+                {metrics.peakProjectedRevenue > 0 ? formatCurrency(metrics.peakProjectedRevenue) : "N/A"}
               </p>
             </div>
           </div>
           <div className="mt-3 text-[11px] text-purple-600 dark:text-purple-400 font-semibold border-t border-slate-100 pt-2 dark:border-slate-800/80">
-            Trajectory +{metrics.growthRate}% over next periods
+            {metrics.growthRate !== null
+              ? `Trajectory ${metrics.growthRate >= 0 ? "+" : ""}${metrics.growthRate}% over next periods`
+              : "No projection baseline"}
           </div>
         </div>
 
@@ -265,7 +276,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Card 4: Model Confidence */}
+        {/* Card 4: Model Engine */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400">
@@ -276,12 +287,20 @@ export default function AnalyticsPage() {
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Model Engine</span>
               <p className="mt-0.5 text-2xl font-black text-slate-900 dark:text-white">
-                {mode === "ai" ? "AI Neural" : "Linear OLS"}
+                {mode === "ai"
+                  ? projection?.aiGenerated
+                    ? "Gemini AI"
+                    : "Statistical (Fallback)"
+                  : "Statistical (OLS)"}
               </p>
             </div>
           </div>
           <div className="mt-3 text-[11px] text-teal-600 dark:text-teal-400 font-semibold border-t border-slate-100 pt-2 dark:border-slate-800/80">
-            Confidence: 94.8% (Verified)
+            {mode === "ai"
+              ? projection?.aiGenerated
+                ? `Executive AI • ${projection?.forecast.length || 0} periods`
+                : `Linear Fallback • ${projection?.forecast.length || 0} periods`
+              : `Linear Regression • ${projection?.forecast.length || 0} periods`}
           </div>
         </div>
       </div>
@@ -330,12 +349,15 @@ export default function AnalyticsPage() {
             <button
               type="button"
               onClick={() => setMode("ai")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
                 mode === "ai"
                   ? "bg-emerald-700 text-white shadow-xs dark:bg-emerald-600"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
             >
+              {isLoading && mode === "ai" && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+              )}
               Predictive Projection
             </button>
           </div>
@@ -344,7 +366,14 @@ export default function AnalyticsPage() {
 
       {/* 4. Main Body: Loading / Error / Content */}
       {isLoading ? (
-        <LoadingState label="Computing projection models..." rows={6} />
+        <LoadingState
+          label={
+            mode === "ai"
+              ? "Generating predictive projection with Gemini AI model..."
+              : "Computing statistical regression model..."
+          }
+          rows={6}
+        />
       ) : error ? (
         <ErrorState
           title="Couldn't generate analytics projection"
@@ -359,19 +388,51 @@ export default function AnalyticsPage() {
       ) : (
         <div className="flex flex-col gap-6">
           {/* Executive AI / Statistical Narrative Briefing */}
-          {projection.narrative && (
-            <div className="rounded-2xl border border-purple-200/80 bg-purple-50/70 p-4 text-xs sm:text-sm text-slate-800 shadow-2xs dark:border-purple-900/40 dark:bg-purple-950/30 dark:text-slate-200">
+          {projection.narrative ? (
+            <div
+              className={`rounded-2xl border p-4 text-xs sm:text-sm shadow-2xs transition-all ${
+                projection.aiGenerated
+                  ? "border-purple-200/80 bg-purple-50/70 text-slate-800 dark:border-purple-900/40 dark:bg-purple-950/30 dark:text-slate-200"
+                  : "border-amber-200/80 bg-amber-50/70 text-slate-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-slate-200"
+              }`}
+            >
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
-                <p className="text-xs font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    projection.aiGenerated ? "bg-purple-500 animate-pulse" : "bg-amber-500"
+                  }`}
+                />
+                <p
+                  className={`text-xs font-extrabold uppercase tracking-wider ${
+                    projection.aiGenerated
+                      ? "text-purple-700 dark:text-purple-400"
+                      : "text-amber-700 dark:text-amber-400"
+                  }`}
+                >
                   {projection.aiGenerated
                     ? "Executive AI Narrative Briefing"
+                    : mode === "ai"
+                    ? "Statistical Fallback Briefing (AI Offline/Unavailable)"
                     : "Statistical Linear Forecast"}
                 </p>
               </div>
               <p className="leading-relaxed">{projection.narrative}</p>
             </div>
-          )}
+          ) : mode === "simple" ? (
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 text-xs sm:text-sm text-slate-700 shadow-2xs dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <p className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  Statistical Linear Regression Model (OLS)
+                </p>
+              </div>
+              <p className="leading-relaxed">
+                Deterministic least-squares regression modeled across {projection.history.length}{" "}
+                {period} record(s). Switch to &ldquo;Predictive Projection&rdquo; to generate an AI-powered
+                financial executive narrative.
+              </p>
+            </div>
+          ) : null}
 
           {/* Revenue Trend & Projection Chart */}
           <Card className="p-5">
@@ -387,6 +448,9 @@ export default function AnalyticsPage() {
             <AnalyticsProjectionChart
               history={projection.history}
               forecast={projection.forecast}
+              period={period}
+              mode={mode}
+              aiGenerated={projection.aiGenerated}
             />
           </Card>
 

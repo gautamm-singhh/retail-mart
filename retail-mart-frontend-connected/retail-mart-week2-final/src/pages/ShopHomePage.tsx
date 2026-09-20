@@ -154,9 +154,9 @@ export default function ShopHomePage() {
       )}
 
       {/* Main 12-Column Storefront Layout */}
-      <div id="catalog-section" className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        {/* Category Navigation Column */}
-        <div className="lg:col-span-3">
+      <div id="catalog-section" className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+        {/* Category Navigation Column — Sticky on Desktop */}
+        <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:z-10">
           <CategorySidebar
             categories={categories}
             activeCategory={categoryFilter}
@@ -168,13 +168,13 @@ export default function ShopHomePage() {
         {/* Product Catalog Main Column */}
         <div className="lg:col-span-9">
           {/* Section Header & Control Toolbar */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900 transition-colors">
             <div>
               <div className="flex items-center gap-2.5">
-                <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+                <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                   {categoryFilter === "all" ? "Featured Catalog" : categoryFilter}
                 </h2>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
                   {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
                 </span>
               </div>
@@ -286,8 +286,14 @@ export default function ShopHomePage() {
             />
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {filteredProducts.map((product, idx) => (
+                <div
+                  key={product.id}
+                  className="opacity-0 animate-[fadeSlideUp_0.45s_ease-out_forwards]"
+                  style={{ animationDelay: `${(idx % 6) * 60}ms` }}
+                >
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           )}
@@ -319,8 +325,14 @@ export default function ShopHomePage() {
               </div>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {recommendedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {recommendedProducts.map((product, idx) => (
+                  <div
+                    key={product.id}
+                    className="opacity-0 animate-[fadeSlideUp_0.45s_ease-out_forwards]"
+                    style={{ animationDelay: `${(idx % 6) * 60}ms` }}
+                  >
+                    <ProductCard product={product} />
+                  </div>
                 ))}
               </div>
             </div>

@@ -1,0 +1,1356 @@
+import {
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/useAuth";
+import { getPostLoginRedirect } from "@/features/auth/postLoginRedirect";
+import { ApiError } from "@/services/api/client";
+import { ROUTES } from "@/constants/routes";
+import type { Role } from "@/types";
+import { normalizeIndianPhone, validateIndianPhone } from "@/utils/validation";
+
+interface LocationState {
+  from?: { pathname: string };
+}
+
+export type AuthMode = "login" | "signup";
+export type CustomerLoginTab = "password" | "otp";
+export type OtpStep = "phone" | "code";
+export type BtnState = "idle" | "loading" | "done";
+
+export interface UnifiedAuthPageProps {
+  initialMode?: AuthMode;
+}
+
+const HEADLINE_WORDS = ["SHOP", "SMARTER.", "LIVE", "BETTER."];
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* ─────────────────────────────────────────────────────────────
+   THEME TOGGLE BUTTON
+   ───────────────────────────────────────────────────────────── */
+
+function ThemeToggleButton() {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark");
+    }
+    return false;
+  });
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", next);
+      document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+      try {
+        localStorage.setItem("retail_mart_theme", next ? "dark" : "light");
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      id="themeBtn"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+      className="absolute top-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--field-line)] bg-[var(--field)] text-[var(--ink-soft)] backdrop-blur-md transition-all duration-300 hover:scale-110 hover:border-[var(--brand)] hover:text-[var(--brand)] active:scale-95"
+    >
+      {isDark ? (
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4.5 w-4.5 text-amber-400 transition-transform duration-300"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        </svg>
+      ) : (
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4.5 w-4.5 transition-transform duration-300"
+        >
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PARTICLE NETWORK CANVAS (LEFT PANEL)
+   ───────────────────────────────────────────────────────────── */
+
+function ParticleNetwork() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    let reduce = false;
+    try {
+      if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+        reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      }
+    } catch {
+      /* jsdom safety */
+    }
+    if (reduce) return;
+
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") return;
+
+    let ctx: CanvasRenderingContext2D | null = null;
+    try {
+      ctx = canvas.getContext("2d");
+    } catch {
+      /* jsdom safety */
+    }
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let w = 0;
+    let h = 0;
+    const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+    let pts: { x: number; y: number; vx: number; vy: number }[] = [];
+    const mouse = { x: -9999, y: -9999 };
+
+    function resize() {
+      if (!canvas || !parent) return;
+      const r = parent.getBoundingClientRect();
+      w = r.width;
+      h = r.height;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.max(16, Math.min(50, Math.round((w * h) / 16000)));
+      pts = Array.from({ length: count }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: (Math.random() - 0.5) * 0.28,
+      }));
+    }
+
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      const r = parent.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.x = -9999;
+      mouse.y = -9999;
+    };
+
+    parent.addEventListener("mousemove", handleMouseMove);
+    parent.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("resize", resize);
+    resize();
+
+    function tick() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, w, h);
+
+      for (const p of pts) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+        const dmx = p.x - mouse.x;
+        const dmy = p.y - mouse.y;
+        const dm = Math.hypot(dmx, dmy);
+        if (dm < 120 && dm > 0) {
+          p.x += (dmx / dm) * 0.4;
+          p.y += (dmy / dm) * 0.4;
+        }
+      }
+
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x,
+            dy = pts[i].y - pts[j].y;
+          const d = Math.hypot(dx, dy);
+          if (d < 110) {
+            ctx.strokeStyle = `rgba(180, 230, 205, ${(1 - d / 110) * 0.35})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.stroke();
+          }
+        }
+        ctx.fillStyle = "rgba(210, 245, 225, 0.65)";
+        ctx.beginPath();
+        ctx.arc(pts[i].x, pts[i].y, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      animationFrameId = requestAnimationFrame(tick);
+    }
+
+    animationFrameId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      parent.removeEventListener("mousemove", handleMouseMove);
+      parent.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-75" />;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SIMPLIFIED UNIFIED AUTHENTICATION PAGE COMPONENT
+   ───────────────────────────────────────────────────────────── */
+
+export default function UnifiedAuthPage({
+  initialMode,
+}: UnifiedAuthPageProps) {
+  const { isAuthenticated, isLoadingUser, currentUser, login, signup, requestOtp, verifyOtp } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentPath = location.pathname;
+  const searchParams = new URLSearchParams(location.search);
+  const isSignupPath = currentPath === ROUTES.signup || currentPath === "/signup";
+
+  // Determine mode: signup if /shop/signup, otherwise normal login
+  const resolvedMode: AuthMode =
+    initialMode ?? (isSignupPath || searchParams.get("mode") === "signup" ? "signup" : "login");
+
+  const [mode, setMode] = useState<AuthMode>(resolvedMode);
+
+  useEffect(() => {
+    if (isSignupPath || searchParams.get("mode") === "signup") {
+      setMode("signup");
+    } else {
+      setMode("login");
+    }
+  }, [currentPath, isSignupPath, searchParams]);
+
+  // Login Sub-tab: Password vs Mobile OTP (Email & Password is the primary default)
+  const [customerLoginTab, setCustomerLoginTab] = useState<CustomerLoginTab>("password");
+  const [otpStep, setOtpStep] = useState<OtpStep>("phone");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [nameForOtp, setNameForOtp] = useState("");
+
+  // Email/Password form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+
+  // Customer Signup form state
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPhone, setSignupPhone] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [signupEmailTouched, setSignupEmailTouched] = useState(false);
+  const [signupCapsLock, setSignupCapsLock] = useState(false);
+
+  // UI status feedback
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [btnState, setBtnState] = useState<BtnState>("idle");
+  const [cardShake, setCardShake] = useState(false);
+
+  // 3D Card tilt & magnetic button state
+  const cardRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [btnPos, setBtnPos] = useState({ x: 0, y: 0 });
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number; size: number }[]>([]);
+  const isTouchDevice = useRef(false);
+
+  // Validation status
+  const cleanEmail = email.trim();
+  const isEmailValid = cleanEmail.length > 0 && EMAIL_REGEX.test(cleanEmail);
+  const isEmailInvalid = emailTouched && cleanEmail.length > 0 && !isEmailValid;
+
+  const cleanSignupEmail = signupEmail.trim();
+  const isSignupEmailValid = cleanSignupEmail.length > 0 && EMAIL_REGEX.test(cleanSignupEmail);
+  const isSignupEmailInvalid = signupEmailTouched && cleanSignupEmail.length > 0 && !isSignupEmailValid;
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+        isTouchDevice.current = window.matchMedia("(hover: none)").matches;
+      }
+    } catch {
+      /* jsdom safety */
+    }
+  }, []);
+
+  const triggerShake = () => {
+    setCardShake(true);
+    setTimeout(() => setCardShake(false), 450);
+  };
+
+  // Ambient mouse glow and 3D tilt
+  const handleSideMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    if (isTouchDevice.current) return;
+    try {
+      if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    const card = cardRef.current;
+    if (!card) return;
+
+    card.style.setProperty("--mx", `${e.clientX}px`);
+    card.style.setProperty("--my", `${e.clientY}px`);
+
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) / (rect.width / 2);
+    const dy = (e.clientY - cy) / (rect.height / 2);
+    setTilt({ x: dy * -3, y: dx * 3 });
+  }, []);
+
+  const handleSideMouseLeave = useCallback(() => {
+    setTilt({ x: 0, y: 0 });
+  }, []);
+
+  // Magnetic button hover
+  const handleBtnMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (isSubmitting || btnState === "done") return;
+    try {
+      if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width / 2;
+    const y = e.clientY - r.top - r.height / 2;
+    setBtnPos({ x: x * 0.12, y: y * 0.28 });
+  };
+
+  const handleBtnMouseLeave = () => {
+    setBtnPos({ x: 0, y: 0 });
+  };
+
+  // Button click ripple
+  const createRipple = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget.getBoundingClientRect();
+    const cx = e.clientX ? e.clientX - btn.left : btn.width / 2;
+    const cy = e.clientY ? e.clientY - btn.top : btn.height / 2;
+    const id = Date.now();
+    const size = btn.width / 3;
+    setRipples((prev) => [...prev, { id, x: cx - size / 2, y: cy - size / 2, size }]);
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== id));
+    }, 600);
+  };
+
+  // Safe redirect helper based entirely on backend-verified role
+  function redirectAfterAuth(authenticatedRole: Role) {
+    const requestedFrom = (location.state as LocationState | null)?.from?.pathname;
+    navigate(getPostLoginRedirect(authenticatedRole, requestedFrom), { replace: true });
+  }
+
+  // Already authenticated guard: if already logged in, navigate to appropriate portal
+  if (isAuthenticated) {
+    if (isLoadingUser || !currentUser) return null;
+    const requestedFrom = (location.state as LocationState | null)?.from?.pathname;
+    return <Navigate to={getPostLoginRedirect(currentUser.role, requestedFrom)} replace />;
+  }
+
+  const redirectDelay =
+    (typeof process !== "undefined" && process.env.NODE_ENV === "test") ||
+    (import.meta as unknown as { env?: { MODE?: string } })?.env?.MODE === "test"
+      ? 0
+      : 650;
+
+  // ── SUBMISSION HANDLER: Email & Password ──
+  async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setEmailTouched(true);
+
+    const targetEmail = email.trim();
+    if (!targetEmail || !EMAIL_REGEX.test(targetEmail) || !password) {
+      triggerShake();
+      return;
+    }
+
+    setIsSubmitting(true);
+    setBtnState("loading");
+    setError(null);
+
+    try {
+      // Backend validates credentials and returns authenticated user with their verified role
+      const user = await login(targetEmail, password);
+      if (!user) {
+        setError("Invalid email or password.");
+        setBtnState("idle");
+        triggerShake();
+        return;
+      }
+      setBtnState("done");
+      setTimeout(() => redirectAfterAuth(user.role), redirectDelay);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Invalid email or password.");
+      } else {
+        setError("Couldn't reach the server. Please verify the backend is running.");
+      }
+      setBtnState("idle");
+      triggerShake();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // ── SUBMISSION HANDLER: Customer Mobile OTP Step 1 ──
+  async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!phone.trim()) {
+      triggerShake();
+      return;
+    }
+
+    const phoneError = validateIndianPhone(phone, true);
+    if (phoneError) {
+      setError(phoneError);
+      triggerShake();
+      return;
+    }
+
+    const normalizedPhone = normalizeIndianPhone(phone);
+    setIsSubmitting(true);
+    setBtnState("loading");
+    setError(null);
+
+    try {
+      await requestOtp(normalizedPhone);
+      setBtnState("done");
+      setTimeout(() => {
+        setOtpStep("code");
+        setBtnState("idle");
+      }, redirectDelay);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Couldn't send a code to that number. Please try again.");
+      } else {
+        setError("Couldn't reach the server. Please try again.");
+      }
+      setBtnState("idle");
+      triggerShake();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // ── SUBMISSION HANDLER: Customer Mobile OTP Step 2 ──
+  async function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!code.trim()) {
+      triggerShake();
+      return;
+    }
+    setIsSubmitting(true);
+    setBtnState("loading");
+    setError(null);
+
+    try {
+      const normalizedPhone = normalizeIndianPhone(phone);
+      await verifyOtp(normalizedPhone, code.trim(), nameForOtp.trim() || undefined);
+      setBtnState("done");
+      setTimeout(() => redirectAfterAuth("Customer"), redirectDelay);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "That code is invalid or has expired. Please request a new one.");
+      } else {
+        setError("Couldn't reach the server. Please try again.");
+      }
+      setBtnState("idle");
+      triggerShake();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // ── SUBMISSION HANDLER: Customer Signup ──
+  async function handleSignup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSignupEmailTouched(true);
+
+    const nameVal = signupName.trim();
+    const emailVal = signupEmail.trim();
+    const passVal = signupPassword;
+
+    if (!nameVal || !emailVal || !EMAIL_REGEX.test(emailVal) || !passVal || passVal.length < 6) {
+      triggerShake();
+      return;
+    }
+
+    let normalizedSignupPhone: string | undefined;
+    if (signupPhone.trim()) {
+      const phoneError = validateIndianPhone(signupPhone);
+      if (phoneError) {
+        setError(phoneError);
+        triggerShake();
+        return;
+      }
+      normalizedSignupPhone = normalizeIndianPhone(signupPhone);
+    }
+
+    setIsSubmitting(true);
+    setBtnState("loading");
+    setError(null);
+
+    try {
+      await signup({
+        name: nameVal,
+        email: emailVal,
+        password: passVal,
+        phone: normalizedSignupPhone,
+      });
+      setBtnState("done");
+      setTimeout(() => redirectAfterAuth("Customer"), redirectDelay);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Could not create account. Please check your details.");
+      } else {
+        setError("Couldn't reach the server. Please try again.");
+      }
+      setBtnState("idle");
+      triggerShake();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="relative grid min-h-screen w-full select-none overflow-hidden bg-[var(--paper)] text-[var(--ink)] font-sans grid-cols-1 md:grid-cols-[1.1fr_1fr]">
+      {/* =========================================================
+          LEFT: LIVING BRAND PANEL (DESKTOP)
+          ========================================================= */}
+      <div className="relative hidden md:flex flex-col justify-between overflow-hidden bg-[#08281c] p-11 text-[var(--panel-ink)] select-none">
+        {/* Particle Network Canvas */}
+        <ParticleNetwork />
+
+        {/* Animated Gradient Mesh Blobs */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-[25%] opacity-85 filter blur-[70px] saturate-[1.3]"
+        >
+          <span className="mesh-m1 absolute top-[-16%] left-[-12%] h-[52vmax] w-[52vmax] rounded-full bg-[radial-gradient(circle,#1fae7a,transparent_65%)] mix-blend-screen" />
+          <span className="mesh-m2 absolute top-[8%] right-[-16%] h-[46vmax] w-[46vmax] rounded-full bg-[radial-gradient(circle,#3fd6c0,transparent_65%)] mix-blend-screen" />
+          <span className="mesh-m3 absolute bottom-[-24%] left-[14%] h-[42vmax] w-[42vmax] rounded-full bg-[radial-gradient(circle,#0a6b4a,transparent_66%)] mix-blend-screen" />
+        </div>
+
+        {/* SVG Noise Grain Overlay */}
+        <div aria-hidden="true" className="panel-grain" />
+
+        {/* Top: Logo & Platform Badge */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-white/20 bg-white/15 shadow-sm backdrop-blur-md transition-transform duration-300 hover:scale-105">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 32 32"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-white"
+            >
+              <path d="M3 4.5h3.1a1.6 1.6 0 0 1 1.57 1.29L8.2 8.5" />
+              <path d="M8.2 8.5h20l-2.4 9.9a2.2 2.2 0 0 1-2.14 1.68H11.6a2.2 2.2 0 0 1-2.16-1.79L7.1 6.8" />
+              <circle cx="12.6" cy="26" r="2" />
+              <circle cx="23.4" cy="26" r="2" />
+            </svg>
+          </div>
+          <div>
+            <span className="font-fraunces text-lg font-semibold tracking-tight text-white block">
+              Retail Mart
+            </span>
+            <div className="text-[10.5px] font-bold tracking-[0.1em] text-[#b9d9c9] uppercase">
+              Omnichannel Platform
+            </div>
+          </div>
+        </div>
+
+        {/* Middle: Dynamic Headline */}
+        <div className="relative z-10 my-auto py-8">
+          <h2 className="font-fraunces mb-4 max-w-[14ch] text-4xl font-semibold leading-[1.14] tracking-[-0.01em] text-white">
+            {HEADLINE_WORDS.map((word, i) => (
+              <span
+                key={`headline-${word}-${i}`}
+                className="inline-block opacity-0"
+                style={{
+                  animation: `wordIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) ${0.12 + i * 0.06}s forwards`,
+                }}
+              >
+                {word}&nbsp;
+              </span>
+            ))}
+          </h2>
+          <p
+            className="max-w-[42ch] text-[14.5px] leading-relaxed text-[#c7e4d5] opacity-0"
+            style={{
+              animation: "wordIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards",
+            }}
+          >
+            Discover curated essentials, track live carrier delivery checkpoints, and manage your account seamlessly.
+          </p>
+        </div>
+
+        {/* Bottom: Verified Capabilities Highlights */}
+        <div className="relative z-10 flex flex-wrap gap-8 text-[var(--panel-ink)]">
+          <div className="stat opacity-0" style={{ animation: "wordIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards" }}>
+            <b className="font-fraunces flex items-center text-xl font-semibold text-white">
+              <span className="live-dot" /> Verified Authentic
+            </b>
+            <span className="text-[11.5px] text-[#a9cdbb]">Direct Sourcing</span>
+          </div>
+          <div className="stat opacity-0" style={{ animation: "wordIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s forwards" }}>
+            <b className="font-fraunces text-xl font-semibold text-white">Live Courier Tracking</b>
+            <span className="text-[11.5px] text-[#a9cdbb]">Multi-Carrier Sync</span>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================
+          RIGHT: AUTHENTICATION FORM CARD
+          ========================================================= */}
+      <div
+        className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 sm:p-8"
+        onMouseMove={handleSideMouseMove}
+        onMouseLeave={handleSideMouseLeave}
+      >
+        {/* Ambient background glows */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <span className="side-sg1 absolute top-[-10%] right-[-10%] h-[34vw] w-[34vw] rounded-full bg-[radial-gradient(circle,var(--mint),transparent_65%)] filter blur-[70px] opacity-35 dark:opacity-20" />
+          <span className="side-sg2 absolute bottom-[-10%] left-[-8%] h-[28vw] w-[28vw] rounded-full bg-[radial-gradient(circle,var(--brand),transparent_65%)] filter blur-[70px] opacity-35 dark:opacity-20" />
+        </div>
+
+        {/* SVG Noise Grain Overlay */}
+        <div aria-hidden="true" className="side-grain" />
+
+        {/* Theme Toggle Button */}
+        <ThemeToggleButton />
+
+        {/* Form Wrap / Card */}
+        <div
+          ref={cardRef}
+          className={`relative z-10 w-full max-w-[420px] rounded-3xl border border-white/60 bg-[var(--card)] p-7 sm:p-8 shadow-xl backdrop-blur-xl dark:border-slate-800/80 dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-[height,transform] duration-300 ${
+            cardShake ? "ref-shake" : ""
+          }`}
+          style={{
+            transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+            transition: "transform 120ms linear",
+            transformStyle: "preserve-3d",
+          }}
+        >
+          {/* Top Logo RM */}
+          <div className="flex flex-col items-center gap-3 mb-4">
+            <div
+              id="unified-rm-logo"
+              className="relative flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--mint)] to-[var(--brand)] font-fraunces text-xl font-bold text-white shadow-lg shadow-emerald-700/20 overflow-hidden animate-logo-float transition-transform duration-300 hover:scale-105"
+            >
+              RM
+              <span
+                aria-hidden="true"
+                className="absolute top-0 -left-[80%] h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-shine"
+              />
+            </div>
+
+            {/* Title / Header */}
+            <div className="text-center">
+              {mode === "login" ? (
+                <>
+                  <h1 className="font-fraunces text-[24px] sm:text-[26px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
+                    Sign in to Retail Mart
+                  </h1>
+                  <p className="mt-1 text-xs sm:text-sm text-[var(--ink-soft)]">
+                    Shop the best deals, track your orders, and manage your account.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-fraunces text-[24px] sm:text-[26px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
+                    Create your account
+                  </h1>
+                  <p className="mt-1 text-xs sm:text-sm text-[var(--ink-soft)]">
+                    Join Retail Mart to shop, track orders, and manage your account.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── AUTHENTICATION FORMS ── */}
+
+          {/* CASE A: SIGN IN (Email & Password OR Mobile OTP) */}
+          {mode === "login" && (
+            <div key="login-container" className="animate-form-in">
+              {/* Login Method Sub-Tabs */}
+              <div className="mb-4 flex gap-2">
+                <button
+                  type="button"
+                  id="tab-password"
+                  aria-pressed={customerLoginTab === "password"}
+                  onClick={() => {
+                    setCustomerLoginTab("password");
+                    setError(null);
+                    setBtnState("idle");
+                  }}
+                  className={`flex-1 rounded-xl border py-2 text-xs font-semibold transition-all duration-200 ${
+                    customerLoginTab === "password"
+                      ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)] font-bold"
+                      : "border-[var(--field-line)] bg-[var(--field)] text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  Email &amp; Password
+                </button>
+                <button
+                  type="button"
+                  id="tab-otp"
+                  aria-pressed={customerLoginTab === "otp"}
+                  onClick={() => {
+                    setCustomerLoginTab("otp");
+                    setError(null);
+                    setBtnState("idle");
+                    setOtpStep("phone");
+                  }}
+                  className={`flex-1 rounded-xl border py-2 text-xs font-semibold transition-all duration-200 ${
+                    customerLoginTab === "otp"
+                      ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)] font-bold"
+                      : "border-[var(--field-line)] bg-[var(--field)] text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  Mobile OTP
+                </button>
+              </div>
+
+              {/* Sub-tab 1: Email & Password */}
+              {customerLoginTab === "password" ? (
+                <form onSubmit={handlePasswordLogin} noValidate>
+                  {/* Email Field */}
+                  <div>
+                    <div
+                      className={`ref-field ${cleanEmail.length > 0 ? "has-val" : ""} ${
+                        isEmailValid ? "valid" : isEmailInvalid ? "invalid" : ""
+                      }`}
+                    >
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder=" "
+                        autoComplete="username email"
+                        required
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (error) setError(null);
+                        }}
+                        onBlur={() => setEmailTouched(true)}
+                        onFocus={() => setEmailTouched(false)}
+                      />
+                      <label htmlFor="email">Email</label>
+
+                      <span className="ico" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
+                          <path d="m3 7 9 6 9-6" />
+                        </svg>
+                      </span>
+
+                      <svg
+                        className="ref-check-ico"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m5 12.5 4.5 4.5L19 7.5" />
+                      </svg>
+                      <span className="under" aria-hidden="true" />
+                    </div>
+
+                    <div className={`ref-msg ${isEmailInvalid ? "show" : ""}`}>
+                      {isEmailInvalid ? "Enter a valid email address." : ""}
+                    </div>
+                  </div>
+
+                  {/* Password Field */}
+                  <div className="mt-3">
+                    <div className={`ref-field ${password.length > 0 ? "has-val" : ""}`}>
+                      <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder=" "
+                        autoComplete="current-password"
+                        required
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (error) setError(null);
+                        }}
+                        onKeyUp={(e: ReactKeyboardEvent<HTMLInputElement>) => {
+                          if (typeof e.getModifierState === "function") {
+                            setCapsLockOn(e.getModifierState("CapsLock"));
+                          }
+                        }}
+                        onBlur={() => setCapsLockOn(false)}
+                      />
+                      <label htmlFor="password">Password</label>
+
+                      <button
+                        id="peek-customer"
+                        type="button"
+                        aria-label={showPassword ? "Hide secret" : "Reveal secret"}
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="ico"
+                        style={{ color: showPassword ? "var(--brand)" : undefined }}
+                      >
+                        {showPassword ? (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                            <circle cx="12" cy="12" r="3" />
+                            <line x1="3" y1="3" x2="21" y2="21" />
+                          </svg>
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" />
+                            <circle cx="12" cy="12" r="2.6" />
+                          </svg>
+                        )}
+                      </button>
+                      <span className="under" aria-hidden="true" />
+                    </div>
+
+                    <div className={`ref-capslock ${capsLockOn ? "show" : ""}`}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 3 2 12h5v9h10v-9h5z" />
+                      </svg>
+                      <span>Caps Lock is on</span>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div
+                      role="alert"
+                      className="my-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-rose-500">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <div
+                    className="relative mt-3"
+                    onMouseMove={handleBtnMouseMove}
+                    onMouseLeave={handleBtnMouseLeave}
+                  >
+                    <button
+                      ref={btnRef}
+                      id="signin-btn"
+                      type="submit"
+                      disabled={isSubmitting}
+                      onClick={createRipple}
+                      data-state={btnState === "done" ? "done" : isSubmitting ? "loading" : undefined}
+                      className="ref-btn"
+                      style={{
+                        transform:
+                          isSubmitting || btnState === "done" ? undefined : `translate(${btnPos.x}px, ${btnPos.y}px)`,
+                      }}
+                    >
+                      {ripples.map((r) => (
+                        <span
+                          key={r.id}
+                          className="ref-ripple"
+                          style={{ width: r.size, height: r.size, left: r.x, top: r.y }}
+                        />
+                      ))}
+                      <span className="lbl">
+                        Sign In
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                          <path d="M5 12h13m-5-5 5 5-5 5" />
+                        </svg>
+                      </span>
+                      <span className="spin" aria-hidden="true" />
+                      <svg className="tick" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="m5 12.5 4.5 4.5L19 7.5" />
+                      </svg>
+                      <span className="prog" aria-hidden="true" />
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Sub-tab 2: Mobile OTP */
+                <div key="otp-container">
+                  {otpStep === "phone" ? (
+                    <form onSubmit={handleSendOtp} noValidate>
+                      <div className={`ref-field ${phone.length > 0 ? "has-val" : ""}`}>
+                        <input
+                          id="cl-phone"
+                          type="tel"
+                          placeholder=" "
+                          autoComplete="tel"
+                          required
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            if (error) setError(null);
+                          }}
+                        />
+                        <label htmlFor="cl-phone">Mobile number</label>
+                        <span className="ico" aria-hidden="true">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="5" y="2" width="14" height="20" rx="2" />
+                            <line x1="12" y1="18" x2="12.01" y2="18" />
+                          </svg>
+                        </span>
+                        <span className="under" aria-hidden="true" />
+                      </div>
+
+                      {error && (
+                        <div
+                          role="alert"
+                          className="my-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-rose-500">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                          </svg>
+                          <span>{error}</span>
+                        </div>
+                      )}
+
+                      <div
+                        className="relative mt-3"
+                        onMouseMove={handleBtnMouseMove}
+                        onMouseLeave={handleBtnMouseLeave}
+                      >
+                        <button
+                          ref={btnRef}
+                          id="cl-send-otp-btn"
+                          type="submit"
+                          disabled={isSubmitting}
+                          onClick={createRipple}
+                          data-state={btnState === "done" ? "done" : isSubmitting ? "loading" : undefined}
+                          className="ref-btn"
+                          style={{
+                            transform:
+                              isSubmitting || btnState === "done" ? undefined : `translate(${btnPos.x}px, ${btnPos.y}px)`,
+                          }}
+                        >
+                          {ripples.map((r) => (
+                            <span
+                              key={r.id}
+                              className="ref-ripple"
+                              style={{ width: r.size, height: r.size, left: r.x, top: r.y }}
+                            />
+                          ))}
+                          <span className="lbl">
+                            Send OTP Code
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                              <path d="M5 12h13m-5-5 5 5-5 5" />
+                            </svg>
+                          </span>
+                          <span className="spin" aria-hidden="true" />
+                          <svg className="tick" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="m5 12.5 4.5 4.5L19 7.5" />
+                          </svg>
+                          <span className="prog" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyOtp} noValidate>
+                      <p className="mb-3 text-xs text-[var(--ink-soft)]">
+                        Enter the 6-digit code sent to <strong className="text-[var(--ink)]">{phone}</strong>
+                      </p>
+
+                      <div className="ref-field has-val">
+                        <input
+                          id="cl-otp-code"
+                          type="text"
+                          placeholder=" "
+                          autoComplete="one-time-code"
+                          required
+                          value={code}
+                          onChange={(e) => {
+                            setCode(e.target.value);
+                            if (error) setError(null);
+                          }}
+                        />
+                        <label htmlFor="cl-otp-code">OTP code</label>
+                        <span className="under" aria-hidden="true" />
+                      </div>
+
+                      <div className="ref-field has-val mt-2">
+                        <input
+                          id="cl-otp-name"
+                          type="text"
+                          placeholder=" "
+                          autoComplete="name"
+                          value={nameForOtp}
+                          onChange={(e) => setNameForOtp(e.target.value)}
+                        />
+                        <label htmlFor="cl-otp-name">Your Name (optional)</label>
+                        <span className="under" aria-hidden="true" />
+                      </div>
+
+                      {error && (
+                        <div
+                          role="alert"
+                          className="my-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-rose-500">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                          </svg>
+                          <span>{error}</span>
+                        </div>
+                      )}
+
+                      <div
+                        className="relative mt-3"
+                        onMouseMove={handleBtnMouseMove}
+                        onMouseLeave={handleBtnMouseLeave}
+                      >
+                        <button
+                          ref={btnRef}
+                          id="cl-verify-otp-btn"
+                          type="submit"
+                          disabled={isSubmitting}
+                          onClick={createRipple}
+                          data-state={btnState === "done" ? "done" : isSubmitting ? "loading" : undefined}
+                          className="ref-btn"
+                          style={{
+                            transform:
+                              isSubmitting || btnState === "done" ? undefined : `translate(${btnPos.x}px, ${btnPos.y}px)`,
+                          }}
+                        >
+                          {ripples.map((r) => (
+                            <span
+                              key={r.id}
+                              className="ref-ripple"
+                              style={{ width: r.size, height: r.size, left: r.x, top: r.y }}
+                            />
+                          ))}
+                          <span className="lbl">
+                            Verify &amp; Sign In
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                              <path d="M5 12h13m-5-5 5 5-5 5" />
+                            </svg>
+                          </span>
+                          <span className="spin" aria-hidden="true" />
+                          <svg className="tick" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="m5 12.5 4.5 4.5L19 7.5" />
+                          </svg>
+                          <span className="prog" aria-hidden="true" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpStep("phone");
+                          setCode("");
+                          setError(null);
+                        }}
+                        className="mt-3 block w-full text-center text-xs font-semibold text-[var(--brand)] hover:underline"
+                      >
+                        Use a different number
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              {/* Single Clean Signup Link */}
+              <p className="mt-5 text-center text-xs sm:text-sm text-[var(--ink-soft)]">
+                New here?{" "}
+                <Link
+                  to={ROUTES.signup}
+                  id="create-account-link"
+                  className="font-semibold text-[var(--brand)] hover:underline inline-flex items-center gap-1"
+                >
+                  Create an account
+                  <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </p>
+            </div>
+          )}
+
+          {/* CASE B: CUSTOMER CREATE ACCOUNT */}
+          {mode === "signup" && (
+            <form key="customer-signup-container" onSubmit={handleSignup} noValidate className="animate-form-in">
+              {/* Name Field */}
+              <div>
+                <div className={`ref-field ${signupName.length > 0 ? "has-val" : ""}`}>
+                  <input
+                    id="signup-name"
+                    type="text"
+                    placeholder=" "
+                    autoComplete="name"
+                    required
+                    value={signupName}
+                    onChange={(e) => {
+                      setSignupName(e.target.value);
+                      if (error) setError(null);
+                    }}
+                  />
+                  <label htmlFor="signup-name">Full Name</label>
+                  <span className="ico" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
+                  <span className="under" aria-hidden="true" />
+                </div>
+              </div>
+
+              {/* Email Field */}
+              <div className="mt-3">
+                <div
+                  className={`ref-field ${cleanSignupEmail.length > 0 ? "has-val" : ""} ${
+                    isSignupEmailValid ? "valid" : isSignupEmailInvalid ? "invalid" : ""
+                  }`}
+                >
+                  <input
+                    id="signup-email"
+                    type="email"
+                    placeholder=" "
+                    autoComplete="email"
+                    required
+                    value={signupEmail}
+                    onChange={(e) => {
+                      setSignupEmail(e.target.value);
+                      if (error) setError(null);
+                    }}
+                    onBlur={() => setSignupEmailTouched(true)}
+                    onFocus={() => setSignupEmailTouched(false)}
+                  />
+                  <label htmlFor="signup-email">Email</label>
+
+                  <span className="ico" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
+                      <path d="m3 7 9 6 9-6" />
+                    </svg>
+                  </span>
+
+                  <svg
+                    className="ref-check-ico"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m5 12.5 4.5 4.5L19 7.5" />
+                  </svg>
+                  <span className="under" aria-hidden="true" />
+                </div>
+
+                <div className={`ref-msg ${isSignupEmailInvalid ? "show" : ""}`}>
+                  {isSignupEmailInvalid ? "Enter a valid email address." : ""}
+                </div>
+              </div>
+
+              {/* Mobile Phone Field */}
+              <div className="mt-3">
+                <div className={`ref-field ${signupPhone.length > 0 ? "has-val" : ""}`}>
+                  <input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder=" "
+                    autoComplete="tel"
+                    value={signupPhone}
+                    onChange={(e) => setSignupPhone(e.target.value)}
+                  />
+                  <label htmlFor="signup-phone">Mobile Phone (Optional)</label>
+                  <span className="ico" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="5" y="2" width="14" height="20" rx="2" />
+                      <line x1="12" y1="18" x2="12.01" y2="18" />
+                    </svg>
+                  </span>
+                  <span className="under" aria-hidden="true" />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="mt-3">
+                <div className={`ref-field ${signupPassword.length > 0 ? "has-val" : ""}`}>
+                  <input
+                    id="signup-password"
+                    type={showSignupPassword ? "text" : "password"}
+                    placeholder=" "
+                    autoComplete="new-password"
+                    required
+                    value={signupPassword}
+                    onChange={(e) => {
+                      setSignupPassword(e.target.value);
+                      if (error) setError(null);
+                    }}
+                    onKeyUp={(e: ReactKeyboardEvent<HTMLInputElement>) => {
+                      if (typeof e.getModifierState === "function") {
+                        setSignupCapsLock(e.getModifierState("CapsLock"));
+                      }
+                    }}
+                    onBlur={() => setSignupCapsLock(false)}
+                  />
+                  <label htmlFor="signup-password">Password (min. 6 characters)</label>
+
+                  <button
+                    id="peek-signup"
+                    type="button"
+                    aria-label={showSignupPassword ? "Hide secret" : "Reveal secret"}
+                    onClick={() => setShowSignupPassword(!showSignupPassword)}
+                    className="ico"
+                    style={{ color: showSignupPassword ? "var(--brand)" : undefined }}
+                  >
+                    {showSignupPassword ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                        <line x1="3" y1="3" x2="21" y2="21" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" />
+                        <circle cx="12" cy="12" r="2.6" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="under" aria-hidden="true" />
+                </div>
+
+                <div className={`ref-capslock ${signupCapsLock ? "show" : ""}`}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3 2 12h5v9h10v-9h5z" />
+                  </svg>
+                  <span>Caps Lock is on</span>
+                </div>
+              </div>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="my-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0 text-rose-500">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div
+                className="relative mt-3"
+                onMouseMove={handleBtnMouseMove}
+                onMouseLeave={handleBtnMouseLeave}
+              >
+                <button
+                  ref={btnRef}
+                  id="signup-btn"
+                  type="submit"
+                  disabled={isSubmitting}
+                  onClick={createRipple}
+                  data-state={btnState === "done" ? "done" : isSubmitting ? "loading" : undefined}
+                  className="ref-btn"
+                  style={{
+                    transform:
+                      isSubmitting || btnState === "done" ? undefined : `translate(${btnPos.x}px, ${btnPos.y}px)`,
+                  }}
+                >
+                  {ripples.map((r) => (
+                    <span
+                      key={r.id}
+                      className="ref-ripple"
+                      style={{ width: r.size, height: r.size, left: r.x, top: r.y }}
+                    />
+                  ))}
+                  <span className="lbl">
+                    Create Retail Mart Account
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                      <path d="M5 12h13m-5-5 5 5-5 5" />
+                    </svg>
+                  </span>
+                  <span className="spin" aria-hidden="true" />
+                  <svg className="tick" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m5 12.5 4.5 4.5L19 7.5" />
+                  </svg>
+                  <span className="prog" aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* Back to Login Link */}
+              <p className="mt-5 text-center text-xs sm:text-sm text-[var(--ink-soft)]">
+                Already have an account?{" "}
+                <Link
+                  to={ROUTES.shopLogin}
+                  id="switch-to-login-btn"
+                  className="font-semibold text-[var(--brand)] hover:underline inline-flex items-center gap-1"
+                >
+                  Sign in
+                  <span aria-hidden="true">&rarr;</span>
+                </Link>
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

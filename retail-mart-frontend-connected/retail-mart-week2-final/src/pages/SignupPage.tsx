@@ -1,5 +1,5 @@
-import CustomerLoginPage from "@/pages/CustomerLoginPage";
+import UnifiedAuthPage from "@/pages/UnifiedAuthPage";
 
 export default function SignupPage() {
-  return <CustomerLoginPage initialMode="signup" />;
+  return <UnifiedAuthPage initialMode="signup" />;
 }

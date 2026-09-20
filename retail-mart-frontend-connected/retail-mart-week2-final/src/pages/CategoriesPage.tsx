@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -12,9 +13,11 @@ import { useCategories } from "@/features/categories/useCategories";
 import { AdminStatCard } from "@/components/common/AdminStatCard";
 import type { Category } from "@/types";
 import { formatDate } from "@/utils/format";
+import { ROUTES } from "@/constants/routes";
 
 export default function CategoriesPage() {
   const { categories, isLoading, error, refresh } = useCategories();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
   const filteredCategories = useMemo(
@@ -30,33 +33,48 @@ export default function CategoriesPage() {
     {
       header: "Category",
       render: (c) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 font-bold text-xs ring-1 ring-blue-100 dark:ring-blue-900/40">
+        <button
+          type="button"
+          onClick={() => navigate(`${ROUTES.products}?category=${encodeURIComponent(c.name)}`)}
+          className="flex items-center gap-3 text-left group"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 font-bold text-xs ring-1 ring-blue-100 dark:ring-blue-900/40 group-hover:scale-105 transition-transform">
             {c.name.substring(0, 2).toUpperCase()}
           </div>
-          <span className="font-semibold text-slate-900 dark:text-slate-100">{c.name}</span>
-        </div>
+          <div>
+            <span className="font-semibold text-slate-900 group-hover:text-emerald-600 dark:text-slate-100 dark:group-hover:text-emerald-400 transition-colors">
+              {c.name}
+            </span>
+            <span className="block text-[11px] text-slate-400">Click to filter catalog</span>
+          </div>
+        </button>
       ),
     },
     {
       header: "Mapped Products",
       render: (c) => (
-        <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {c.productCount} products
-        </span>
+        <button
+          type="button"
+          onClick={() => navigate(`${ROUTES.products}?category=${encodeURIComponent(c.name)}`)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-emerald-700 dark:bg-slate-800 dark:hover:bg-emerald-950/60 dark:text-slate-300 dark:hover:text-emerald-300 transition-colors"
+        >
+          <span>📦 {c.productCount} products</span>
+          <span className="text-[10px] text-slate-400">→</span>
+        </button>
       ),
     },
     { header: "Status", render: (c) => <StatusBadge status={c.status} /> },
     { header: "Created", hideBelow: "sm", render: (c) => <span className="text-slate-500 dark:text-slate-400 text-xs">{formatDate(c.createdAt)}</span> },
     {
       header: "Actions",
-      render: () => (
+      render: (c) => (
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm">
-            Edit
-          </Button>
-          <Button variant="ghost" size="sm" className="text-rose-600 hover:text-rose-700 dark:text-rose-400">
-            Delete
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`${ROUTES.products}?category=${encodeURIComponent(c.name)}`)}
+          >
+            View Products
           </Button>
         </div>
       ),

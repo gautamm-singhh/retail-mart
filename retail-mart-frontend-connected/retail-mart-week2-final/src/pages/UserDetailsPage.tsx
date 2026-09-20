@@ -10,12 +10,31 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { UserForm } from "@/features/users/components/UserForm";
 import { useUsers } from "@/features/users/useUsers";
+import { useAuth } from "@/features/auth/useAuth";
 import { useToast } from "@/hooks/useToast";
 import type { UserFormValues } from "@/types";
 import { formatDate } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 
+function getRoleBadge(role: string) {
+  switch (role) {
+    case "Admin":
+      return "bg-purple-50 text-purple-700 ring-1 ring-purple-600/20 dark:bg-purple-950/60 dark:text-purple-300";
+    case "Manager":
+      return "bg-blue-50 text-blue-700 ring-1 ring-blue-600/20 dark:bg-blue-950/60 dark:text-blue-300";
+    case "Staff":
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-950/60 dark:text-emerald-300";
+    case "Customer":
+      return "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300";
+    default:
+      return "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200";
+  }
+}
+
 export default function UserDetailsPage() {
+  const { currentUser } = useAuth();
+  const isAdmin = !currentUser || currentUser.role === "Admin";
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { users, isLoading, error, refresh, editUser, setUserStatus, removeUser } = useUsers();
@@ -104,7 +123,7 @@ export default function UserDetailsPage() {
             <Button variant="secondary" onClick={() => navigate(ROUTES.users)}>
               ← Back to users
             </Button>
-            <Button onClick={() => setIsEditOpen(true)}>Edit Profile</Button>
+            {isAdmin && <Button onClick={() => setIsEditOpen(true)}>Edit Profile</Button>}
           </div>
         }
       />
@@ -128,7 +147,7 @@ export default function UserDetailsPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
               <dt className="text-xs font-semibold uppercase tracking-wider text-slate-400">Assigned Role</dt>
               <dd className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${getRoleBadge(user.role)}`}>
                   {user.role}
                 </span>
               </dd>
@@ -146,7 +165,11 @@ export default function UserDetailsPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
               <dt className="text-xs font-semibold uppercase tracking-wider text-slate-400">Security Tier</dt>
               <dd className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
-                {user.role === "Admin" ? "Full Enterprise Superuser" : "Standard Operations Access"}
+                {user.role === "Admin"
+                  ? "Full Enterprise Superuser"
+                  : user.role === "Manager"
+                  ? "Store & Operations Lead"
+                  : "Operations & Support Access"}
               </dd>
             </div>
           </dl>
@@ -160,14 +183,20 @@ export default function UserDetailsPage() {
             </p>
           </div>
 
-          <div className="mt-2 flex flex-col gap-3">
-            <Button variant="secondary" onClick={handleToggleStatus} className="w-full justify-center">
-              {user.status === "active" ? "Deactivate User Account" : "Reactivate User Account"}
-            </Button>
-            <Button variant="danger" onClick={() => setIsDeleteOpen(true)} className="w-full justify-center">
-              Delete User Account
-            </Button>
-          </div>
+          {isAdmin ? (
+            <div className="mt-2 flex flex-col gap-3">
+              <Button variant="secondary" onClick={handleToggleStatus} className="w-full justify-center">
+                {user.status === "active" ? "Deactivate User Account" : "Reactivate User Account"}
+              </Button>
+              <Button variant="danger" onClick={() => setIsDeleteOpen(true)} className="w-full justify-center">
+                Delete User Account
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300">
+              <span className="font-semibold">View-Only Mode:</span> Modifying user status or deleting accounts requires Administrator privileges.
+            </div>
+          )}
 
           <div className="mt-auto rounded-xl border border-amber-200/60 bg-amber-50/60 p-3.5 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
             <span className="font-semibold">Security Note:</span> Role changes take effect immediately across all active login sessions.

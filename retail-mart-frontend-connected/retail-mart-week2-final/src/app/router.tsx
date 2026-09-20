@@ -1,38 +1,44 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
 import StorefrontLayout from "@/layouts/StorefrontLayout";
 import CustomerLoginPage from "@/pages/CustomerLoginPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
-import DashboardPage from "@/pages/DashboardPage";
-import UsersPage from "@/pages/UsersPage";
-import UserDetailsPage from "@/pages/UserDetailsPage";
-import ProductsPage from "@/pages/ProductsPage";
-import ProductDetailsPage from "@/pages/ProductDetailsPage";
-import CategoriesPage from "@/pages/CategoriesPage";
-import OrdersPage from "@/pages/OrdersPage";
-import OrderDetailsPage from "@/pages/OrderDetailsPage";
-import PaymentsPage from "@/pages/PaymentsPage";
-import RefundsPage from "@/pages/RefundsPage";
-import PaymentDetailsPage from "@/pages/PaymentDetailsPage";
-import ShippingPage from "@/pages/ShippingPage";
-import ShipmentDetailsPage from "@/pages/ShipmentDetailsPage";
-import CouriersPage from "@/pages/CouriersPage";
-import CampaignsPage from "@/pages/CampaignsPage";
-import CommunicationsPage from "@/pages/CommunicationsPage";
-import ReportsPage from "@/pages/ReportsPage";
-import AnalyticsPage from "@/pages/AnalyticsPage";
-import ProfilePage from "@/pages/ProfilePage";
-import ShopHomePage from "@/pages/ShopHomePage";
-import ShopProductDetailPage from "@/pages/ShopProductDetailPage";
-import CartPage from "@/pages/CartPage";
-import CheckoutPage from "@/pages/CheckoutPage";
-import MyOrdersPage from "@/pages/MyOrdersPage";
-import AccountPage from "@/pages/AccountPage";
-import WishlistPage from "@/pages/WishlistPage";
-import NotFoundPage from "@/pages/NotFoundPage";
+import { PageFallback } from "@/components/common/PageFallback";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ROUTES } from "@/constants/routes";
+
+// Admin pages — lazy loaded for optimal initial bundle performance
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const UsersPage = lazy(() => import("@/pages/UsersPage"));
+const UserDetailsPage = lazy(() => import("@/pages/UserDetailsPage"));
+const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
+const ProductDetailsPage = lazy(() => import("@/pages/ProductDetailsPage"));
+const CategoriesPage = lazy(() => import("@/pages/CategoriesPage"));
+const OrdersPage = lazy(() => import("@/pages/OrdersPage"));
+const OrderDetailsPage = lazy(() => import("@/pages/OrderDetailsPage"));
+const PaymentsPage = lazy(() => import("@/pages/PaymentsPage"));
+const RefundsPage = lazy(() => import("@/pages/RefundsPage"));
+const PaymentDetailsPage = lazy(() => import("@/pages/PaymentDetailsPage"));
+const ShippingPage = lazy(() => import("@/pages/ShippingPage"));
+const ShipmentDetailsPage = lazy(() => import("@/pages/ShipmentDetailsPage"));
+const CouriersPage = lazy(() => import("@/pages/CouriersPage"));
+const CampaignsPage = lazy(() => import("@/pages/CampaignsPage"));
+const CommunicationsPage = lazy(() => import("@/pages/CommunicationsPage"));
+const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+
+// Storefront pages — lazy loaded
+const ShopHomePage = lazy(() => import("@/pages/ShopHomePage"));
+const ShopProductDetailPage = lazy(() => import("@/pages/ShopProductDetailPage"));
+const CartPage = lazy(() => import("@/pages/CartPage"));
+const CheckoutPage = lazy(() => import("@/pages/CheckoutPage"));
+const MyOrdersPage = lazy(() => import("@/pages/MyOrdersPage"));
+const AccountPage = lazy(() => import("@/pages/AccountPage"));
+const WishlistPage = lazy(() => import("@/pages/WishlistPage"));
+const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
 // Routing lives in a single place so every screen's URL is defined once and
 // the nav sidebar, breadcrumbs, and redirects can all reference ROUTES
@@ -114,7 +120,14 @@ export const routes: RouteObject[] = [
       { path: "*", element: <NotFoundPage /> },
     ],
   },
-  { path: "*", element: <NotFoundPage /> },
+  {
+    path: "*",
+    element: (
+      <Suspense fallback={<PageFallback />}>
+        <NotFoundPage />
+      </Suspense>
+    ),
+  },
 ];
 
 export const router = createBrowserRouter(routes);

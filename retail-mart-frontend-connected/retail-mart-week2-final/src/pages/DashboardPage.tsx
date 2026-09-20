@@ -12,42 +12,6 @@ import { formatCurrency, formatDate } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 
-// Sample mock timeline events for Recent Activity
-const RECENT_ACTIVITIES = [
-  {
-    id: "act-1",
-    icon: "🛒",
-    color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-    text: "New order received",
-    code: "ORD-09968",
-    time: "2 minutes ago",
-  },
-  {
-    id: "act-2",
-    icon: "💳",
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-    text: "Payment completed",
-    code: "ORD-59453",
-    time: "12 minutes ago",
-  },
-  {
-    id: "act-3",
-    icon: "📦",
-    color: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
-    text: "Product updated",
-    code: "Wireless Earbuds Pro",
-    time: "1 hour ago",
-  },
-  {
-    id: "act-4",
-    icon: "⚠️",
-    color: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-    text: "Low stock alert",
-    code: "Yoga Mat (6 units left)",
-    time: "2 hours ago",
-  },
-];
-
 export default function DashboardPage() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -90,7 +54,7 @@ export default function DashboardPage() {
     return () => clearInterval(intervalId);
   }, [isOrdersPaused]);
 
-  // Derived metrics
+  // Derived metrics - 100% real data
   const lowStockCount = useMemo(() => products.filter((p) => p.stock > 0 && p.stock <= 20).length, [products]);
   const outOfStockCount = useMemo(() => products.filter((p) => p.status === "out-of-stock" || p.stock <= 0).length, [products]);
   const inStockCount = useMemo(() => Math.max(0, products.length - lowStockCount - outOfStockCount), [products, lowStockCount, outOfStockCount]);
@@ -104,10 +68,89 @@ export default function DashboardPage() {
   );
   const failedPaymentsCount = useMemo(() => payments.filter((p) => p.status === "Failed").length, [payments]);
 
+  // Derived real stock percentages for Donut chart
+  const totalProductsCount = products.length || 1;
+  const inStockPct = Math.round((inStockCount / totalProductsCount) * 100);
+  const lowStockPct = Math.round((lowStockCount / totalProductsCount) * 100);
+  const outOfStockPct = Math.max(0, 100 - inStockPct - lowStockPct);
+
+  // Dynamic real categories from products
+  const topCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of products) {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    }
+    const total = products.length || 1;
+    const colors = [
+      "bg-emerald-500",
+      "bg-blue-500",
+      "bg-amber-500",
+      "bg-purple-500",
+      "bg-rose-500",
+    ];
+    return Object.entries(counts)
+      .map(([name, count], index) => ({
+        name,
+        count,
+        pct: Math.round((count / total) * 100),
+        color: colors[index % colors.length],
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [products]);
+
   // Sorted orders list for recent table
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [orders]);
+
+  // Dynamic real recent activity from orders, payments, shipments, products
+  const recentActivities = useMemo(() => {
+    const events = [];
+    if (sortedOrders.length > 0) {
+      events.push({
+        id: `act-ord-${sortedOrders[0].id}`,
+        icon: "🛒",
+        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+        text: "Recent order placed",
+        code: `${sortedOrders[0].id} · ${formatCurrency(sortedOrders[0].amount)}`,
+        time: formatDate(sortedOrders[0].date),
+      });
+    }
+    const latestPaid = payments.find((p) => p.status === "Paid");
+    if (latestPaid) {
+      events.push({
+        id: `act-pay-${latestPaid.id}`,
+        icon: "💳",
+        color: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+        text: "Payment captured",
+        code: `${latestPaid.id} · ${formatCurrency(latestPaid.amount)}`,
+        time: formatDate(latestPaid.date),
+      });
+    }
+    const lowStockProd = products.find((p) => p.stock > 0 && p.stock <= 20);
+    if (lowStockProd) {
+      events.push({
+        id: `act-low-${lowStockProd.id}`,
+        icon: "⚠️",
+        color: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+        text: "Low stock alert",
+        code: `${lowStockProd.name} (${lowStockProd.stock} left)`,
+        time: "Restock suggested",
+      });
+    }
+    if (shipments.length > 0) {
+      events.push({
+        id: `act-ship-${shipments[0].id}`,
+        icon: "📦",
+        color: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+        text: `Shipment ${shipments[0].status}`,
+        code: `${shipments[0].id} · ${shipments[0].courier}`,
+        time: formatDate(shipments[0].expectedDelivery),
+      });
+    }
+    return events;
+  }, [sortedOrders, payments, products, shipments]);
 
   const currentDateFormatted = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -231,7 +274,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Row of 5 KPI Cards */}
+      {/* 2. Row of 5 Real KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {/* KPI 1: Active Users */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
@@ -246,13 +289,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Active Users</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{users.length || 8}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{users.length}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              <span>▲ +12%</span>
-              <span className="text-slate-400 font-normal">9 total accounts</span>
+              <span>● Active Directory</span>
+              <span className="text-slate-400 font-normal">{users.length} accounts</span>
             </div>
             {/* Emerald Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-emerald-500">
@@ -273,13 +316,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Products</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{products.length || 10}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{products.length}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-500">
-              <span>▼ -5%</span>
-              <span className="text-slate-400 font-normal">{outOfStockCount || 2} out of stock</span>
+              <span>{outOfStockCount > 0 ? "⚠️" : "✓"}</span>
+              <span className="text-slate-400 font-normal">{outOfStockCount} out of stock</span>
             </div>
             {/* Blue Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-blue-500">
@@ -300,13 +343,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pending Orders</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pendingOrdersCount || 6}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pendingOrdersCount}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-              <span>▲ +20%</span>
-              <span className="text-slate-400 font-normal">{orders.length || 26} orders total</span>
+              <span>● Fulfillment</span>
+              <span className="text-slate-400 font-normal">{orders.length} orders total</span>
             </div>
             {/* Amber Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-amber-500">
@@ -327,13 +370,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Payments</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{payments.length || 23}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{payments.length}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-              <span>▲ +8%</span>
-              <span className="text-slate-400 font-normal">{failedPaymentsCount || 1} failed</span>
+              <span>● Transactions</span>
+              <span className="text-slate-400 font-normal">{failedPaymentsCount} failed</span>
             </div>
             {/* Purple Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-purple-500">
@@ -355,13 +398,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pending Shipments</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pendingShipmentsCount || 5}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pendingShipmentsCount}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
-              <span>▲ +25%</span>
-              <span className="text-slate-400 font-normal">{shipments.length || 21} shipments total</span>
+              <span>● Logistics</span>
+              <span className="text-slate-400 font-normal">{shipments.length} total</span>
             </div>
             {/* Rose Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-rose-500">
@@ -526,46 +569,73 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-4">
-              {/* SVG Donut Chart */}
+              {/* SVG Donut Chart with Real Proportions */}
               <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
                 <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
                   {/* Background circle */}
                   <circle cx="18" cy="18" r="14" fill="none" stroke="#E2E8F0" strokeWidth="3.5" className="dark:stroke-slate-800" />
                   {/* In stock arc (emerald) */}
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="#10B981" strokeWidth="3.5" strokeDasharray="65 100" strokeDashoffset="0" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="3.5"
+                    strokeDasharray={`${inStockPct} 100`}
+                    strokeDashoffset="0"
+                  />
                   {/* Low stock arc (amber) */}
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="#F59E0B" strokeWidth="3.5" strokeDasharray="15 100" strokeDashoffset="-65" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="#F59E0B"
+                    strokeWidth="3.5"
+                    strokeDasharray={`${lowStockPct} 100`}
+                    strokeDashoffset={`-${inStockPct}`}
+                  />
                   {/* Out of stock arc (rose) */}
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="#F43F5E" strokeWidth="3.5" strokeDasharray="20 100" strokeDashoffset="-80" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="14"
+                    fill="none"
+                    stroke="#F43F5E"
+                    strokeWidth="3.5"
+                    strokeDasharray={`${outOfStockPct} 100`}
+                    strokeDashoffset={`-${inStockPct + lowStockPct}`}
+                  />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{products.length || 10}</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white leading-none">{products.length}</span>
                   <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tight">Total</span>
                 </div>
               </div>
 
-              {/* Legend List */}
+              {/* Legend List with Real Counts */}
               <div className="flex-1 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     <span className="text-slate-600 dark:text-slate-300">In Stock</span>
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white">{inStockCount || 7}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{inStockCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-amber-500" />
                     <span className="text-slate-600 dark:text-slate-300">Low Stock (≤20)</span>
                   </div>
-                  <span className="font-bold text-amber-600 dark:text-amber-400">{lowStockCount || 1}</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-400">{lowStockCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-rose-500" />
                     <span className="text-slate-600 dark:text-slate-300">Out of Stock</span>
                   </div>
-                  <span className="font-bold text-rose-600 dark:text-rose-400">{outOfStockCount || 2}</span>
+                  <span className="font-bold text-rose-600 dark:text-rose-400">{outOfStockCount}</span>
                 </div>
               </div>
             </div>
@@ -601,11 +671,11 @@ export default function DashboardPage() {
 
               <div className="text-right">
                 <p className="text-xl font-black text-slate-900 dark:text-white">
-                  {formatCurrency(paidTotal || 60557)}
+                  {formatCurrency(paidTotal)}
                 </p>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Collected (paid)</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Collected ({payments.filter(p => p.status === "Paid").length} paid)</span>
                 <p className="mt-2 text-xs font-bold text-rose-500">
-                  {failedPaymentsCount || 1} Failed payments
+                  {failedPaymentsCount} Failed payments
                 </p>
               </div>
             </div>
@@ -680,7 +750,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Top Categories (3 cols) */}
+        {/* Top Categories (3 cols) - 100% Real from Products */}
         <div className="lg:col-span-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -698,59 +768,21 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-4 space-y-3">
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <span>Electronics</span>
-                <span>40%</span>
+            {topCategories.map((cat) => (
+              <div key={cat.name}>
+                <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="truncate">{cat.name}</span>
+                  <span className="font-mono text-slate-500 dark:text-slate-400">{cat.count} items ({cat.pct}%)</span>
+                </div>
+                <div className="mt-1 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className={`h-full rounded-full ${cat.color}`} style={{ width: `${Math.max(5, cat.pct)}%` }} />
+                </div>
               </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: "40%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <span>Apparel</span>
-                <span>20%</span>
-              </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-blue-500" style={{ width: "20%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <span>Home & Kitchen</span>
-                <span>15%</span>
-              </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-500" style={{ width: "15%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <span>Footwear</span>
-                <span>15%</span>
-              </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-purple-500" style={{ width: "15%" }} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <span>Sports & Fitness</span>
-                <span>10%</span>
-              </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div className="h-full rounded-full bg-rose-500" style={{ width: "10%" }} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Recent Activity (4 cols) */}
+        {/* Recent Activity (4 cols) - 100% Real from Live Store Events */}
         <div className="lg:col-span-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -767,22 +799,28 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800 space-y-2">
-            {RECENT_ACTIVITIES.map((act) => (
-              <div key={act.id} className="pt-2 flex items-start gap-3">
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${act.color}`}>
-                  {act.icon}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                    {act.text}{" "}
-                    <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{act.code}</span>
-                  </p>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500">{act.time}</span>
+          {recentActivities.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+              No recent activity recorded yet.
+            </div>
+          ) : (
+            <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800 space-y-2">
+              {recentActivities.map((act) => (
+                <div key={act.id} className="pt-2 flex items-start gap-3">
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${act.color}`}>
+                    {act.icon}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                      {act.text}{" "}
+                      <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{act.code}</span>
+                    </p>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{act.time}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

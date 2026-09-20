@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useWishlist } from "@/features/wishlist/useWishlist";
 import { useCart } from "@/features/cart/useCart";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { cn } from "@/utils/cn";
 import type { Product } from "@/types";
 
 export default function WishlistPage() {
@@ -16,11 +18,20 @@ export default function WishlistPage() {
   const { items, isLoading, error, refresh, removeItem, pendingProductIds } = useWishlist();
   const { addItem } = useCart();
   const { showToast } = useToast();
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
   function handleAddToCart(product: Product) {
     if (product.stock <= 0) return;
     addItem(product);
+    setAddedIds((prev) => new Set([...prev, product.id]));
     showToast(`Added ${product.name} to cart.`);
+    setTimeout(() => {
+      setAddedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+    }, 1800);
   }
 
   async function handleRemove(productId: string) {
@@ -152,9 +163,10 @@ export default function WishlistPage() {
                     disabled={isPending}
                     title={`Remove ${product.name} from wishlist`}
                     aria-label={`Remove ${product.name} from wishlist`}
-                    className={`absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-rose-500 shadow-sm backdrop-blur-xs transition-all duration-150 hover:bg-rose-50 hover:scale-110 active:scale-95 dark:bg-slate-900/95 dark:text-rose-400 dark:hover:bg-rose-950/60 ${
-                      isPending ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
+                    className={cn(
+                      "absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-rose-500 shadow-sm backdrop-blur-xs transition-all duration-150 hover:bg-rose-50 hover:scale-110 active:scale-95 dark:bg-slate-900/95 dark:text-rose-400 dark:hover:bg-rose-950/60",
+                      isPending && "opacity-50 cursor-not-allowed",
+                    )}
                   >
                     <svg
                       aria-hidden="true"
@@ -164,7 +176,7 @@ export default function WishlistPage() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="h-4 w-4"
+                      className="h-4 w-4 transition-transform hover:scale-110"
                     >
                       <line x1="18" y1="6" x2="6" y2="18" />
                       <line x1="6" y1="6" x2="18" y2="18" />
@@ -203,25 +215,38 @@ export default function WishlistPage() {
                   {/* Add to Cart Button */}
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <Button
-                      variant="primary"
+                      variant={addedIds.has(product.id) ? "secondary" : "primary"}
                       size="sm"
                       onClick={() => handleAddToCart(product)}
                       disabled={isOutOfStock}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl"
+                      className={cn(
+                        "w-full flex items-center justify-center gap-2 rounded-xl transition-all duration-200",
+                        addedIds.has(product.id) &&
+                          "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 ring-2 ring-emerald-500/30 scale-[1.02]",
+                      )}
                     >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="h-4 w-4"
-                      >
-                        <circle cx="9" cy="20" r="1.4" />
-                        <circle cx="18" cy="20" r="1.4" />
-                        <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8a2 2 0 0 0 2-1.6L21 8H6" />
-                      </svg>
-                      <span>{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+                      {addedIds.has(product.id) ? (
+                        <>
+                          <span className="font-bold">✓</span>
+                          <span>Moved to Cart!</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-4 w-4"
+                          >
+                            <circle cx="9" cy="20" r="1.4" />
+                            <circle cx="18" cy="20" r="1.4" />
+                            <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8a2 2 0 0 0 2-1.6L21 8H6" />
+                          </svg>
+                          <span>{isOutOfStock ? "Out of Stock" : "Move to Cart"}</span>
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

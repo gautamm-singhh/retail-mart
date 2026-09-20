@@ -4,7 +4,8 @@ interface LoadingStateProps {
 }
 
 /**
- * Skeleton pulse placeholder displayed while async data resolves.
+ * Skeleton shimmer placeholder displayed while async data resolves.
+ * Rows fade progressively for visual depth without multiple animation delays.
  */
 export function LoadingState({ rows = 4, label = "Loading" }: LoadingStateProps) {
   return (
@@ -12,9 +13,12 @@ export function LoadingState({ rows = 4, label = "Loading" }: LoadingStateProps)
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="h-11 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800/70"
-          style={{ opacity: Math.max(0.4, 1 - index * 0.12) }}
-        />
+          className="relative h-11 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800/60"
+          style={{ opacity: Math.max(0.35, 1 - index * 0.15) }}
+        >
+          {/* Shimmer sweep */}
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_linear_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-slate-700/40" />
+        </div>
       ))}
       <span className="sr-only">{label}</span>
     </div>

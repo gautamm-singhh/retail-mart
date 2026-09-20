@@ -92,14 +92,14 @@ function CourierFormModal({ initialValues, onSave, onClose }: CourierModalProps)
         Use <code className="rounded bg-slate-100 px-1 py-0.5 font-mono dark:bg-slate-800 dark:text-slate-300">{"{tracking_number}"}</code> as the placeholder for customer shipment links.
       </p>
 
-      <label className="flex items-center gap-2 text-sm text-ink-800 dark:text-slate-200">
+      <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
         <input
           type="checkbox"
           checked={isActive}
           onChange={(e) => setIsActive(e.target.checked)}
-          className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-800"
+          className="h-4 w-4 rounded-md border-slate-300 text-emerald-600 focus:ring-emerald-500/30 dark:border-slate-700 dark:bg-slate-800"
         />
-        Active partner (available in shipment form)
+        Active partner (available in shipment forms)
       </label>
 
       <div className="mt-2 flex justify-end gap-2">

@@ -43,7 +43,7 @@ describe("Application Routing & Entry Point Tests", () => {
 
     // Brand and customer login elements
     expect(screen.getByRole("heading", { name: /sign in to retail mart/i })).toBeInTheDocument();
-    expect(screen.getByText(/shop the best deals, track your orders, and more/i)).toBeInTheDocument();
+    expect(screen.getByText(/shop the best deals, track your orders, and manage your account/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mobile otp/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /create an account/i })).toBeInTheDocument();
@@ -62,14 +62,13 @@ describe("Application Routing & Entry Point Tests", () => {
     expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();
   });
 
-  it("3. Direct navigation to '/login' renders Admin Login page (stays at /login)", () => {
+  it("3. Direct navigation to '/login' renders unified login page (stays at /login)", () => {
     const { router } = renderWithProviders(["/login"]);
 
-    // /login renders the Admin LoginPage directly — no redirect
+    // /login renders the simplified login page directly — no redirect
     expect(router.state.location.pathname).toBe("/login");
-    // Admin LoginPage has its own heading — "Run the whole store from one place."
-    // The page renders with the animated admin headline
-    expect(screen.queryByRole("heading", { name: /sign in to retail mart/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /sign in to retail mart/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();
   });
 
   it("4. Clicking 'Create an account' from Customer Login navigates to /shop/signup", async () => {

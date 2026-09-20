@@ -103,7 +103,7 @@ export default function ShopProductDetailPage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 duration-200">
+    <div className="space-y-6 pb-16 sm:pb-0 animate-in fade-in-50 duration-200">
       {/* Breadcrumb Bar */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <Link to={ROUTES.shop} className="hover:text-emerald-600 transition-colors dark:hover:text-emerald-400">
@@ -210,24 +210,38 @@ export default function ShopProductDetailPage() {
               )}
             </div>
 
-            {/* Quantity Selector */}
+            {/* Quantity Stepper */}
             {product.stock > 0 && (
               <div className="flex items-center gap-3 pt-2">
-                <label htmlFor="quantity" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Quantity
                 </label>
-                <select
-                  id="quantity"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="rounded-xl border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-semibold text-slate-800 shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  {Array.from({ length: Math.min(product.stock, 10) }, (_, i) => i + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 p-0.5">
+                  <button
+                    type="button"
+                    aria-label="Decrease quantity"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition-all hover:bg-slate-100 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3.5 w-3.5"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  </button>
+                  <span className="w-8 text-center text-sm font-bold text-slate-900 dark:text-white">{quantity}</span>
+                  <button
+                    type="button"
+                    aria-label="Increase quantity"
+                    onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+                    disabled={quantity >= product.stock}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition-all hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40 dark:text-slate-300 dark:hover:bg-emerald-950/40"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3.5 w-3.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  </button>
+                </div>
+                {product.stock <= 5 && (
+                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                    Only {product.stock} left!
+                  </span>
+                )}
               </div>
             )}
 
@@ -281,20 +295,20 @@ export default function ShopProductDetailPage() {
           </div>
 
           {/* Guarantee Highlights */}
-          <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/50">
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                <span className="text-emerald-600 font-bold dark:text-emerald-400">✓</span>
-                <span>Express Dispatch</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                <span className="text-emerald-600 font-bold dark:text-emerald-400">✓</span>
-                <span>7-Day Returns</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                <span className="text-emerald-600 font-bold dark:text-emerald-400">✓</span>
-                <span>Genuine Certified</span>
-              </div>
+          <div className="mt-8 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 dark:border-slate-800 dark:from-slate-800/50 dark:to-slate-900/50">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[
+                { icon: "🚀", label: "Express Dispatch" },
+                { icon: "↩️", label: "7-Day Returns" },
+                { icon: "✅", label: "Genuine Certified" },
+              ].map(({ icon, label }) => (
+                <div key={label} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-base dark:bg-emerald-950/40">
+                    {icon}
+                  </span>
+                  {label}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -331,6 +345,41 @@ export default function ShopProductDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Sticky Mobile Purchase Bar */}
+      <aside
+        aria-label="Quick purchase actions"
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-slate-200/90 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-md dark:border-slate-800/90 dark:bg-slate-900/95 sm:hidden"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">
+            {product.name}
+          </p>
+          <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+            {formatCurrency(product.price)}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleAddToCart}
+            disabled={product.stock <= 0}
+            className="rounded-xl px-3 text-xs"
+          >
+            Add to Cart
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleBuyNow}
+            disabled={product.stock <= 0}
+            className="rounded-xl px-3.5 text-xs font-bold"
+          >
+            Buy Now
+          </Button>
+        </div>
+      </aside>
     </div>
   );
 }

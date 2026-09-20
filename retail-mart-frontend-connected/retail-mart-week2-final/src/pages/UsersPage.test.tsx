@@ -59,4 +59,31 @@ describe("UsersPage", () => {
       expect(screen.queryByText("Gautam Sharma")).not.toBeInTheDocument();
     });
   });
+
+  it("displays distinct roles (Admin, Manager, Staff) for seeded users without collapsing", async () => {
+    renderUsersPage();
+    await screen.findByText("Gautam Sharma");
+
+    // All distinct roles are rendered in the table badges
+    const adminBadges = screen.getAllByText("Admin");
+    const managerBadges = screen.getAllByText("Manager");
+    const staffBadges = screen.getAllByText("Staff");
+
+    expect(adminBadges.length).toBeGreaterThanOrEqual(2);
+    expect(managerBadges.length).toBeGreaterThanOrEqual(1);
+    expect(staffBadges.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("filters the list by Staff role and displays staff users", async () => {
+    renderUsersPage();
+    await screen.findByText("Gautam Sharma");
+
+    await userEvent.selectOptions(screen.getByLabelText("Role"), "Staff");
+
+    await waitFor(() => {
+      expect(screen.getByText("Farah Khan")).toBeInTheDocument();
+      expect(screen.queryByText("Gautam Sharma")).not.toBeInTheDocument();
+      expect(screen.queryByText("Neha Joshi")).not.toBeInTheDocument();
+    });
+  });
 });

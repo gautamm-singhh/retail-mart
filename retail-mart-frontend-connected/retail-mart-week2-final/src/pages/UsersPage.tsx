@@ -16,6 +16,7 @@ import { AdminStatCard } from "@/components/common/AdminStatCard";
 import { RoleSelect } from "@/features/users/components/RoleSelect";
 import { UserForm } from "@/features/users/components/UserForm";
 import { useUsers } from "@/features/users/useUsers";
+import { useAuth } from "@/features/auth/useAuth";
 import { useToast } from "@/hooks/useToast";
 import type { User, UserFormValues } from "@/types";
 import { formatDate } from "@/utils/format";
@@ -27,7 +28,25 @@ const STATUS_OPTIONS = [
   { label: "Inactive", value: "inactive" },
 ];
 
+function getRoleBadge(role: string) {
+  switch (role) {
+    case "Admin":
+      return "bg-purple-50 text-purple-700 ring-1 ring-purple-600/20 dark:bg-purple-950/60 dark:text-purple-300";
+    case "Manager":
+      return "bg-blue-50 text-blue-700 ring-1 ring-blue-600/20 dark:bg-blue-950/60 dark:text-blue-300";
+    case "Staff":
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 dark:bg-emerald-950/60 dark:text-emerald-300";
+    case "Customer":
+      return "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300";
+    default:
+      return "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200";
+  }
+}
+
 export default function UsersPage() {
+  const { currentUser } = useAuth();
+  const isAdmin = !currentUser || currentUser.role === "Admin";
+
   const { users, isLoading, error, refresh, addUser, editUser, setUserStatus, removeUser } =
     useUsers();
   const { showToast } = useToast();
@@ -102,9 +121,9 @@ export default function UsersPage() {
   }
 
   const totalUsers = users.length;
-  const activeUsers = users.filter((u) => u.status === "active").length;
   const adminUsers = users.filter((u) => u.role === "Admin").length;
-  const staffUsers = users.filter((u) => u.role === "Manager" || u.role === "Staff").length;
+  const managerUsers = users.filter((u) => u.role === "Manager").length;
+  const staffUsers = users.filter((u) => u.role === "Staff").length;
 
   const columns: TableColumn<User>[] = [
     {
@@ -131,7 +150,7 @@ export default function UsersPage() {
     {
       header: "Role",
       render: (u) => (
-        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+        <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold ${getRoleBadge(u.role)}`}>
           {u.role}
         </span>
       ),
@@ -142,15 +161,23 @@ export default function UsersPage() {
       header: "Actions",
       render: (u) => (
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={() => openEditForm(u)}>
-            Edit
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(u)}>
-            {u.status === "active" ? "Deactivate" : "Activate"}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setDeletingUser(u)} className="text-rose-600 hover:text-rose-700 dark:text-rose-400">
-            Delete
-          </Button>
+          {isAdmin ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => openEditForm(u)}>
+                Edit
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(u)}>
+                {u.status === "active" ? "Deactivate" : "Activate"}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setDeletingUser(u)} className="text-rose-600 hover:text-rose-700 dark:text-rose-400">
+                Delete
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${ROUTES.users}/${u.id}`)}>
+              View
+            </Button>
+          )}
         </div>
       ),
     },
@@ -162,10 +189,18 @@ export default function UsersPage() {
         badge="USER MANAGEMENT"
         title="Users & Access Control"
         description="Manage admin console users, administrative roles, and system privileges."
-        action={<Button onClick={openAddForm}>+ Add User</Button>}
+        action={
+          isAdmin ? (
+            <Button onClick={openAddForm}>+ Add User</Button>
+          ) : (
+            <span className="rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+              Read-Only Access
+            </span>
+          )
+        }
       />
 
-      {/* KPI Stats Grid */}
+      {/* KPI Stats Grid: Total Accounts, Administrators, Managers, Staff */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminStatCard
           label="Total Accounts"
@@ -175,13 +210,6 @@ export default function UsersPage() {
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
         />
         <AdminStatCard
-          label="Active Users"
-          value={activeUsers}
-          subtext={`${Math.round((activeUsers / (totalUsers || 1)) * 100)}% active rate`}
-          accentColor="teal"
-          icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-        />
-        <AdminStatCard
           label="Administrators"
           value={adminUsers}
           subtext="Full system access"
@@ -189,10 +217,17 @@ export default function UsersPage() {
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
         />
         <AdminStatCard
-          label="Staff / Managers"
-          value={staffUsers}
-          subtext="Operations & support"
+          label="Managers"
+          value={managerUsers}
+          subtext="Store & operations leads"
           accentColor="blue"
+          icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
+        />
+        <AdminStatCard
+          label="Operations Staff"
+          value={staffUsers}
+          subtext="Customer & fulfillment"
+          accentColor="teal"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
         />
       </div>

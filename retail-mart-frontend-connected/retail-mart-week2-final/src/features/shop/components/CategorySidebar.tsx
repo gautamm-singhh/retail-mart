@@ -136,8 +136,8 @@ export function CategorySidebar({
       </div>
 
       {/* Desktop Vertical Category Card */}
-      <aside className="hidden lg:block">
-        <div className="sticky top-20 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors duration-200">
+      <aside className="hidden lg:block w-full">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors duration-200 max-h-[calc(100vh-6.5rem)] overflow-y-auto custom-scrollbar">
           <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800/80">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -160,7 +160,7 @@ export function CategorySidebar({
             <button
               type="button"
               onClick={() => onSelectCategory("all")}
-              className={`group relative flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-150 ${
+              className={`group relative flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 isAll
                   ? "bg-emerald-50/90 text-emerald-700 font-semibold dark:bg-emerald-950/70 dark:text-emerald-300 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-full before:bg-emerald-600 dark:before:bg-emerald-400"
                   : "text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:translate-x-1 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
@@ -189,7 +189,7 @@ export function CategorySidebar({
                   key={c.id}
                   type="button"
                   onClick={() => onSelectCategory(c.name)}
-                  className={`group relative flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-150 ${
+                  className={`group relative flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                     active
                       ? "bg-emerald-50/90 text-emerald-700 font-semibold dark:bg-emerald-950/70 dark:text-emerald-300 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-full before:bg-emerald-600 dark:before:bg-emerald-400"
                       : "text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:translate-x-1 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"

@@ -8,19 +8,23 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const toneStyles: Record<BadgeTone, string> = {
-  neutral: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  brand: "bg-brand-50 text-brand-700 dark:bg-teal-950/60 dark:text-teal-300 dark:border dark:border-teal-800/60",
-  success: "bg-success-50 text-success-600 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/60",
-  warning: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-800/60",
-  danger: "bg-danger-50 text-danger-600 dark:bg-rose-950/60 dark:text-rose-300 dark:border dark:border-rose-800/60",
+  neutral: "bg-slate-100 text-slate-600 dark:bg-slate-800/80 dark:text-slate-300",
+  brand:
+    "bg-brand-50 text-brand-700 ring-1 ring-brand-200/60 dark:bg-brand-950/50 dark:text-brand-300 dark:ring-brand-800/50",
+  success:
+    "bg-success-50 text-success-600 ring-1 ring-success-200/60 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800/50",
+  warning:
+    "bg-amber-50 text-amber-700 ring-1 ring-amber-200/60 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800/50",
+  danger:
+    "bg-danger-50 text-danger-600 ring-1 ring-danger-200/60 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-800/50",
 };
 
 const dotStyles: Record<BadgeTone, string> = {
   neutral: "bg-slate-400 dark:bg-slate-500",
-  brand: "bg-teal-500",
-  success: "bg-emerald-500",
+  brand: "bg-brand-500",
+  success: "bg-success-600",
   warning: "bg-amber-500",
-  danger: "bg-rose-500",
+  danger: "bg-danger-600",
 };
 
 /** Generic colored pill. For domain statuses (order/payment/shipment), use StatusBadge instead. */
@@ -28,7 +32,7 @@ export function Badge({ tone = "neutral", className, children, ...props }: Badge
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide shadow-sm",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium tracking-wide",
         toneStyles[tone],
         className,
       )}

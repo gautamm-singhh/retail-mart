@@ -25,7 +25,11 @@ export interface AuthContextValue {
   /** True while /auth/me is resolving after a token is found on load. */
   isLoadingUser: boolean;
   /** Resolves with the signed-in user on success, null on invalid credentials. Throws on network/server errors. */
-  login: (email: string, password: string) => Promise<CurrentUser | null>;
+  login: (
+    email: string,
+    password: string,
+    targetPortal?: "customer" | "admin",
+  ) => Promise<CurrentUser | null>;
   /** Customer signup (storefront). Throws ApiError on validation failure (e.g. email already taken). */
   signup: (values: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
   /** Step 1 of mobile OTP auth: sends a code to `phone`. */
@@ -84,23 +88,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [token]);
 
-  const login = useCallback(async (email: string, password: string): Promise<CurrentUser | null> => {
-    try {
-      const data = await request<LoginResponse>("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      setAuthToken(data.accessToken);
-      setToken(data.accessToken);
-      setCurrentUser(data.user);
-      return data.user;
-    } catch (err) {
-      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
-        return null;
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      targetPortal?: "customer" | "admin",
+    ): Promise<CurrentUser | null> => {
+      const cleanEmail = email.trim().toLowerCase();
+      try {
+        const data = await request<LoginResponse>("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email: cleanEmail, password }),
+        });
+
+        // Enforce role security against intended portal without relying on UI state
+        if (targetPortal === "customer" && data.user.role !== "Customer") {
+          throw new ApiError(
+            403,
+            "This account is registered as an administrator. Please switch to Admin mode to sign in.",
+          );
+        } else if (
+          targetPortal === "admin" &&
+          !["Admin", "Manager", "Staff"].includes(data.user.role)
+        ) {
+          throw new ApiError(
+            403,
+            "This account is not registered as an administrator.",
+          );
+        }
+
+        setAuthToken(data.accessToken);
+        setToken(data.accessToken);
+        setCurrentUser(data.user);
+        return data.user;
+      } catch (err) {
+        if (err instanceof ApiError) {
+          if (err.status === 401) {
+            return null;
+          }
+          // Preserve specific 403 role-mismatch messages for caller
+          throw err;
+        }
+        throw err;
       }
-      throw err;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const logout = useCallback(() => {
     setAuthToken(null);

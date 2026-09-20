@@ -21,10 +21,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const errorId = `${selectId}-error`;
 
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         <label
           htmlFor={selectId}
-          className={cn("text-sm font-medium text-ink-800 dark:text-slate-200", hideLabel && "sr-only")}
+          className={cn("text-sm font-medium text-slate-700 dark:text-slate-200", hideLabel && "sr-only")}
         >
           {label}
         </label>
@@ -34,10 +34,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            "h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-ink-900 shadow-sm transition-colors",
-            "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
-            "focus-visible:border-brand-500 dark:focus-visible:border-brand-400",
-            error && "border-danger-600 dark:border-rose-500",
+            "h-11 w-full rounded-xl border px-3.5 text-sm",
+            "bg-white text-slate-900",
+            "dark:bg-slate-900 dark:text-slate-100",
+            "border-slate-200 dark:border-slate-700",
+            "shadow-xs",
+            "transition-all duration-200 ease-out",
+            "focus-visible:outline-none focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20",
+            "dark:focus-visible:border-brand-400 dark:focus-visible:ring-brand-500/25",
+            error && "border-danger-600 focus-visible:border-danger-600 focus-visible:ring-danger-600/20 dark:border-danger-500",
             className,
           )}
           {...props}
@@ -49,7 +54,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p id={errorId} className="text-xs text-danger-600">
+          <p id={errorId} className="text-xs font-medium text-danger-600 dark:text-danger-400">
             {error}
           </p>
         )}

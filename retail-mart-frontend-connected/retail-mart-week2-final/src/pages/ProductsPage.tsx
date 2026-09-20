@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -36,9 +36,26 @@ export default function ProductsPage() {
   const categoryOptions = useMemo(() => getActiveCategoryOptions(categories), [categories]);
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") || "");
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get("category") || "all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q !== null) setSearch(q);
+    const cat = searchParams.get("category");
+    if (cat !== null) setCategoryFilter(cat);
+  }, [searchParams]);
+
+  const categoryFilterOptions = useMemo(
+    () => [
+      { label: "All categories", value: "all" },
+      ...categories.map((c) => ({ label: c.name, value: c.name })),
+    ],
+    [categories],
+  );
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -50,10 +67,13 @@ export default function ProductsPage() {
       const matchesSearch =
         product.name.toLowerCase().includes(query) ||
         product.sku.toLowerCase().includes(query);
+      const matchesCategory =
+        categoryFilter === "all" ||
+        product.category.toLowerCase() === categoryFilter.toLowerCase();
       const matchesStatus = statusFilter === "all" || product.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [products, search, statusFilter]);
+  }, [products, search, categoryFilter, statusFilter]);
 
   function openAddForm() {
     setEditingProduct(null);
@@ -240,15 +260,26 @@ export default function ProductsPage() {
           searchValue={search}
           onSearchChange={setSearch}
           filters={
-            <div className="sm:w-48">
-              <Select
-                label="Status"
-                hideLabel
-                options={STATUS_OPTIONS}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              />
-            </div>
+            <>
+              <div className="sm:w-44">
+                <Select
+                  label="Category"
+                  hideLabel
+                  options={categoryFilterOptions}
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                />
+              </div>
+              <div className="sm:w-40">
+                <Select
+                  label="Status"
+                  hideLabel
+                  options={STATUS_OPTIONS}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                />
+              </div>
+            </>
           }
         />
 

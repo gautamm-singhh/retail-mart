@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/useAuth";
 import { useCart } from "@/features/cart/useCart";
@@ -8,6 +8,7 @@ import { AppreciationMarquee } from "@/components/common/AppreciationMarquee";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
+import { PageFallback } from "@/components/common/PageFallback";
 import { ROUTES } from "@/constants/routes";
 
 export default function StorefrontLayout() {
@@ -233,7 +234,9 @@ export default function StorefrontLayout() {
 
       {/* Centered Max-Width Storefront Body with Smooth Page Entrance */}
       <main key={location.pathname} className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-page-entrance">
-        <Outlet />
+        <Suspense fallback={<PageFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

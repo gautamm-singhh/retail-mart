@@ -1,8 +1,7 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
-import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { ROUTES } from "@/constants/routes";
 
 interface HeaderProps {
@@ -11,19 +10,9 @@ interface HeaderProps {
   isCollapsed?: boolean;
 }
 
-const NOTIFICATIONS = [
-  { id: "notif-1", title: "New order received", meta: "ORD-09968 · ₹3,997", time: "2 min ago", unread: true },
-  { id: "notif-2", title: "Payment completed", meta: "PAY-19206 · Razorpay Verified", time: "12 min ago", unread: true },
-  { id: "notif-3", title: "Low stock alert", meta: "Yoga Mat 6mm (6 units left)", time: "2 hours ago", unread: true },
-];
-
 export function Header({ onMenuClick, onToggleCollapse, isCollapsed }: HeaderProps) {
   const navigate = useNavigate();
   const [searchVal, setSearchVal] = useState("");
-  const [showNotifs, setShowNotifs] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
-
-  useOnClickOutside(notifRef, () => setShowNotifs(false), showNotifs);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,51 +77,10 @@ export function Header({ onMenuClick, onToggleCollapse, isCollapsed }: HeaderPro
         </form>
       </div>
 
-      {/* Right Controls: Theme Toggle, Notifications, User Profile */}
+      {/* Right Controls: Theme Toggle & User Profile */}
       <div className="flex items-center gap-3">
         {/* Segmented Light / Dark Toggle */}
         <ThemeToggle variant="segmented" />
-
-        {/* Notifications Bell */}
-        <div className="relative" ref={notifRef}>
-          <button
-            type="button"
-            onClick={() => setShowNotifs(!showNotifs)}
-            aria-label="View notifications"
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 shadow-xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold text-white shadow-xs animate-pulse">
-              3
-            </span>
-          </button>
-
-          {/* Notifications Dropdown Modal */}
-          {showNotifs && (
-            <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50 animate-dropdown">
-              <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-2 px-1 dark:border-slate-800">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                  3 unread
-                </span>
-              </div>
-              <div className="space-y-1">
-                {NOTIFICATIONS.map((n) => (
-                  <div key={n.id} className="rounded-xl p-2 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition-colors cursor-pointer">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-900 dark:text-white">{n.title}</span>
-                      <span className="text-[10px] text-slate-400">{n.time}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{n.meta}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* User Profile Info & Menu */}
         <div className="flex items-center gap-2.5 pl-1 border-l border-slate-200/80 dark:border-slate-800">

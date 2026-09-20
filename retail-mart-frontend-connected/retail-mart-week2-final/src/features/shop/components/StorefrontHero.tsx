@@ -20,14 +20,16 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
     <div
       className="relative mb-8 overflow-hidden rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 p-6 shadow-xs sm:p-8 md:p-10 lg:p-12 dark:border-slate-800/90 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/40 dark:shadow-md transition-colors duration-200"
     >
-      {/* Ambient background blobs */}
+      {/* Ambient background glowing orbs with subtle floating animations */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl dark:bg-emerald-500/10"
+        className="pointer-events-none absolute -right-16 -top-16 h-96 w-96 rounded-full bg-gradient-to-br from-emerald-400/25 via-teal-400/20 to-transparent blur-3xl animate-pulse dark:from-emerald-500/15 dark:via-teal-500/10"
+        style={{ animationDuration: "5s" }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-teal-400/15 blur-3xl dark:bg-teal-500/10"
+        className="pointer-events-none absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-gradient-to-tr from-teal-400/20 via-emerald-400/15 to-transparent blur-3xl animate-pulse dark:from-teal-500/15 dark:via-emerald-600/10"
+        style={{ animationDuration: "7s" }}
       />
 
       <div className="relative z-10 grid grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
@@ -38,7 +40,7 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
             className="hero-entrance-badge inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-white/85 px-3.5 py-1 text-xs font-semibold text-emerald-800 shadow-xs backdrop-blur-sm dark:border-emerald-900/60 dark:bg-emerald-950/70 dark:text-emerald-300"
             style={{ animationDelay: "0.05s" }}
           >
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
             <span>NEW SEASON COLLECTION</span>
           </div>
 
@@ -124,6 +126,10 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
             <div className="hero-float-only">
               {/* Main product image */}
               <div className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/40 bg-gradient-to-tr from-slate-100 to-white shadow-xl dark:border-slate-700/60 dark:bg-slate-800 transition-all duration-300">
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md shadow-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>Trending Choice</span>
+                </div>
                 <img
                   src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80"
                   alt="Retail Mart Premium Catalog"
@@ -132,7 +138,7 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <span className="rounded-md bg-emerald-600/90 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider backdrop-blur-xs">
-                    Featured Choice
+                    Featured Collection
                   </span>
                   <p className="mt-1 text-sm font-bold drop-shadow-sm">
                     Wireless Pro Audio &amp; Ergonomic Living
@@ -157,13 +163,15 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
                 </div>
               </div>
 
-              {/* Rating pill */}
-              <div className="hero-pill-entrance absolute -top-3 -right-3 rounded-full border border-slate-200/80 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900/95">
+              {/* Authentic quality pill */}
+              <div className="hero-pill-entrance absolute -top-3 -right-3 rounded-full border border-emerald-200/80 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:border-emerald-800/80 dark:bg-slate-900/95">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span className="text-amber-400">★</span>
-                  <span>4.9</span>
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 text-[10px] font-black">
+                    ✓
+                  </span>
+                  <span>100% Genuine</span>
                   <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
-                    (2.4k+ reviews)
+                    Direct Source
                   </span>
                 </div>
               </div>

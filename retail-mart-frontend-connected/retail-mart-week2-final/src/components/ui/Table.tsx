@@ -32,15 +32,15 @@ export function Table<T>({ columns, rows, getRowKey, emptyState }: TableProps<T>
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800/80">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200/70 dark:border-slate-800/60 shadow-xs">
       <table className="w-full min-w-[640px] border-collapse text-left text-sm">
         <thead>
-          <tr className="border-b border-slate-200/80 bg-slate-50/90 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
+          <tr className="border-b border-slate-200/80 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800/80 dark:bg-slate-800/50 dark:text-slate-400">
             {columns.map((column) => (
               <th
                 key={column.header}
                 scope="col"
-                className={`whitespace-nowrap px-4 py-3.5 ${
+                className={`whitespace-nowrap px-5 py-3.5 ${
                   column.hideBelow ? HIDE_CLASS[column.hideBelow] : ""
                 }`}
               >
@@ -49,16 +49,16 @@ export function Table<T>({ columns, rows, getRowKey, emptyState }: TableProps<T>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+        <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800/60">
           {rows.map((row) => (
             <tr
               key={getRowKey(row)}
-              className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50"
+              className="transition-colors duration-150 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/25"
             >
               {columns.map((column) => (
                 <td
                   key={column.header}
-                  className={`whitespace-nowrap px-4 py-3.5 text-slate-700 dark:text-slate-200 ${
+                  className={`whitespace-nowrap px-5 py-4 text-sm text-slate-700 dark:text-slate-200 ${
                     column.hideBelow ? HIDE_CLASS[column.hideBelow] : ""
                   }`}
                 >

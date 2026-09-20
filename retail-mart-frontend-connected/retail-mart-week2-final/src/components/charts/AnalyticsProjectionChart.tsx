@@ -1,13 +1,22 @@
 import { useState, useId, useMemo } from "react";
 import { formatCurrency } from "@/utils/format";
-import type { SalesReportBucket, ProjectionForecastPoint } from "@/types";
+import type { SalesReportBucket, ProjectionForecastPoint, ReportPeriod } from "@/types";
 
 interface AnalyticsProjectionChartProps {
   history: SalesReportBucket[];
   forecast: ProjectionForecastPoint[];
+  period?: ReportPeriod;
+  mode?: "simple" | "ai";
+  aiGenerated?: boolean;
 }
 
-export function AnalyticsProjectionChart({ history, forecast }: AnalyticsProjectionChartProps) {
+export function AnalyticsProjectionChart({
+  history,
+  forecast,
+  period = "monthly",
+  mode = "simple",
+  aiGenerated = false,
+}: AnalyticsProjectionChartProps) {
   const chartId = useId();
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [chartMode, setChartMode] = useState<"line" | "area">("area");
@@ -24,10 +33,25 @@ export function AnalyticsProjectionChart({ history, forecast }: AnalyticsProject
         let label = f.period;
         if (history.length > 0) {
           const lastPeriod = history[history.length - 1].period;
-          if (/^\d{4}-\d{2}$/.test(lastPeriod)) {
+          if (period === "daily" || /^\d{4}-\d{2}-\d{2}$/.test(lastPeriod)) {
+            const lastDate = new Date(lastPeriod);
+            if (!Number.isNaN(lastDate.getTime())) {
+              lastDate.setDate(lastDate.getDate() + idx + 1);
+              label =
+                lastDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+                " (Proj)";
+            } else {
+              label = `+${idx + 1}d (Proj)`;
+            }
+          } else if (period === "yearly" || /^\d{4}$/.test(lastPeriod)) {
+            const yr = parseInt(lastPeriod, 10);
+            label = !Number.isNaN(yr) ? `${yr + idx + 1} (Proj)` : `+${idx + 1}y (Proj)`;
+          } else if (/^\d{4}-\d{2}$/.test(lastPeriod)) {
             const [yStr, mStr] = lastPeriod.split("-");
             const targetDate = new Date(parseInt(yStr, 10), parseInt(mStr, 10) + idx, 1);
-            label = targetDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) + " (Proj)";
+            label =
+              targetDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) +
+              " (Proj)";
           } else {
             label = `Period +${idx + 1} (Proj)`;
           }
@@ -40,7 +64,7 @@ export function AnalyticsProjectionChart({ history, forecast }: AnalyticsProject
         };
       }),
     ];
-  }, [history, forecast]);
+  }, [history, forecast, period]);
 
   const maxValue = useMemo(() => {
     const rawMax = Math.max(...combined.map((c) => c.value), 100);
@@ -120,7 +144,13 @@ export function AnalyticsProjectionChart({ history, forecast }: AnalyticsProject
           </div>
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-purple-600 shadow-xs" />
-            <span className="text-slate-700 dark:text-slate-300">Projected Trajectory</span>
+            <span className="text-slate-700 dark:text-slate-300">
+              {mode === "ai"
+                ? aiGenerated
+                  ? "AI Predictive Trajectory"
+                  : "Statistical Trajectory (Fallback)"
+                : "Statistical Linear Trajectory"}
+            </span>
           </div>
         </div>
 

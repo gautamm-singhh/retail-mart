@@ -4,8 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import LoginPage, { DEMO_CREDENTIALS } from "@/pages/LoginPage";
+import LoginPage from "@/pages/LoginPage";
 import { ROUTES } from "@/constants/routes";
+
+const DEMO_CREDENTIALS = { email: "sorav@retailmart.dev", password: "password123" } as const;
 
 function DummyDashboard() {
   return <h1>Dashboard</h1>;
@@ -35,7 +37,7 @@ describe("Login -> protected dashboard flow", () => {
   it("redirects an unauthenticated visitor from a protected route to /login", () => {
     renderApp();
     expect(
-      screen.getByRole("heading", { name: /retail mart admin/i }),
+      screen.getByRole("heading", { name: /sign in to retail mart/i }),
     ).toBeInTheDocument();
   });
 

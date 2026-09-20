@@ -106,50 +106,55 @@ export default function MyOrdersPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-200">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-800/90">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-slate-800/70">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             My Orders
           </h1>
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
             {orders.length} {orders.length === 1 ? "order" : "orders"}
           </span>
         </div>
         <Link
           to={ROUTES.shop}
-          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors dark:text-emerald-400"
+          className="flex items-center gap-1 text-xs font-semibold text-emerald-600 transition-colors hover:text-emerald-700 dark:text-emerald-400"
         >
-          ← Continue Shopping
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Continue Shopping
         </Link>
       </div>
 
       {justPlacedId && (
-        <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs sm:text-sm text-emerald-800 shadow-xs dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 animate-in slide-in-from-top-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs">
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-xs sm:text-sm text-emerald-800 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300 animate-in slide-in-from-top-2 duration-300">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-xs">
             ✓
           </span>
           <p>
-            Order <strong>{justPlacedId}</strong> has been successfully placed! A confirmation email and live courier tracking will update automatically.
+            Order <strong>#{justPlacedId}</strong> has been successfully placed! A confirmation email and live courier tracking will update automatically.
           </p>
         </div>
       )}
 
       <div className="space-y-4">
-        {orders.map((order) => (
+        {orders.map((order, idx) => (
           <div
             key={order.id}
-            className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6 dark:border-slate-800/90 dark:bg-slate-900 transition-colors"
+            className="group rounded-2xl border border-slate-200/70 bg-white shadow-sm transition-all duration-200 hover:border-emerald-400/40 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-900 overflow-hidden"
+            style={{ animationDelay: `${idx * 50}ms` }}
           >
             {/* Order Card Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800/80">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5 dark:border-slate-800/80">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
-                    Order #{order.id}
+                  <span className="font-bold text-slate-900 dark:text-white text-sm">
+                    Order <span className="font-mono">#{order.id.slice(-8).toUpperCase()}</span>
                   </span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500">•</span>
+                  <span className="text-xs text-slate-300 dark:text-slate-600">•</span>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Placed on {formatDate(order.date)}
+                    {formatDate(order.date)}
                   </span>
                 </div>
               </div>
@@ -160,13 +165,14 @@ export default function MyOrdersPage() {
             </div>
 
             {/* Items List */}
-            <ul className="py-3 space-y-1.5 divide-y divide-slate-100/60 dark:divide-slate-800/60">
+            <ul className="px-4 sm:px-5 py-3 space-y-1.5 divide-y divide-slate-100/70 dark:divide-slate-800/60">
               {order.items.map((item, i) => (
-                <li key={i} className="flex justify-between text-xs sm:text-sm pt-1.5 first:pt-0">
+                <li key={i} className="flex justify-between py-1.5 first:pt-0 text-xs sm:text-sm">
                   <span className="text-slate-700 dark:text-slate-300">
-                    {item.productName} <strong className="font-normal text-slate-400 dark:text-slate-500">× {item.quantity}</strong>
+                    {item.productName}
+                    <span className="ml-1 font-normal text-slate-400 dark:text-slate-500">× {item.quantity}</span>
                   </span>
-                  <span className="font-bold text-slate-900 dark:text-white">
+                  <span className="font-semibold text-slate-900 dark:text-white">
                     {formatCurrency(item.price * item.quantity)}
                   </span>
                 </li>
@@ -232,10 +238,10 @@ export default function MyOrdersPage() {
             )}
 
             {/* Order Card Footer */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800/80">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 sm:px-5 py-3.5 dark:border-slate-800/80">
               <div className="flex items-baseline gap-2">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Total:</span>
-                <span className="text-base font-extrabold text-slate-950 dark:text-white">
+                <span className="text-xs text-slate-500 dark:text-slate-400">Order Total:</span>
+                <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(order.amount)}
                 </span>
               </div>
@@ -259,7 +265,7 @@ export default function MyOrdersPage() {
                   onClick={() => handleDownloadInvoice(order.id)}
                   disabled={downloadingId === order.id}
                 >
-                  {downloadingId === order.id ? "Downloading..." : "Download Invoice (PDF)"}
+                  {downloadingId === order.id ? "Downloading..." : "Download Invoice"}
                 </Button>
               </div>
             </div>

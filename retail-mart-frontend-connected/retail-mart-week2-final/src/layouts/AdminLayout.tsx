@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { MobileNavDrawer } from "@/components/layout/MobileNavDrawer";
+import { PageFallback } from "@/components/common/PageFallback";
 import { useDisclosure } from "@/hooks/useDisclosure";
 import { cn } from "@/utils/cn";
 
@@ -46,7 +47,9 @@ export default function AdminLayout() {
         <Header onMenuClick={drawer.open} onToggleCollapse={toggleCollapse} isCollapsed={isCollapsed} />
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl animate-page-entrance">
-            <Outlet />
+            <Suspense fallback={<PageFallback />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

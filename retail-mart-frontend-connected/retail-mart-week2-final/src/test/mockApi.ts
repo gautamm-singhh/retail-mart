@@ -30,7 +30,17 @@ let payments: Payment[] = [];
 let shipments: Shipment[] = [];
 
 export function resetMockApi() {
-  users = mockUsers.map((u) => ({ ...u }));
+  users = [
+    ...mockUsers.map((u) => ({ ...u })),
+    {
+      id: "u-customer-001",
+      name: "Customer User",
+      email: "customer@retailmart.dev",
+      role: "Customer",
+      status: "active",
+      createdAt: "2026-02-01",
+    },
+  ];
   categories = mockCategories.map((c) => ({ ...c }));
   products = mockProducts.map((p) => ({ ...p }));
   orders = mockOrders.map((o) => ({ ...o, items: [...o.items], statusHistory: [...o.statusHistory] }));
@@ -71,6 +81,43 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
       return json({ error: "Invalid email or password" }, 401);
     }
     return json({ accessToken: `test-token-${user.id}`, user });
+  }
+
+  if (path === "/auth/signup" && method === "POST") {
+    const email = String(body.email ?? "").toLowerCase();
+    const name = String(body.name ?? "Customer");
+    const newUser: User = {
+      id: `u-${String(users.length + 1).padStart(3, "0")}`,
+      name,
+      email,
+      role: "Customer",
+      status: "active",
+      createdAt: todayIso(),
+    };
+    users.push(newUser);
+    return json({ accessToken: `test-token-${newUser.id}`, user: newUser }, 201);
+  }
+
+  if ((path === "/auth/otp/send" || path === "/auth/otp/request") && method === "POST") {
+    return json({ success: true, phone: String(body.phone ?? ""), expiresInMinutes: 10, message: "OTP sent successfully" });
+  }
+
+  if (path === "/auth/otp/verify" && method === "POST") {
+    const phone = String(body.phone ?? "");
+    const code = String(body.code ?? "");
+    if (code !== "123456" && code !== "000000" && code.length !== 6) {
+      return json({ error: "Invalid verification code" }, 400);
+    }
+    const customerUser: User = {
+      id: "u-customer-otp",
+      name: `Customer (${phone.slice(-4)})`,
+      email: `${phone.replace(/\D/g, "")}@mobile.retailmart.dev`,
+      role: "Customer",
+      status: "active",
+      createdAt: todayIso(),
+    };
+    users.push(customerUser);
+    return json({ accessToken: `test-token-${customerUser.id}`, user: customerUser });
   }
 
   if (path === "/auth/me" && method === "GET") {
@@ -163,6 +210,115 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
       { label: "Total Payments", value: String(payments.filter((p) => p.status === "Paid").length), hint: "0 failed" },
       { label: "Pending Shipments", value: String(shipments.filter((s) => s.status !== "Delivered").length), hint: "0 delivered" },
     ]);
+  }
+
+  // --- Analytics & Projections ----------------------------------------
+  if (path.startsWith("/analytics/projections") && method === "GET") {
+    const periodMatch = /[?&]period=([^&]+)/.exec(path);
+    const period = periodMatch ? periodMatch[1] : "monthly";
+
+    if (period === "daily") {
+      return json({
+        period: "daily",
+        history: [
+          { period: "2026-09-18", orderCount: 2, revenue: 2400 },
+          { period: "2026-09-19", orderCount: 4, revenue: 5600 },
+          { period: "2026-09-20", orderCount: 5, revenue: 7800 },
+        ],
+        forecast: [
+          { period: "+1", projectedRevenue: 10200 },
+          { period: "+2", projectedRevenue: 12800 },
+          { period: "+3", projectedRevenue: 15400 },
+        ],
+      });
+    }
+
+    if (period === "yearly") {
+      return json({
+        period: "yearly",
+        history: [
+          { period: "2024", orderCount: 40, revenue: 450000 },
+          { period: "2025", orderCount: 65, revenue: 780000 },
+        ],
+        forecast: [
+          { period: "+1", projectedRevenue: 1110000 },
+          { period: "+2", projectedRevenue: 1440000 },
+          { period: "+3", projectedRevenue: 1770000 },
+        ],
+      });
+    }
+
+    // Default monthly
+    return json({
+      period: "monthly",
+      history: [
+        { period: "2026-07", orderCount: 6, revenue: 38000 },
+        { period: "2026-08", orderCount: 12, revenue: 64000 },
+        { period: "2026-09", orderCount: 18, revenue: 95000 },
+      ],
+      forecast: [
+        { period: "+1", projectedRevenue: 123500 },
+        { period: "+2", projectedRevenue: 152000 },
+        { period: "+3", projectedRevenue: 180500 },
+      ],
+    });
+  }
+
+  if (path.startsWith("/analytics/ai-projections") && method === "GET") {
+    const periodMatch = /[?&]period=([^&]+)/.exec(path);
+    const period = periodMatch ? periodMatch[1] : "monthly";
+
+    let projection;
+    if (period === "daily") {
+      projection = {
+        period: "daily",
+        history: [
+          { period: "2026-09-18", orderCount: 2, revenue: 2400 },
+          { period: "2026-09-19", orderCount: 4, revenue: 5600 },
+          { period: "2026-09-20", orderCount: 5, revenue: 7800 },
+        ],
+        forecast: [
+          { period: "+1", projectedRevenue: 10200 },
+          { period: "+2", projectedRevenue: 12800 },
+          { period: "+3", projectedRevenue: 15400 },
+        ],
+        narrative: "Daily sales revenue shows rapid acceleration over the last 3 operating days, with projections indicating peak revenue of ₹15,400 across the near horizon.",
+        aiGenerated: true,
+      };
+    } else if (period === "yearly") {
+      projection = {
+        period: "yearly",
+        history: [
+          { period: "2024", orderCount: 40, revenue: 450000 },
+          { period: "2025", orderCount: 65, revenue: 780000 },
+        ],
+        forecast: [
+          { period: "+1", projectedRevenue: 1110000 },
+          { period: "+2", projectedRevenue: 1440000 },
+          { period: "+3", projectedRevenue: 1770000 },
+        ],
+        narrative: "Year-over-year commercial trajectory demonstrates sustained 73% historical expansion with projected annualized revenue topping ₹17,70,000.",
+        aiGenerated: true,
+      };
+    } else {
+      projection = {
+        period: "monthly",
+        history: [
+          { period: "2026-07", orderCount: 6, revenue: 38000 },
+          { period: "2026-08", orderCount: 12, revenue: 64000 },
+          { period: "2026-09", orderCount: 18, revenue: 95000 },
+        ],
+        forecast: [
+          { period: "+1", projectedRevenue: 123500 },
+          { period: "+2", projectedRevenue: 152000 },
+          { period: "+3", projectedRevenue: 180500 },
+        ],
+        narrative: "Strong monthly expansion recorded across Q3. Predictive trend modeling indicates consistent forward revenue velocity with top projected revenue reaching ₹1,80,500.",
+        aiGenerated: true,
+      };
+    }
+
+    return json(projection);
   }
 
   return json({ error: `No mock handler for ${method} ${path}` }, 404);
