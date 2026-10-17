@@ -19,6 +19,7 @@ export function createOrder(values: {
   customer: string;
   customerEmail: string;
   items: CreateOrderItem[];
+  destinationState?: string;
 }): Promise<Order> {
   return request<Order>("/orders", { method: "POST", body: JSON.stringify(values) });
 }

@@ -32,6 +32,9 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Safe order-time tax snapshot (deferred so missing column pre-migration does not fail queries)
+    tax_snapshot = db.deferred(db.Column(db.JSON, nullable=True))
+
     items = db.relationship(
         "OrderItem", back_populates="order", cascade="all, delete-orphan", order_by="OrderItem.id"
     )
@@ -55,6 +58,13 @@ class Order(db.Model):
                 "trackingNumber": s.tracking_number,
                 "expectedDelivery": s.expected_delivery.strftime("%Y-%m-%d") if s.expected_delivery else None,
             }
+
+        tax_snap = None
+        try:
+            tax_snap = self.tax_snapshot
+        except Exception:
+            tax_snap = None
+
         return {
             "id": self.id,
             "customer": self.customer,
@@ -67,6 +77,7 @@ class Order(db.Model):
             "statusHistory": [ev.to_dict() for ev in self.status_history],
             "paymentId": payments[0].id if payments else None,
             "shipment": shipment_summary,
+            "taxSnapshot": tax_snap,
         }
 
 

@@ -1,8 +1,9 @@
 import logging
 from datetime import datetime, date
+from decimal import Decimal
 
 from flask import Blueprint, request, jsonify, send_file, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 
 from sqlalchemy.orm import selectinload, configure_mappers
 
@@ -154,7 +155,6 @@ def get_order(order_id):
 
 
 @orders_bp.post("")
-@roles_required("Admin", "Manager", "Staff", "Customer")
 def create_order():
     """
     Create Order
@@ -206,16 +206,50 @@ def create_order():
           $ref: '#/definitions/ErrorResponse'
     """
     data = request.get_json(silent=True) or {}
+    items = data.get("items") or []
+
+    # Check for authoritative tax quote mode (without saving order, guest-accessible)
+    if request.args.get("quote") or data.get("quoteOnly"):
+        if not items:
+            return jsonify({"error": "at least one item is required"}), 400
+        from app.utils.tax import calculate_order_tax_breakdown
+        breakdown = calculate_order_tax_breakdown(
+            items=items,
+            destination_state=(data.get("destinationState") or data.get("state") or "").strip(),
+            discount_amount=Decimal(str(data.get("discount", 0))),
+            delivery_fee=Decimal(str(data.get("deliveryFee", 0))),
+        )
+        return jsonify(breakdown), 200
+
+    # Real order placement requires verified JWT with permitted role
+    verify_jwt_in_request()
+    claims = get_jwt()
+    allowed_roles = ("Admin", "Manager", "Staff", "Customer")
+    if allowed_roles and claims.get("role") not in allowed_roles:
+        logger.warning(
+            "Unauthorized access attempt: user_id=%s role=%s endpoint=create_order required_roles=%s",
+            claims.get("sub"),
+            claims.get("role"),
+            allowed_roles,
+        )
+        return jsonify({"error": "Forbidden: insufficient role"}), 403
+
     customer = (data.get("customer") or "").strip()
     customer_email = (data.get("customerEmail") or "").strip()
-    items = data.get("items") or []
 
     if not customer or not customer_email:
         return jsonify({"error": "customer and customerEmail are required"}), 400
     if not items:
         return jsonify({"error": "at least one item is required"}), 400
 
-    amount = sum(float(i["price"]) * int(i["quantity"]) for i in items)
+    from app.utils.tax import calculate_order_tax_breakdown
+    # Server-side authoritative tax & total validation
+    tax_breakdown = calculate_order_tax_breakdown(
+        items=items,
+        destination_state=data.get("destinationState") or "",
+    )
+    amount = tax_breakdown["total_payable"]
+
     order = Order(
         id=f"ORD-{random_suffix(5)}",
         user_id=get_jwt_identity(),
@@ -226,6 +260,15 @@ def create_order():
         payment_status="Pending",
         status="Pending",
     )
+    # Store immutable order-time tax snapshot if column exists in database
+    try:
+        from sqlalchemy import inspect
+        insp = inspect(db.engine)
+        if "tax_snapshot" in {c["name"] for c in insp.get_columns("orders")}:
+            order.tax_snapshot = tax_breakdown
+    except Exception:
+        pass
+
     for i in items:
         order.items.append(OrderItem(product_name=i["productName"], quantity=i["quantity"], price=i["price"]))
     order.status_history.append(OrderStatusEvent(status="Pending", date=date.today()))

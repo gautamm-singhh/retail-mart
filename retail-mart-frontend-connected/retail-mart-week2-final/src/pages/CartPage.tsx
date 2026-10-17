@@ -2,14 +2,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCart } from "@/features/cart/useCart";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, formatTaxAmount } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
+import { calculateOrderTaxBreakdown } from "@/utils/taxCalculation";
+import { PRODUCT_TAX_REGISTRY } from "@/constants/taxConfig";
 
 export default function CartPage() {
   const { items, subtotal, updateQuantity, removeItem } = useCart();
   const navigate = useNavigate();
   const standardDeliveryFee = 99;
-  const totalAmount = subtotal;
+  const deliveryFee = 0;
+  const discountAmount = 0;
+  const taxBreakdown = calculateOrderTaxBreakdown(items, undefined, discountAmount, deliveryFee);
+  const totalAmount = taxBreakdown.totalPayable;
 
   if (items.length === 0) {
     return (
@@ -71,6 +76,11 @@ export default function CartPage() {
                 </Link>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   Unit price: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(item.price)}</span>
+                  {PRODUCT_TAX_REGISTRY[item.productName] && (
+                    <span className="ml-2 text-[11px] text-slate-400 dark:text-slate-500">
+                      (HSN {PRODUCT_TAX_REGISTRY[item.productName].hsn} • {PRODUCT_TAX_REGISTRY[item.productName].rate}% GST incl.)
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -180,7 +190,15 @@ export default function CartPage() {
                 </span>
               </div>
 
-              {/* 4. GST / Tax Line Item */}
+              {/* 4. Taxable Value */}
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span>Taxable Value (Net Base)</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  {formatTaxAmount(taxBreakdown.taxableValue)}
+                </span>
+              </div>
+
+              {/* 5. GST / Tax Line Item */}
               <div className="rounded-xl bg-slate-50/80 p-3 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-1">
                 <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
                   <div className="flex items-center gap-1.5">
@@ -190,11 +208,14 @@ export default function CartPage() {
                     </span>
                   </div>
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    Included
+                    {formatTaxAmount(taxBreakdown.totalGst)}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Taxes included where applicable
+                </p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                  Estimated for Telangana origin (36). Exact CGST/SGST vs IGST determined at checkout.
                 </p>
               </div>
 

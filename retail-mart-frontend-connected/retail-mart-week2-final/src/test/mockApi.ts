@@ -6,7 +6,7 @@ import { mockOrders } from "@/features/orders/data/orders";
 import { mockPayments } from "@/features/payments/data/payments";
 import { mockShipments } from "@/features/shipping/data/shipments";
 import { ORDER_STATUS_TRANSITIONS } from "@/types";
-import type { Category, Order, OrderStatus, Payment, PaymentStatus, Product, Shipment, User } from "@/types";
+import type { Address, Category, Order, OrderStatus, Payment, PaymentStatus, Product, Shipment, User } from "@/types";
 
 
 const API_BASE = "http://localhost:4000/api";
@@ -19,6 +19,7 @@ let products: Product[] = [];
 let orders: Order[] = [];
 let payments: Payment[] = [];
 let shipments: Shipment[] = [];
+let addresses: Address[] = [];
 
 export function resetMockApi() {
   users = [
@@ -37,6 +38,30 @@ export function resetMockApi() {
   orders = mockOrders.map((o) => ({ ...o, items: [...o.items], statusHistory: [...o.statusHistory] }));
   payments = mockPayments.map((p) => ({ ...p, history: [...p.history] }));
   shipments = mockShipments.map((s) => ({ ...s, trackingHistory: [...s.trackingHistory] }));
+  addresses = [
+    {
+      id: "addr-001",
+      label: "Home (Hyderabad)",
+      line1: "Plot 12, Road No 36, Jubilee Hills",
+      line2: "",
+      city: "Hyderabad",
+      state: "Telangana",
+      postalCode: "500033",
+      phone: "+91 98765 43210",
+      isDefault: true,
+    },
+    {
+      id: "addr-002",
+      label: "Office (Bengaluru)",
+      line1: "45 Koramangala 4th Block",
+      line2: "",
+      city: "Bengaluru",
+      state: "Karnataka",
+      postalCode: "560034",
+      phone: "+91 91234 56789",
+      isDefault: false,
+    },
+  ];
 }
 
 function json(body: unknown, status = 200): Response {
@@ -300,6 +325,39 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
     }
 
     return json(projection);
+  }
+
+  if (path === "/addresses" && method === "GET") {
+    return json(addresses);
+  }
+  if (path === "/addresses" && method === "POST") {
+    const newAddr: Address = {
+      id: `addr-${Date.now()}`,
+      label: String(body.label || "Address"),
+      line1: String(body.line1 || ""),
+      line2: String(body.line2 || ""),
+      city: String(body.city || ""),
+      state: String(body.state || ""),
+      postalCode: String(body.postalCode || ""),
+      phone: String(body.phone || ""),
+      isDefault: Boolean(body.isDefault),
+    };
+    if (newAddr.isDefault) {
+      addresses.forEach((a) => (a.isDefault = false));
+    }
+    addresses.push(newAddr);
+    return json(newAddr, 201);
+  }
+  const addrMatch = /^\/addresses\/([^/]+)$/.exec(path);
+  if (addrMatch && method === "PUT") {
+    const addr = addresses.find((a) => a.id === addrMatch[1]);
+    if (!addr) return json({ error: "Address not found" }, 404);
+    Object.assign(addr, body);
+    return json(addr);
+  }
+  if (addrMatch && method === "DELETE") {
+    addresses = addresses.filter((a) => a.id !== addrMatch[1]);
+    return json(null, 204);
   }
 
   return json({ error: `No mock handler for ${method} ${path}` }, 404);

@@ -206,6 +206,19 @@ class BaseConfig:
     # (e.g. a newer/older model name) - no code change needed either way.
     GEMINI_MODEL = os.environ.get("GEMINI_MODEL")
 
+    # --- GST & Business Tax Settings (Statutory Indian Place-of-Supply) ---
+    SELLER_BUSINESS_NAME = os.environ.get("SELLER_BUSINESS_NAME", "Retail Mart Commerce")
+    SELLER_STATE = os.environ.get("SELLER_STATE", "Telangana")
+    SELLER_STATE_CODE = os.environ.get("SELLER_STATE_CODE", "36")
+    SELLER_COUNTRY = os.environ.get("SELLER_COUNTRY", "India")
+    SELLER_ADDRESS = os.environ.get("SELLER_ADDRESS", "[Pending Registration - Proposed Origin: Hyderabad, Telangana]")
+    # Client GSTIN registration is pending; defaults to None to prevent false tax invoices.
+    SELLER_GSTIN = (os.environ.get("SELLER_GSTIN") or "").strip() or None
+    SELLER_GST_VERIFIED = os.environ.get("SELLER_GST_VERIFIED", "false").lower() in ("true", "1")
+    SELLER_GST_STATUS = os.environ.get("SELLER_GST_STATUS", "PENDING")
+    GST_MODE = os.environ.get("GST_MODE", "preview")
+
+
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True

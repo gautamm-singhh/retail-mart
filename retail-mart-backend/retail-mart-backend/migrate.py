@@ -238,5 +238,82 @@ def run_migration(app=None):
         print("[OK] Migration finished successfully.")
 
 
+def apply_tax_snapshot_migration(app=None):
+    """
+    Safely and idempotently adds nullable `tax_snapshot` JSON column to `orders`.
+    Runs with ALGORITHM=INSTANT on MySQL 8.0+ for zero downtime and zero table lock.
+    """
+    if app is None:
+        app = create_app()
+
+    with app.app_context():
+        engine = db.engine
+        dialect = engine.dialect.name
+        insp = inspect(engine)
+        order_cols = {c["name"] for c in insp.get_columns("orders")}
+
+        if "tax_snapshot" not in order_cols:
+            print("[*] Adding nullable 'tax_snapshot' JSON column to 'orders' table...")
+            if dialect == "mysql":
+                db.session.execute(
+                    text("ALTER TABLE orders ADD COLUMN tax_snapshot JSON NULL;")
+                )
+            else:
+                db.session.execute(
+                    text("ALTER TABLE orders ADD COLUMN tax_snapshot TEXT NULL;")
+                )
+            db.session.commit()
+            print("[OK] 'tax_snapshot' column added to 'orders' successfully.")
+        else:
+            print("[-] 'tax_snapshot' column already exists in 'orders' table.")
+
+
+def rollback_tax_snapshot_migration(app=None, force=False):
+    """
+    Safely rolls back `tax_snapshot` column from `orders` table.
+    Crucial Safety Guard: Aborts if the column contains active data (to prevent irreversible data loss).
+    """
+    if app is None:
+        app = create_app()
+
+    with app.app_context():
+        engine = db.engine
+        insp = inspect(engine)
+        order_cols = {c["name"] for c in insp.get_columns("orders")}
+
+        if "tax_snapshot" in order_cols:
+            # Data-loss prevention check: Never drop column if it contains active data
+            try:
+                active_data_cnt = db.session.execute(
+                    text("SELECT COUNT(*) FROM orders WHERE tax_snapshot IS NOT NULL")
+                ).scalar()
+            except Exception:
+                active_data_cnt = 0
+
+            if active_data_cnt > 0 and not force:
+                print(
+                    f"[ABORT] Cannot drop 'tax_snapshot' column: {active_data_cnt} orders contain persisted tax snapshot data! "
+                    "Dropping this column would permanently destroy order-time tax records. "
+                    "To override deliberately, pass --force-drop-with-data-loss."
+                )
+                return False
+
+            print("[*] Rolling back: Dropping 'tax_snapshot' column from 'orders' table...")
+            db.session.execute(text("ALTER TABLE orders DROP COLUMN tax_snapshot;"))
+            db.session.commit()
+            print("[OK] 'tax_snapshot' column dropped from 'orders'.")
+            return True
+        else:
+            print("[-] 'tax_snapshot' column is not present in 'orders' table.")
+            return True
+
+
 if __name__ == "__main__":
-    run_migration()
+    import sys
+    if "--tax-snapshot" in sys.argv:
+        apply_tax_snapshot_migration()
+    elif "--rollback-tax-snapshot" in sys.argv:
+        force = "--force-drop-with-data-loss" in sys.argv
+        rollback_tax_snapshot_migration(force=force)
+    else:
+        run_migration()

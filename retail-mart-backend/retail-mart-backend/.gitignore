@@ -20,3 +20,8 @@ instance/
 
 # Application logs directory
 logs/
+
+# Database backups and dumps (never commit production or staging dumps)
+backups/
+*.sql
+*.dump

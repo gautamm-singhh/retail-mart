@@ -128,91 +128,178 @@ def _kv_block(pairs: list[tuple[str, str]]):
 
 
 def build_invoice_pdf(order) -> BytesIO:
-    """`order` is an app.models.order.Order instance."""
+    """
+    Builds a professional, statutory-compliant PDF invoice:
+      - Uses verified Telangana seller state configuration.
+      - Displays Place of Supply (POS) and HSN codes for each item.
+      - Generates 'TAX INVOICE' if seller GSTIN is verified, or 'COMMERCIAL INVOICE'
+        if client GST registration is pending.
+      - Bifurcates CGST + SGST (intra-state) or IGST (interstate) without altering order total.
+    """
+    from app.utils.tax import calculate_order_tax_breakdown, get_seller_tax_config
+
     font_reg, font_bold, _ = _get_fonts()
     footer_style = ParagraphStyle("Footer", fontName=font_reg, textColor=MUTED_COLOR, fontSize=8)
 
+    seller_cfg = get_seller_tax_config()
+    is_live_gst = seller_cfg["is_verified_gst"]
+    doc_title = "TAX INVOICE" if is_live_gst else "COMMERCIAL INVOICE"
+
+    # Identify customer state from linked user address if present
+    dest_state = "Telangana"
+    user = getattr(order, "user", None)
+    if user and getattr(user, "addresses", None):
+        dest_state = user.addresses[0].state
+
+    # Historical Invoice Protection: Check for immutable order-time tax snapshot first
+    tax_snapshot = None
+    try:
+        tax_snapshot = getattr(order, "tax_snapshot", None)
+    except Exception:
+        tax_snapshot = None
+
+    is_snapshot_preserved = bool(tax_snapshot and isinstance(tax_snapshot, dict))
+    if is_snapshot_preserved:
+        breakdown = tax_snapshot
+    else:
+        raw_items = [
+            {"productName": item.product_name, "quantity": item.quantity, "price": float(item.price)}
+            for item in order.items
+        ]
+        breakdown = calculate_order_tax_breakdown(
+            items=raw_items,
+            destination_state=dest_state,
+        )
+
     buffer = BytesIO()
     doc = _base_doc(buffer)
-    story = _header("INVOICE", order.id, order.date.strftime("%d %b %Y") if order.date else "")
+    story = _header(doc_title, order.id, order.date.strftime("%d %b %Y") if order.date else "")
+
+    seller_info = [
+        ("SELLER / SUPPLIER", seller_cfg["business_name"]),
+        ("DISPATCH LOCATION", f"{seller_cfg['seller_state']} (State Code: {seller_cfg['seller_state_code']})"),
+    ]
+    if is_live_gst:
+        seller_info.append(("SELLER GSTIN", seller_cfg["seller_gstin"]))
+    else:
+        seller_info.append(("GST REGISTRATION", "Pending Client Registration (Commercial Preview)"))
+
+    tax_record_status = (
+        "Recorded Order-Time Snapshot (Immutable)"
+        if is_snapshot_preserved
+        else "Informational Estimate (Legacy Order - No Snapshot Recorded)"
+    )
+
+    buyer_info = [
+        ("BILLED TO", order.customer),
+        ("EMAIL", order.customer_email),
+        ("PLACE OF SUPPLY", f"{breakdown['destination_state']} (Code: {breakdown['destination_state_code'] or '36'})"),
+        ("SUPPLY TYPE", "Intra-State (Telangana)" if breakdown["is_intra_state"] else f"Inter-State ({breakdown['destination_state']})"),
+        ("TAX RECORD STATUS", tax_record_status),
+    ]
 
     info_table = Table(
         [
             [
-                Table(
-                    [[p] for p in _kv_block([("BILLED TO", order.customer), ("EMAIL", order.customer_email)])],
-                    colWidths=[85 * mm],
-                ),
-                Table(
-                    [[p] for p in _kv_block(
-                        [
-                            ("ORDER STATUS", order.status),
-                            ("PAYMENT STATUS", order.payment_status),
-                        ]
-                    )],
-                    colWidths=[75 * mm],
-                ),
+                Table([[p] for p in _kv_block(seller_info)], colWidths=[80 * mm]),
+                Table([[p] for p in _kv_block(buyer_info)], colWidths=[80 * mm]),
             ]
         ],
-        colWidths=[95 * mm, 75 * mm],
+        colWidths=[85 * mm, 85 * mm],
     )
     story.append(info_table)
     story.append(Spacer(1, 10))
 
-    item_rows = [["Item", "Qty", "Unit Price", "Total"]]
-    for item in order.items:
+    # Item breakdown table with HSN, Taxable Value, Tax Rate, Tax Amount, Gross Total
+    item_rows = [["Item Description", "HSN", "Qty", "Taxable", "GST %", "Tax Amt", "Total"]]
+    for b_item in breakdown["items"]:
         item_rows.append(
-            [item.product_name, str(item.quantity), _money(item.price), _money(item.price * item.quantity)]
+            [
+                b_item["product_name"],
+                b_item["hsn"],
+                str(b_item["quantity"]),
+                _money(b_item["taxable_value"]),
+                f"{int(b_item['gst_rate'])}%",
+                _money(b_item["total_tax"]),
+                _money(b_item["gross_amount"]),
+            ]
         )
 
-    items_table = Table(item_rows, colWidths=[80 * mm, 20 * mm, 35 * mm, 35 * mm])
+    items_table = Table(
+        item_rows,
+        colWidths=[52 * mm, 18 * mm, 14 * mm, 24 * mm, 16 * mm, 22 * mm, 24 * mm],
+    )
     items_table.setStyle(
         TableStyle(
             [
                 ("BACKGROUND", (0, 0), (-1, 0), BRAND_COLOR),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                 ("FONTNAME", (0, 0), (-1, 0), font_bold),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
                 ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
                 ("ALIGN", (0, 0), (0, -1), "LEFT"),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
                 ("GRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
     story.append(items_table)
     story.append(Spacer(1, 10))
 
+    # Summary table with Taxable Base, CGST+SGST or IGST, and Grand Total
+    summary_rows = [
+        ["Total Taxable Value", _money(breakdown["taxable_value"])],
+    ]
+    if breakdown["is_intra_state"]:
+        summary_rows.append(["Central GST (CGST)", _money(breakdown["cgst_amount"])])
+        summary_rows.append(["State GST (SGST - Telangana)", _money(breakdown["sgst_amount"])])
+    else:
+        summary_rows.append([f"Integrated GST (IGST to {breakdown['destination_state']})", _money(breakdown["igst_amount"])])
+
+    summary_rows.append(["Grand Total (Inclusive of All Taxes)", _money(order.amount)])
+
     total_table = Table(
-        [["Total", _money(order.amount)]],
-        colWidths=[135 * mm, 35 * mm],
+        summary_rows,
+        colWidths=[120 * mm, 50 * mm],
     )
     total_table.setStyle(
         TableStyle(
             [
-                ("FONTNAME", (0, 0), (-1, -1), font_bold),
-                ("FONTSIZE", (0, 0), (-1, -1), 12),
+                ("FONTNAME", (0, 0), (-1, -1), font_reg),
+                ("FONTNAME", (0, -1), (-1, -1), font_bold),
+                ("FONTSIZE", (0, 0), (-1, -2), 9),
+                ("FONTSIZE", (0, -1), (-1, -1), 11),
                 ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-                ("LINEABOVE", (0, 0), (-1, 0), 1, BRAND_COLOR),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("LINEABOVE", (0, -1), (-1, -1), 1, BRAND_COLOR),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
     story.append(total_table)
-    story.append(Spacer(1, 30))
-    story.append(
-        Paragraph(
-            "This invoice was generated automatically by Retail Mart's admin console and "
-            "does not require a signature.",
-            footer_style,
+    story.append(Spacer(1, 25))
+
+    if is_live_gst:
+        disclaimer = (
+            "This is an official computer-generated GST Tax Invoice issued under Section 31 of "
+            "the CGST Act, 2017. Input tax credit is available to eligible registered recipients."
         )
-    )
+    else:
+        disclaimer = (
+            "Commercial Sale Voucher: Client GST registration is pending. Tax figures are provided as "
+            "statutory reverse-calculation previews from tax-inclusive selling prices. Valid without signature."
+        )
+
+    story.append(Paragraph(disclaimer, footer_style))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
+
 
 
 def build_receipt_pdf(payment, receipt) -> BytesIO:

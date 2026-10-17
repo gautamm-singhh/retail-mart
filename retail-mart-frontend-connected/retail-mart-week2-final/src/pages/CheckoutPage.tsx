@@ -12,11 +12,13 @@ import { useRazorpayCheckout } from "@/features/razorpay/useRazorpayCheckout";
 import { createOrder } from "@/services/api/orders";
 import { useToast } from "@/hooks/useToast";
 import type { AddressFormValues } from "@/types";
-import { formatCurrency } from "@/utils/format";
+import { formatCurrency, formatTaxAmount } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
+import { calculateOrderTaxBreakdown } from "@/utils/taxCalculation";
+import { SELLER_TAX_PROFILE, PRODUCT_TAX_REGISTRY } from "@/constants/taxConfig";
 
 export default function CheckoutPage() {
-  const { items, subtotal, clear } = useCart();
+  const { items, clear } = useCart();
   const { addresses, isLoading, error, addAddress } = useAddresses();
   const { currentUser } = useAuth();
   const { payWithRazorpay } = useRazorpayCheckout();
@@ -29,14 +31,23 @@ export default function CheckoutPage() {
 
   const effectiveSelectedId =
     selectedAddressId ?? addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? null;
+  const effectiveSelectedAddress = addresses.find((a) => a.id === effectiveSelectedId) ?? null;
 
   // Pricing breakdown (Prices are tax-inclusive MRP standard)
   const deliveryCharge = 0; // Free Express Delivery
   const standardDeliveryFee = 99; // Standard carrier fee crossed out to highlight savings
   const discountAmount = 0; // Base discount (₹0)
 
+  // Real-time authoritative Place of Supply & Tax Calculation
+  const taxBreakdown = calculateOrderTaxBreakdown(
+    items,
+    effectiveSelectedAddress?.state,
+    discountAmount,
+    deliveryCharge,
+  );
+
   // Final Total Amount = Subtotal + Delivery Charges - Discount
-  const totalAmount = subtotal + deliveryCharge - discountAmount;
+  const totalAmount = taxBreakdown.totalPayable;
 
   if (items.length === 0) {
     return (
@@ -65,6 +76,7 @@ export default function CheckoutPage() {
       const order = await createOrder({
         customer: currentUser.name,
         customerEmail: currentUser.email ?? "",
+        destinationState: effectiveSelectedAddress?.state,
         items: items.map((item) => ({
           productName: item.productName,
           quantity: item.quantity,
@@ -290,7 +302,9 @@ export default function CheckoutPage() {
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                     <span className="block text-[10px] text-slate-400 dark:text-slate-500">
-                      Taxes included
+                      {PRODUCT_TAX_REGISTRY[item.productName]
+                        ? `Taxes included • HSN ${PRODUCT_TAX_REGISTRY[item.productName].hsn} (${PRODUCT_TAX_REGISTRY[item.productName].rate}%)`
+                        : "Taxes included"}
                     </span>
                   </div>
                 </li>
@@ -334,7 +348,7 @@ export default function CheckoutPage() {
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
                 <span>Items Subtotal ({items.length} {items.length === 1 ? "item" : "items"})</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {formatCurrency(subtotal)}
+                  {formatCurrency(taxBreakdown.subtotal)}
                 </span>
               </div>
 
@@ -362,20 +376,100 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
-              {/* 4. GST / Tax Line Item */}
-              <div className="rounded-xl bg-slate-50/80 p-3 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-1">
+              {/* 4. Taxable Value (Net Goods Base) */}
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span>Taxable Value (Net Base)</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  {formatTaxAmount(taxBreakdown.taxableValue)}
+                </span>
+              </div>
+
+              {/* 5. Statutory GST / Taxes Breakdown */}
+              <div className="rounded-xl bg-slate-50/90 p-3.5 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-slate-900 dark:text-slate-100">Estimated GST / Taxes</span>
-                    <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                      Estimated GST / Taxes
+                    </span>
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-100/80 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
                       Included
                     </span>
                   </div>
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    Included
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                    {formatTaxAmount(taxBreakdown.totalGst)}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+
+                {/* Place of Supply indicator */}
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <span>Place of Supply:</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {taxBreakdown.isPlaceOfSupplyIntra
+                      ? `Intra-State (${SELLER_TAX_PROFILE.state} → ${taxBreakdown.destinationState})`
+                      : `Inter-State (${SELLER_TAX_PROFILE.state} → ${taxBreakdown.destinationState})`}
+                  </span>
+                </div>
+
+                {/* CGST + SGST or IGST line items */}
+                <div className="space-y-1.5 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-xs">
+                  {taxBreakdown.isPlaceOfSupplyIntra ? (
+                    <>
+                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <span>• CGST (Central Tax):</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          {formatTaxAmount(taxBreakdown.cgstAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                        <span>• SGST (State Tax):</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          {formatTaxAmount(taxBreakdown.sgstAmount)}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                      <span>• IGST (Integrated Tax):</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {formatTaxAmount(taxBreakdown.igstAmount)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Slabs summary (HSN verified) */}
+                {taxBreakdown.slabs.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 block">
+                      Product Tax Slabs (HSN Verified):
+                    </span>
+                    {taxBreakdown.slabs.map((slab) => (
+                      <div key={slab.hsn} className="flex items-center justify-between">
+                        <span>HSN {slab.hsn} ({slab.rate}%):</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          Taxable: {formatTaxAmount(slab.taxableValue)} | Tax: {formatTaxAmount(slab.totalTax)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Statutory Pending Registration Notice */}
+                <div className="mt-2 rounded-lg bg-amber-50/90 p-2.5 text-[11px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 border border-amber-200/70 dark:border-amber-800/50">
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-xs">ℹ️</span>
+                    <div>
+                      <p className="font-bold">
+                        GST Registration in Progress (Preview Mode)
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+                        Seller GSTIN: Pending client registration. Breakdown reflects statutory tax estimates based on official HSN rates. Official GST is not separately charged.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center">
                   Taxes included where applicable
                 </p>
               </div>
@@ -388,7 +482,7 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
-              {/* 5. Total Amount (Prominent Highlight Box) */}
+              {/* 6. Total Amount (Prominent Highlight Box) */}
               <div className="mt-3 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white shadow-md dark:from-slate-800 dark:to-slate-950 border border-slate-800 dark:border-slate-700">
                 <div className="flex items-baseline justify-between">
                   <div>
