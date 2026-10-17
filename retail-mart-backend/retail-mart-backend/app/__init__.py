@@ -2,7 +2,7 @@
 Retail Mart - Backend API
 Application factory. Wires together config, extensions and blueprints.
 
-Owner: Sorav (BackEnd) - Week 2 / API Development
+
 Matches: Retail_Mart_ERD.pdf (Users, Categories, Products, Product_Variants,
 Orders, Order_Items, Payments, Receipts, Shipments, Shipment_Status_Hist,
 Order_Status_Hist) and the JSON shapes already coded into the Week-2
@@ -10,11 +10,20 @@ frontend's src/types/*.ts so the React app can be pointed at this API by
 just implementing services/api/client.ts's `request()` with fetch().
 """
 
-from flask import Flask, jsonify
+import logging
+import time
+import uuid
+
+from flask import Flask, jsonify, g, request
 from flask_cors import CORS
 
 from app.config import get_config
 from app.extensions import db, jwt
+
+# Module-level logger — used by the error handlers and request hooks below.
+# The 'retail_mart' logger is configured in configure_logging(); all child
+# loggers (logging.getLogger(__name__) in route modules) inherit from it.
+logger = logging.getLogger("retail_mart")
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -27,6 +36,10 @@ def create_app(config_name: str | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(get_config(config_name))
 
+    # --- logging (must come early so all downstream code has a logger) ----
+    from app.utils.logging_config import configure_logging
+    configure_logging(app)
+
     # --- extensions -------------------------------------------------
     db.init_app(app)
     jwt.init_app(app)
@@ -38,7 +51,8 @@ def create_app(config_name: str | None = None) -> Flask:
         # invoice/receipt PDF downloads rely on reading this header
         # client-side to get the suggested filename, so it must be listed
         # here explicitly or every download falls back to a generic name.
-        expose_headers=["Content-Disposition"],
+        # X-Request-ID is also exposed so clients can trace failed requests.
+        expose_headers=["Content-Disposition", "X-Request-ID"],
     )
 
     # --- blueprints ---------------------------------------------------
@@ -78,9 +92,94 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(couriers_bp, url_prefix="/api/couriers")
     app.register_blueprint(wishlist_bp, url_prefix="/api/wishlist")
 
+    # --- request / response logging hooks -----------------------------------
+
+    @app.before_request
+    def _before_request():
+        """
+        Assign a correlation / request ID for the lifetime of this request.
+
+        Priority:
+          1. Honour an incoming ``X-Request-ID`` header (allows upstream
+             load-balancers or clients to supply their own trace ID).
+          2. Otherwise generate a new UUID4 (short 8-char prefix for readability).
+
+        The ID is stored on Flask's ``g`` object so:
+          - The ``RequestIdFilter`` in logging_config.py can embed it in every
+            log line for this request.
+          - ``_after_request`` can echo it back in the response header.
+        """
+        incoming = request.headers.get("X-Request-ID", "").strip()
+        g.request_id = incoming if incoming else uuid.uuid4().hex[:8]
+        g._start_time = time.monotonic()
+
+    @app.after_request
+    def _after_request(response):
+        """
+        Attach ``X-Request-ID`` to every response and emit a structured
+        request log line.
+
+        Log format:
+            INFO  retail_mart [req=8f21] GET /api/products 200 42ms
+        """
+        request_id = getattr(g, "request_id", "-")
+        response.headers["X-Request-ID"] = request_id
+
+        duration_ms = 0
+        if hasattr(g, "_start_time"):
+            duration_ms = int((time.monotonic() - g._start_time) * 1000)
+
+        status_code = response.status_code
+        log_level = (
+            logging.WARNING if status_code >= 400 else logging.INFO
+        )
+        logger.log(
+            log_level,
+            "%s %s %s %dms",
+            request.method,
+            request.path,
+            status_code,
+            duration_ms,
+        )
+        return response
+
+    @app.teardown_request
+    def _teardown_request(exc):
+        """Log unhandled exceptions that bypass the error handlers (rare)."""
+        if exc is not None:
+            logger.exception(
+                "Unhandled exception during teardown: %s", exc
+            )
+
     # --- health check ---------------------------------------------------
     @app.get("/api/health")
     def health():
+        """
+        API Health Check
+        Check the operational status of the Retail Mart API backend and database connection. Returns service status and database connectivity. Public API — no login required.
+        ---
+        tags:
+          - System
+        responses:
+          200:
+            description: Request successful. Service is healthy and database connection status is returned.
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: ok
+                service:
+                  type: string
+                  example: retail-mart-backend
+                database:
+                  type: string
+                  example: connected
+                  enum: [connected, disconnected]
+                db_error:
+                  type: string
+                  example: OperationalError
+        """
         res = {"status": "ok", "service": "retail-mart-backend"}
         try:
             db.session.execute(db.text("SELECT 1"))
@@ -93,6 +192,59 @@ def create_app(config_name: str | None = None) -> Flask:
     # --- safe database diagnostics --------------------------------------
     @app.get("/api/db-diagnostics")
     def db_diagnostics():
+        """
+        Database Connectivity & Schema Diagnostics
+        Check detailed database connection information, active database dialect, and existing tables. Returns database diagnostics and total user count. Public API — no login required.
+        ---
+        tags:
+          - System
+        responses:
+          200:
+            description: Request successful. Returns database diagnostics and connection details.
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: healthy
+                database_configured:
+                  type: boolean
+                  example: true
+                dialect:
+                  type: string
+                  example: sqlite
+                driver:
+                  type: string
+                  example: pysqlite
+                select_1:
+                  type: string
+                  example: ok
+                tables_found:
+                  type: array
+                  items:
+                    type: string
+                  example: ["campaigns", "categories", "couriers", "orders", "payments", "products", "shipments", "users", "wishlist_items"]
+                expected_tables_present:
+                  type: boolean
+                  example: true
+                user_count:
+                  type: integer
+                  example: 10
+          500:
+            description: Database connection error or diagnostic failure.
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: error
+                error_type:
+                  type: string
+                  example: OperationalError
+                error_message:
+                  type: string
+                  example: could not connect to server
+        """
         from sqlalchemy import inspect
         report = {
             "status": "testing",
@@ -123,18 +275,29 @@ def create_app(config_name: str | None = None) -> Flask:
             report["error_message"] = str(exc).split("\n")[0]
             return jsonify(report), 500
 
+    # --- swagger documentation ------------------------------------------
+    from app.swagger import init_swagger
+    init_swagger(app)
+
     # --- error handlers ---------------------------------------------------
     @app.errorhandler(404)
     def not_found(_e):
+        logger.debug("404 Not found: %s %s", request.method, request.path)
         return jsonify({"error": "Not found"}), 404
 
     @app.errorhandler(400)
     def bad_request(e):
+        logger.debug(
+            "400 Bad request: %s %s - %s",
+            request.method,
+            request.path,
+            e.description if hasattr(e, "description") else e,
+        )
         return jsonify({"error": str(e.description) if hasattr(e, "description") else "Bad request"}), 400
 
     @app.errorhandler(500)
     def server_error(e):
-        app.logger.error("500 Internal server error: %s", str(e), exc_info=True)
+        logger.exception("500 Internal server error on %s %s: %s", request.method, request.path, e)
         return jsonify({
             "error": "Internal server error",
             "message": str(e) if app.config.get("DEBUG") else "An internal server error occurred."
@@ -142,7 +305,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
     @app.errorhandler(Exception)
     def handle_unhandled_exception(e):
-        app.logger.error("Unhandled exception: %s", str(e), exc_info=True)
+        logger.exception("Unhandled exception on %s %s: %s", request.method, request.path, e)
         return jsonify({
             "error": "Internal server error",
             "message": str(e) if app.config.get("DEBUG") else "An internal server error occurred."

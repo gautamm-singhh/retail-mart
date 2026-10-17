@@ -68,7 +68,6 @@ export function AnalyticsProjectionChart({
 
   const maxValue = useMemo(() => {
     const rawMax = Math.max(...combined.map((c) => c.value), 100);
-    // Round up to clean ceiling for readable Y-axis ticks
     if (rawMax <= 1000) return 1000;
     if (rawMax <= 10000) return Math.ceil(rawMax / 2000) * 2000;
     if (rawMax <= 50000) return Math.ceil(rawMax / 10000) * 10000;
@@ -76,7 +75,6 @@ export function AnalyticsProjectionChart({
     return Math.ceil(rawMax / 100000) * 100000;
   }, [combined]);
 
-  // Chart bounds
   const width = 800;
   const height = 300;
   const padding = { top: 30, right: 35, bottom: 45, left: 65 };
@@ -109,7 +107,6 @@ export function AnalyticsProjectionChart({
     "",
   );
 
-  // Area under curve
   const areaPath = useMemo(() => {
     if (points.length === 0) return "";
     const firstX = points[0].x.toFixed(1);
@@ -134,9 +131,7 @@ export function AnalyticsProjectionChart({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Chart Top Controls & Legend Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Legend */}
         <div className="flex items-center gap-5 text-xs font-medium">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-blue-600 shadow-xs" />
@@ -154,7 +149,6 @@ export function AnalyticsProjectionChart({
           </div>
         </div>
 
-        {/* Callout Chip & View Switcher */}
         <div className="flex items-center gap-3">
           {peakProjected && (
             <div className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200/80 bg-purple-50/80 px-3 py-1.5 text-xs font-semibold text-purple-700 shadow-2xs dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-300">
@@ -176,28 +170,24 @@ export function AnalyticsProjectionChart({
         </div>
       </div>
 
-      {/* Interactive SVG Canvas */}
       <div className="relative w-full overflow-hidden rounded-xl bg-slate-50/50 p-2 dark:bg-slate-900/50">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="h-auto w-full overflow-visible select-none"
         >
           <defs>
-            {/* Area gradient */}
             <linearGradient id={`revGrad-${chartId}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.22" />
               <stop offset="60%" stopColor="#3B82F6" stopOpacity="0.08" />
               <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
             </linearGradient>
 
-            {/* Projection Area Mask */}
             <linearGradient id={`projGrad-${chartId}`} x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#3B82F6" />
               <stop offset="100%" stopColor="#8B5CF6" />
             </linearGradient>
           </defs>
 
-          {/* Grid lines and Y-axis text */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
             const y = padding.top + chartH * (1 - ratio);
             const val = maxValue * ratio;
@@ -230,12 +220,10 @@ export function AnalyticsProjectionChart({
             );
           })}
 
-          {/* Area Fill */}
           {chartMode === "area" && areaPath && (
             <path d={areaPath} fill={`url(#revGrad-${chartId})`} />
           )}
 
-          {/* Historical Solid Line */}
           {histPath && (
             <path
               d={histPath}
@@ -248,7 +236,6 @@ export function AnalyticsProjectionChart({
             />
           )}
 
-          {/* Projected Dashed Line */}
           {bridgePath && (
             <path
               d={bridgePath}
@@ -262,7 +249,6 @@ export function AnalyticsProjectionChart({
             />
           )}
 
-          {/* Hover Column Guide */}
           {hoveredIdx !== null && points[hoveredIdx] && (
             <line
               x1={points[hoveredIdx].x}
@@ -276,7 +262,6 @@ export function AnalyticsProjectionChart({
             />
           )}
 
-          {/* Interactive Point Nodes */}
           {points.map((pt, idx) => {
             const isProjected = pt.type === "Projected";
             const isHovered = hoveredIdx === idx;
@@ -287,10 +272,8 @@ export function AnalyticsProjectionChart({
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
               >
-                {/* Hit target */}
                 <circle cx={pt.x} cy={pt.y} r="14" fill="transparent" />
 
-                {/* Point Halo */}
                 {isHovered && (
                   <circle
                     cx={pt.x}
@@ -301,7 +284,6 @@ export function AnalyticsProjectionChart({
                   />
                 )}
 
-                {/* Visible node */}
                 <circle
                   cx={pt.x}
                   cy={pt.y}
@@ -312,7 +294,6 @@ export function AnalyticsProjectionChart({
                   className="transition-transform duration-150 dark:fill-slate-900"
                 />
 
-                {/* X-axis Period Label */}
                 <text
                   x={pt.x}
                   y={height - 15}
@@ -332,7 +313,6 @@ export function AnalyticsProjectionChart({
           })}
         </svg>
 
-        {/* Hover Tooltip Overlay */}
         {hoveredIdx !== null && points[hoveredIdx] && (
           <div
             className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-xl border border-slate-200/90 bg-white/95 px-3 py-2 text-xs shadow-xl backdrop-blur-md transition-all duration-150 dark:border-slate-800 dark:bg-slate-900/95"

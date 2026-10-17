@@ -10,6 +10,36 @@ products_bp = Blueprint("products", __name__)
 
 @products_bp.get("")
 def list_products():
+    """
+    List Products
+    Get the list of available products with their basic details such as name, price, category, and availability. Public API — no login required.
+    ---
+    tags:
+      - Products
+    parameters:
+      - in: query
+        name: category
+        type: string
+        required: false
+        description: Filter products by category name (e.g. Electronics).
+      - in: query
+        name: status
+        type: string
+        required: false
+        description: Filter by status (active, inactive, out-of-stock).
+      - in: query
+        name: search
+        type: string
+        required: false
+        description: Search query matching product name or SKU.
+    responses:
+      200:
+        description: Request successful. Returns the list of products matching the filters.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Product'
+    """
     query = Product.query
     category = request.args.get("category")
     status = request.args.get("status")
@@ -29,6 +59,28 @@ def list_products():
 
 @products_bp.get("/<product_id>")
 def get_product(product_id):
+    """
+    Get Product by ID
+    Get the details of a specific product using its product ID. Public API — no login required.
+    ---
+    tags:
+      - Products
+    parameters:
+      - in: path
+        name: product_id
+        type: string
+        required: true
+        description: Unique product ID (e.g. p-1001).
+    responses:
+      200:
+        description: Request successful. Returns the requested product details.
+        schema:
+          $ref: '#/definitions/Product'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     product = Product.query.get(product_id)
     if not product:
         return jsonify({"error": "Product not found"}), 404
@@ -38,6 +90,80 @@ def get_product(product_id):
 @products_bp.post("")
 @roles_required("Admin", "Manager")
 def create_product():
+    """
+    Create Product
+    Create a new product by sending its details in the request body. Admin or Manager access required.
+    ---
+    tags:
+      - Products
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter product details including name, SKU, category, price, and initial stock.
+        schema:
+          type: object
+          required:
+            - name
+            - sku
+            - category
+            - price
+          properties:
+            name:
+              type: string
+              description: Product display name.
+              example: Wireless Noise-Canceling Headphones
+            sku:
+              type: string
+              description: Unique product inventory SKU code.
+              example: ELEC-WNC-001
+            category:
+              type: string
+              description: Category name (e.g. Electronics).
+              example: Electronics
+            description:
+              type: string
+              description: Product description.
+              example: Premium over-ear headphones with active noise cancellation.
+            price:
+              type: number
+              description: Product price.
+              example: 2999.0
+            stock:
+              type: integer
+              description: Available inventory quantity.
+              example: 45
+            status:
+              type: string
+              description: Product availability status.
+              example: active
+              enum: [active, inactive, out-of-stock]
+            imageUrl:
+              type: string
+              description: Product image URL.
+              example: https://images.unsplash.com/photo-1505740420928-5e560c06d30e
+    responses:
+      201:
+        description: Product created successfully.
+        schema:
+          $ref: '#/definitions/Product'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: A product with this SKU already exists.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
     sku = (data.get("sku") or "").strip()
@@ -80,6 +206,80 @@ def create_product():
 @products_bp.put("/<product_id>")
 @roles_required("Admin", "Manager")
 def update_product(product_id):
+    """
+    Update Product
+    Update an existing product's details such as price, stock, or status using its product ID. Admin or Manager access required.
+    ---
+    tags:
+      - Products
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: product_id
+        type: string
+        required: true
+        description: Unique product ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the product fields you want to update.
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Updated product name.
+              example: Wireless Noise-Canceling Headphones Gen 2
+            sku:
+              type: string
+              description: Updated SKU code.
+              example: ELEC-WNC-001
+            category:
+              type: string
+              description: Updated category name.
+              example: Electronics
+            description:
+              type: string
+              description: Updated product description.
+              example: Upgraded drivers and 40h battery life.
+            price:
+              type: number
+              description: Updated price.
+              example: 3299.0
+            stock:
+              type: integer
+              description: Updated inventory stock.
+              example: 50
+            status:
+              type: string
+              description: Updated product status.
+              example: active
+              enum: [active, inactive, out-of-stock]
+            imageUrl:
+              type: string
+              description: Updated image URL.
+              example: https://images.unsplash.com/photo-1505740420928-5e560c06d30e
+    responses:
+      200:
+        description: Product updated successfully.
+        schema:
+          $ref: '#/definitions/Product'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     product = Product.query.get(product_id)
     if not product:
         return jsonify({"error": "Product not found"}), 404
@@ -117,6 +317,36 @@ def update_product(product_id):
 @products_bp.delete("/<product_id>")
 @roles_required("Admin")
 def delete_product(product_id):
+    """
+    Delete Product
+    Delete a product using its product ID. Admin access required.
+    ---
+    tags:
+      - Products
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: product_id
+        type: string
+        required: true
+        description: Unique product ID to delete.
+    responses:
+      204:
+        description: Product deleted successfully.
+        schema:
+          type: string
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     product = Product.query.get(product_id)
     if not product:
         return jsonify({"error": "Product not found"}), 404

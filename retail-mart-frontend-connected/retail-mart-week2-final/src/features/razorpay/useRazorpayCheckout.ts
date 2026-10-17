@@ -4,8 +4,6 @@ import type { Payment } from "@/types";
 
 const CHECKOUT_SCRIPT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
-// Module-level cache so the RazorPay script tag is only ever injected once,
-// no matter how many times payWithRazorpay() is called across the app.
 let checkoutScriptPromise: Promise<void> | null = null;
 
 function loadCheckoutScript(): Promise<void> {
@@ -39,18 +37,6 @@ declare global {
   }
 }
 
-/**
- * One hook for the whole RazorPay checkout flow: create order -> open
- * widget -> verify signature -> return the updated (Paid) Payment.
- *
- * In dev (no real RAZORPAY_KEY_ID configured on the backend - see that
- * project's README), the create-order response comes back with
- * `live: false` and this skips loading RazorPay's real widget entirely,
- * verifying immediately with a mock signature instead. This means the
- * full checkout flow, including the "money changes hands" UI state, is
- * testable with zero RazorPay account setup. Going live later requires no
- * changes here - only the backend's two env vars.
- */
 export function useRazorpayCheckout() {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -61,7 +47,6 @@ export function useRazorpayCheckout() {
       return createRazorpayOrder(paymentId)
         .then((order) => {
           if (!order.live) {
-            // Mock mode: simulate an instant successful payment.
             return verifyRazorpayPayment({
               paymentId,
               razorpayOrderId: order.razorpayOrderId,

@@ -1,8 +1,3 @@
-/**
- * Postal PIN code lookup service for Indian addresses.
- * Uses official Indian Postal Pincode API with in-memory memoization cache
- * and fail-safe timeout handling.
- */
 
 export interface PincodeLookupResult {
   city: string;
@@ -22,7 +17,6 @@ export async function lookupPincode(
     return null;
   }
 
-  // Return from in-memory cache if previously resolved
   if (cache.has(cleanPin)) {
     return cache.get(cleanPin)!;
   }
@@ -50,7 +44,6 @@ export async function lookupPincode(
       data[0].PostOffice.length > 0
     ) {
       const offices = data[0].PostOffice;
-      // Prefer Head Post Office or Delivery office if available, otherwise first office
       const primaryOffice =
         offices.find(
           (o: { DeliveryStatus?: string }) => o.DeliveryStatus === "Delivery",
@@ -60,7 +53,6 @@ export async function lookupPincode(
       const state = (primaryOffice.State || "").trim();
       const officeName = (primaryOffice.Name || "").trim();
 
-      // For city, use District (standard across India) or office name
       const city = district || officeName;
 
       if (city && state) {

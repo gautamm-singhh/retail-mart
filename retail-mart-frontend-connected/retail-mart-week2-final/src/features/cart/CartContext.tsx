@@ -25,13 +25,6 @@ function readStoredCart(): CartItem[] {
   }
 }
 
-/**
- * The cart is intentionally client-side only (localStorage), not a backend
- * resource - see the frontend README's "Week 4: Customer storefront"
- * section for why. It survives page refreshes but not a different device.
- * Checkout is the only place this talks to the API, via a single
- * POST /orders call built from `items`.
- */
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => readStoredCart());
 
@@ -39,7 +32,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch {
-      // Storage can fail (quota, private mode) - the cart just won't persist across reloads.
+      /* ignore */
     }
   }, [items]);
 

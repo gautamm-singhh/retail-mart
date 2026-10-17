@@ -155,7 +155,6 @@ export default function ShippingPage() {
         }
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminStatCard
           label="Total Shipments"

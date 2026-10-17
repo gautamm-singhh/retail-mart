@@ -88,10 +88,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-200">
-      {/* ── 1. Animated Checkout Progress Stepper ── */}
       <nav aria-label="Checkout progress" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
-          {/* Step 1: Cart (Completed) */}
           <Link
             to={ROUTES.cart}
             className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 group"
@@ -102,10 +100,8 @@ export default function CheckoutPage() {
             <span className="hidden sm:inline">Shopping Cart</span>
           </Link>
 
-          {/* Connector Line 1 (Active/Completed) */}
           <div className="flex-1 mx-3 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full" />
 
-          {/* Step 2: Delivery Details (Active) */}
           <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
             <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm ring-4 ring-emerald-500/20">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-25" />
@@ -114,10 +110,8 @@ export default function CheckoutPage() {
             <span className="hidden sm:inline">Delivery Address</span>
           </div>
 
-          {/* Connector Line 2 */}
           <div className="flex-1 mx-3 h-0.5 bg-slate-200 dark:bg-slate-800 rounded-full" />
 
-          {/* Step 3: Payment & Confirmation */}
           <div className="flex items-center gap-2 text-xs font-medium text-slate-400 dark:text-slate-500">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 font-semibold text-[11px]">
               3
@@ -127,7 +121,6 @@ export default function CheckoutPage() {
         </div>
       </nav>
 
-      {/* Header Info */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-800/90">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
@@ -146,9 +139,7 @@ export default function CheckoutPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-        {/* Main Details Column */}
         <div className="flex flex-col gap-6 lg:col-span-8">
-          {/* Delivery Address Section */}
           <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -228,7 +219,6 @@ export default function CheckoutPage() {
             )}
           </section>
 
-          {/* Order Items Review Section */}
           <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
             <div className="flex items-center gap-2 mb-4">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-xs font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
@@ -255,7 +245,6 @@ export default function CheckoutPage() {
           </section>
         </div>
 
-        {/* Order Summary Column */}
         <div className="lg:col-span-4">
           <div className="sticky top-20 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
             <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -318,7 +307,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Processing Order Backdrop */}
       {isPlacingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs animate-in fade-in-50">
           <div className="flex flex-col items-center gap-3 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 text-center max-w-xs mx-4">

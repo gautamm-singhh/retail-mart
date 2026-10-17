@@ -18,9 +18,6 @@ import type { Payment } from "@/types";
 import { formatCurrency, formatDate } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 
-// "Refunded" is deliberately not offered here - refunds have their own tab
-// and their own view (RefundsPage). See the README's "Payments vs Refunds"
-// section for why, and usePayments() for how the two lists are derived.
 const STATUS_OPTIONS = [
   { label: "All statuses", value: "all" },
   { label: "Pending", value: "Pending" },
@@ -150,7 +147,6 @@ export default function PaymentsPage() {
         description="Review incoming customer payments, verification state, transaction methods, and receipts."
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminStatCard
           label="Total Transactions"

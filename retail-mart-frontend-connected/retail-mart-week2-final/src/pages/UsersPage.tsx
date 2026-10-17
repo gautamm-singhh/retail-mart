@@ -200,7 +200,6 @@ export default function UsersPage() {
         }
       />
 
-      {/* KPI Stats Grid: Total Accounts, Administrators, Managers, Staff */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminStatCard
           label="Total Accounts"

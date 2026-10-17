@@ -52,6 +52,7 @@ class FakeReceipt:
         self.issued_at = datetime(2026, 9, 20, 14, 45)
 
 
+
 class TestPaymentReceiptPdf(unittest.TestCase):
     def test_build_receipt_pdf_with_items(self):
         items = [

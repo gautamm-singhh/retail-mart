@@ -32,7 +32,6 @@ export default function ShipmentDetailsPage() {
       trackShipment(id)
         .then((data) => setTrackingData(data))
         .catch(() => {
-          // fallback to local shipment data
         });
     }
   }, [id, shipment?.status]);
@@ -148,7 +147,6 @@ export default function ShipmentDetailsPage() {
         }
       />
 
-      {/* Visual Logistics Milestone Stepper Timeline */}
       <Card className="p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -167,7 +165,6 @@ export default function ShipmentDetailsPage() {
 
               return (
                 <div key={stage.key} className="flex flex-col items-center text-center relative">
-                  {/* Connecting horizontal line */}
                   {idx < STAGES.length - 1 && (
                     <div
                       className={`absolute top-4 left-1/2 w-full h-1 -z-0 transition-colors duration-300 ${
@@ -178,7 +175,6 @@ export default function ShipmentDetailsPage() {
                     />
                   )}
 
-                  {/* Stage Node */}
                   <div
                     className={`relative z-10 flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-sm font-bold shadow-xs transition-all duration-300 ${
                       isCompleted
@@ -191,7 +187,6 @@ export default function ShipmentDetailsPage() {
                     {isCompleted ? "✓" : stage.icon}
                   </div>
 
-                  {/* Label */}
                   <span
                     className={`mt-2.5 text-[11px] sm:text-xs font-bold leading-tight ${
                       isCurrent
@@ -204,7 +199,6 @@ export default function ShipmentDetailsPage() {
                     {stage.label}
                   </span>
 
-                  {/* Timestamp if available */}
                   {timestamp && (
                     <span className="mt-0.5 hidden text-[10px] text-slate-400 sm:block">
                       {formatDate(timestamp)}
@@ -259,7 +253,6 @@ export default function ShipmentDetailsPage() {
             </div>
           </dl>
 
-          {/* External Carrier Integration Card */}
           {ext && (
             <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/60">
               <div className="flex flex-wrap items-center justify-between gap-2">

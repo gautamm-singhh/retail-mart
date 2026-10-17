@@ -14,13 +14,13 @@ interface CategoryDonutChartProps {
 }
 
 const CATEGORY_COLORS = [
-  "#10B981", // Emerald
-  "#3B82F6", // Blue
-  "#F59E0B", // Amber
-  "#EC4899", // Pink
-  "#8B5CF6", // Purple
-  "#06B6D4", // Cyan
-  "#64748B", // Slate
+  "#10B981",
+  "#3B82F6",
+  "#F59E0B",
+  "#EC4899",
+  "#8B5CF6",
+  "#06B6D4",
+  "#64748B",
 ];
 
 export function CategoryDonutChart({ data, totalRevenue }: CategoryDonutChartProps) {
@@ -35,7 +35,7 @@ export function CategoryDonutChart({ data, totalRevenue }: CategoryDonutChartPro
     if (!data.length || calculatedTotal <= 0) return [];
 
     let currentOffset = 0;
-    const circumference = 2 * Math.PI * 45; // r = 45
+    const circumference = 2 * Math.PI * 45;
 
     return data.map((item, idx) => {
       const percentage = (item.totalSpent / calculatedTotal) * 100;
@@ -66,7 +66,6 @@ export function CategoryDonutChart({ data, totalRevenue }: CategoryDonutChartPro
 
   return (
     <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-      {/* SVG Donut Circle */}
       <div className="relative mx-auto flex h-48 w-48 shrink-0 items-center justify-center">
         <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90 transform">
           <circle
@@ -96,7 +95,6 @@ export function CategoryDonutChart({ data, totalRevenue }: CategoryDonutChartPro
           ))}
         </svg>
 
-        {/* Center Metric Text */}
         <div className="pointer-events-none absolute flex flex-col items-center justify-center text-center">
           <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
             {hoveredIndex !== null && segments[hoveredIndex]
@@ -111,7 +109,6 @@ export function CategoryDonutChart({ data, totalRevenue }: CategoryDonutChartPro
         </div>
       </div>
 
-      {/* Categories Legend List */}
       <div className="flex flex-1 flex-col gap-2.5">
         {segments.slice(0, 5).map((seg, idx) => (
           <div

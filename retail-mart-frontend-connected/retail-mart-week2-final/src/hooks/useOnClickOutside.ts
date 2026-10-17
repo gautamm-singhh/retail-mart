@@ -1,11 +1,5 @@
 import { RefObject, useEffect } from "react";
 
-/**
- * Calls `handler` when a pointer event happens outside `ref`'s element.
- * Generic so it can be reused by any future dropdown/popover, not just the
- * profile menu. Pass `enabled = false` to skip attaching listeners when the
- * element isn't open - there's no reason to listen globally while closed.
- */
 export function useOnClickOutside<T extends HTMLElement>(
   ref: RefObject<T>,
   handler: () => void,

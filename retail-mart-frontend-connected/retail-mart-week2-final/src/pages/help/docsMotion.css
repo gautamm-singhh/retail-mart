@@ -1,0 +1,719 @@
+/* ==========================================================================
+   Retail Mart Documentation Motion System
+   Enterprise Developer Documentation + Premium SaaS Product + Brand Motion
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Tokens & Color Mapping
+   -------------------------------------------------------------------------- */
+:root, .official-docs-shell {
+  --docs-ambient-glow1: rgba(47, 130, 80, 0.07);
+  --docs-ambient-glow2: rgba(58, 148, 94, 0.06);
+  --docs-ambient-glow3: rgba(107, 184, 138, 0.05);
+  --docs-net-stroke: rgba(47, 130, 80, 0.14);
+  --docs-net-node: rgba(58, 148, 94, 0.28);
+  --docs-particle-color: rgba(47, 130, 80, 0.32);
+  --docs-particle-glow: rgba(58, 148, 94, 0.18);
+  --docs-grain-opacity: 0.024;
+  --docs-hero-bloom-color: rgba(255, 255, 255, 0.12);
+  --docs-hero-orb1: rgba(7, 155, 112, 0.32);
+  --docs-hero-orb2: rgba(4, 138, 117, 0.26);
+  --docs-hero-orb3: rgba(12, 59, 44, 0.38);
+}
+
+html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], html.dark .official-docs-shell {
+  --docs-ambient-glow1: rgba(7, 155, 112, 0.16);
+  --docs-ambient-glow2: rgba(4, 138, 117, 0.12);
+  --docs-ambient-glow3: rgba(12, 59, 44, 0.24);
+  --docs-net-stroke: rgba(7, 155, 112, 0.16);
+  --docs-net-node: rgba(95, 230, 160, 0.35);
+  --docs-particle-color: rgba(95, 230, 160, 0.40);
+  --docs-particle-glow: rgba(7, 155, 112, 0.25);
+  --docs-grain-opacity: 0.038;
+  --docs-hero-bloom-color: rgba(95, 230, 160, 0.18);
+  --docs-hero-orb1: rgba(7, 155, 112, 0.36);
+  --docs-hero-orb2: rgba(4, 138, 117, 0.28);
+  --docs-hero-orb3: rgba(15, 42, 32, 0.45);
+}
+
+/* --------------------------------------------------------------------------
+   Shell Protection & Initial Page Entrance
+   -------------------------------------------------------------------------- */
+.official-docs-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip; /* Prevents decorative horizontal scrollbars while preserving position: sticky */
+  animation: docsShellFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes docsShellFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Ensure app-shell and header stay elevated above ambient decorations */
+.app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Ambient Background Layer (<DocumentationAmbientBackground />)
+   -------------------------------------------------------------------------- */
+.docs-ambient-bg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  contain: strict;
+}
+
+/* Subtle SVG Grain Overlay */
+.docs-ambient-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--docs-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Drifting Radial Glow Orbs */
+.docs-ambient-glows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.docs-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.docs-glow-1 {
+  width: 55vw;
+  height: 55vw;
+  max-width: 780px;
+  max-height: 780px;
+  top: -12%;
+  right: -8%;
+  background: radial-gradient(circle, var(--docs-ambient-glow1), transparent 68%);
+  filter: blur(85px);
+  animation: docsGlowDrift1 26s ease-in-out infinite;
+}
+
+.docs-glow-2 {
+  width: 48vw;
+  height: 48vw;
+  max-width: 680px;
+  max-height: 680px;
+  bottom: 5%;
+  left: -10%;
+  background: radial-gradient(circle, var(--docs-ambient-glow2), transparent 66%);
+  filter: blur(80px);
+  animation: docsGlowDrift2 30s ease-in-out infinite;
+}
+
+.docs-glow-3 {
+  width: 36vw;
+  height: 36vw;
+  max-width: 520px;
+  max-height: 520px;
+  top: 45%;
+  right: 18%;
+  background: radial-gradient(circle, var(--docs-ambient-glow3), transparent 68%);
+  filter: blur(75px);
+  animation: docsGlowDrift3 22s ease-in-out infinite;
+}
+
+@keyframes docsGlowDrift1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-6%, 8%) scale(1.08);
+  }
+}
+
+@keyframes docsGlowDrift2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8%, -6%) scale(1.06);
+  }
+}
+
+@keyframes docsGlowDrift3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1.04);
+  }
+  50% {
+    transform: translate(-5%, -7%) scale(0.96);
+  }
+}
+
+/* Subtle Network Connectivity Lines */
+.docs-ambient-network {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.docs-net-line {
+  stroke-dasharray: 5 4;
+  animation: docsNetLinePulse 18s ease-in-out infinite;
+}
+
+.docs-net-line-1 { animation-delay: 0s; }
+.docs-net-line-2 { animation-delay: 3s; }
+.docs-net-line-3 { animation-delay: 6s; }
+.docs-net-line-4 { animation-delay: 9s; }
+.docs-net-line-5 { animation-delay: 12s; }
+.docs-net-line-6 { animation-delay: 15s; }
+
+@keyframes docsNetLinePulse {
+  0%, 100% {
+    opacity: 0.35;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    opacity: 0.85;
+    stroke-dashoffset: 24;
+  }
+}
+
+.docs-net-node {
+  fill: var(--docs-net-node);
+  animation: docsNodePulse 14s ease-in-out infinite;
+}
+
+.docs-net-node-1 { animation-delay: 0.5s; }
+.docs-net-node-2 { animation-delay: 2.5s; }
+.docs-net-node-3 { animation-delay: 4.5s; }
+.docs-net-node-4 { animation-delay: 6.5s; }
+.docs-net-node-5 { animation-delay: 8.5s; }
+.docs-net-node-6 { animation-delay: 10.5s; }
+.docs-net-node-7 { animation-delay: 12.5s; }
+
+@keyframes docsNodePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.9;
+  }
+}
+
+/* Ambient Floating Particles */
+.docs-ambient-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.docs-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--docs-particle-color);
+  box-shadow: 0 0 6px var(--docs-particle-glow);
+  pointer-events: none;
+  animation: docsParticleFloat ease-in-out infinite;
+}
+
+/* Calm individual particle positions, sizes, and different timings */
+.docs-particle.p1  { width: 3px; height: 3px; top: 14%; left: 16%; animation-duration: 20s; animation-delay: 0s; }
+.docs-particle.p2  { width: 4px; height: 4px; top: 22%; left: 74%; animation-duration: 24s; animation-delay: 2s; }
+.docs-particle.p3  { width: 2.5px; height: 2.5px; top: 38%; left: 32%; animation-duration: 22s; animation-delay: 4s; }
+.docs-particle.p4  { width: 3.5px; height: 3.5px; top: 46%; left: 88%; animation-duration: 28s; animation-delay: 1s; }
+.docs-particle.p5  { width: 3px; height: 3px; top: 58%; left: 12%; animation-duration: 25s; animation-delay: 5s; }
+.docs-particle.p6  { width: 4px; height: 4px; top: 68%; left: 54%; animation-duration: 21s; animation-delay: 3s; }
+.docs-particle.p7  { width: 2.5px; height: 2.5px; top: 82%; left: 82%; animation-duration: 27s; animation-delay: 6s; }
+.docs-particle.p8  { width: 3px; height: 3px; top: 88%; left: 28%; animation-duration: 23s; animation-delay: 7s; }
+.docs-particle.p9  { width: 3.5px; height: 3.5px; top: 28%; left: 45%; animation-duration: 26s; animation-delay: 8s; }
+.docs-particle.p10 { width: 2px; height: 2px; top: 52%; left: 68%; animation-duration: 29s; animation-delay: 4.5s; }
+.docs-particle.p11 { width: 3px; height: 3px; top: 76%; left: 38%; animation-duration: 22s; animation-delay: 9s; }
+.docs-particle.p12 { width: 2.5px; height: 2.5px; top: 12%; left: 85%; animation-duration: 25s; animation-delay: 1.5s; }
+
+@keyframes docsParticleFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.25;
+  }
+  35% {
+    transform: translate(14px, -18px) scale(1.15);
+    opacity: 0.65;
+  }
+  70% {
+    transform: translate(-12px, 12px) scale(0.9);
+    opacity: 0.35;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Hero Atmosphere & Motion (<DocumentationHeroAtmosphere />)
+   -------------------------------------------------------------------------- */
+.docs-hero-atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Drift Orbs inside Hero */
+.docs-hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.docs-hero-orb-1 {
+  width: 440px;
+  height: 440px;
+  top: -90px;
+  right: -60px;
+  background: radial-gradient(circle, var(--docs-hero-orb1), transparent 68%);
+  filter: blur(65px);
+  animation: docsHeroOrb1 20s ease-in-out infinite;
+}
+
+.docs-hero-orb-2 {
+  width: 360px;
+  height: 360px;
+  bottom: -80px;
+  left: -50px;
+  background: radial-gradient(circle, var(--docs-hero-orb2), transparent 68%);
+  filter: blur(60px);
+  animation: docsHeroOrb2 24s ease-in-out infinite;
+}
+
+.docs-hero-orb-3 {
+  width: 280px;
+  height: 280px;
+  top: 25%;
+  left: 35%;
+  background: radial-gradient(circle, var(--docs-hero-orb3), transparent 68%);
+  filter: blur(55px);
+  animation: docsHeroOrb3 16s ease-in-out infinite;
+}
+
+@keyframes docsHeroOrb1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-24px, 20px) scale(1.08);
+  }
+}
+
+@keyframes docsHeroOrb2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(22px, -18px) scale(1.06);
+  }
+}
+
+@keyframes docsHeroOrb3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1.04);
+  }
+  50% {
+    transform: translate(-18px, -16px) scale(0.95);
+  }
+}
+
+/* Light Bloom Sweep across Hero */
+.docs-hero-bloom {
+  position: absolute;
+  width: 260px;
+  height: 180%;
+  top: -40%;
+  left: -35%;
+  background: linear-gradient(115deg, transparent 20%, var(--docs-hero-bloom-color) 50%, transparent 80%);
+  filter: blur(40px);
+  transform: rotate(24deg);
+  pointer-events: none;
+  animation: docsHeroBloomSweep 22s ease-in-out infinite;
+}
+
+@keyframes docsHeroBloomSweep {
+  0% {
+    transform: translateX(0) rotate(24deg);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(520px) rotate(24deg);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(0) rotate(24deg);
+    opacity: 0.2;
+  }
+}
+
+/* Hero Network Lines */
+.docs-hero-net {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.docs-hero-net-line {
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+  fill: none;
+  animation: docsHeroNetPulse 14s ease-in-out infinite;
+}
+
+.docs-hero-net-line.l2 {
+  stroke: rgba(95, 230, 160, 0.22);
+  animation-delay: 4s;
+}
+
+@keyframes docsHeroNetPulse {
+  0%, 100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.docs-hero-node {
+  fill: #5fe6a0;
+  opacity: 0.45;
+  animation: docsHeroNodePulse 8s ease-in-out infinite;
+}
+
+@keyframes docsHeroNodePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.8;
+  }
+}
+
+/* Hero Micro Particles */
+.docs-hero-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.docs-hero-pt {
+  position: absolute;
+  border-radius: 50%;
+  background: #5fe6a0;
+  box-shadow: 0 0 6px rgba(95, 230, 160, 0.4);
+  pointer-events: none;
+  animation: docsHeroPtFloat ease-in-out infinite;
+}
+
+.docs-hero-pt-1 { width: 3px; height: 3px; top: 22%; left: 18%; animation-duration: 16s; animation-delay: 0s; }
+.docs-hero-pt-2 { width: 2.5px; height: 2.5px; top: 32%; left: 78%; animation-duration: 20s; animation-delay: 1s; }
+.docs-hero-pt-3 { width: 4px; height: 4px; top: 62%; left: 26%; animation-duration: 18s; animation-delay: 3s; }
+.docs-hero-pt-4 { width: 3px; height: 3px; top: 72%; left: 68%; animation-duration: 22s; animation-delay: 2s; }
+.docs-hero-pt-5 { width: 2.5px; height: 2.5px; top: 15%; left: 52%; animation-duration: 19s; animation-delay: 4s; }
+.docs-hero-pt-6 { width: 3.5px; height: 3.5px; top: 82%; left: 44%; animation-duration: 21s; animation-delay: 5s; }
+.docs-hero-pt-7 { width: 2px; height: 2px; top: 48%; left: 88%; animation-duration: 17s; animation-delay: 2.5s; }
+.docs-hero-pt-8 { width: 3px; height: 3px; top: 86%; left: 84%; animation-duration: 23s; animation-delay: 6s; }
+
+@keyframes docsHeroPtFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate(8px, -12px) scale(1.18);
+    opacity: 0.6;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Page Load Hero Entrance Stagger
+   -------------------------------------------------------------------------- */
+.hero-inner .hero-badge {
+  animation: docsHeroItemIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+}
+.hero-inner h1 {
+  animation: docsHeroItemIn 0.40s cubic-bezier(0.16, 1, 0.3, 1) 0.10s both;
+}
+.hero-inner .hero-sub {
+  animation: docsHeroItemIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+}
+.hero-inner .hero-desc {
+  animation: docsHeroItemIn 0.44s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+.hero-inner .hero-actions {
+  animation: docsHeroItemIn 0.44s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
+}
+.hero-inner .hero-meta {
+  animation: docsHeroItemIn 0.46s cubic-bezier(0.16, 1, 0.3, 1) 0.34s both;
+}
+
+@keyframes docsHeroItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Scroll-Reveal Motion
+   -------------------------------------------------------------------------- */
+.docs-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.docs-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   Micro-Interactions: Cards, Buttons, Inputs, Chevrons
+   -------------------------------------------------------------------------- */
+/* Cards */
+.card, .role-card, .endpoint-card {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s ease;
+}
+
+.card:hover, .role-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border2);
+}
+
+.endpoint-card:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(28, 58, 92, 0.08);
+  border-color: var(--border2);
+}
+
+/* Method badge subtle glow on card hover */
+.endpoint-card:hover .method {
+  filter: brightness(1.08);
+  box-shadow: 0 2px 8px rgba(7, 155, 112, 0.22);
+  transition: filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Endpoint details opening animation */
+.endpoint-details {
+  animation: docsEndpointDetailsIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top center;
+}
+
+@keyframes docsEndpointDetailsIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Buttons micro-interactions */
+.icon-btn, .endpoint-btn, .copy-btn, .api-filter-btn, .sidebar-collapse-btn, .mobile-menu-btn, .hero-cta-btn {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.16s ease,
+              color 0.16s ease,
+              border-color 0.16s ease,
+              box-shadow 0.16s ease;
+}
+
+.icon-btn:hover, .endpoint-btn:hover, .copy-btn:hover, .api-filter-btn:hover, .sidebar-collapse-btn:hover, .hero-cta-btn:hover {
+  transform: translateY(-1px);
+}
+
+.icon-btn:active, .endpoint-btn:active, .copy-btn:active, .api-filter-btn:active, .sidebar-collapse-btn:active, .hero-cta-btn:active {
+  transform: scale(0.98);
+}
+
+.icon-btn:focus-visible, .endpoint-btn:focus-visible, .copy-btn:focus-visible, .api-filter-btn:focus-visible, .sidebar-collapse-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Swagger arrow subtle slide */
+.swagger-link .swagger-arrow, .icon-btn[title*="Swagger"] span {
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.swagger-link:hover .swagger-arrow {
+  transform: translateX(3px);
+}
+
+/* Copy button success state */
+.copy-btn.copied {
+  background: var(--green-bg);
+  color: #16a34a;
+  border-color: #16a34a;
+  animation: docsCopySuccess 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes docsCopySuccess {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Search input focus states */
+.search-input, .api-search-input {
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease;
+}
+
+.search-input:focus, .api-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(7, 155, 112, 0.20), 0 4px 14px rgba(0, 0, 0, 0.05);
+  background: var(--surface);
+}
+
+/* Search results dropdown entrance */
+.search-results.open {
+  animation: docsSearchDropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes docsSearchDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sidebar transitions */
+.sidebar {
+  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.2s ease;
+}
+
+.main-col {
+  transition: margin-left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-scrim {
+  transition: opacity 0.25s ease;
+}
+
+.nav-link {
+  transition: background 0.14s ease, color 0.14s ease, transform 0.14s ease;
+}
+
+.nav-link:hover {
+  transform: translateX(2px);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Motion Adaptations
+   -------------------------------------------------------------------------- */
+@media (max-width: 980px) {
+  .docs-glow-1 { width: 65vw; height: 65vw; filter: blur(65px); }
+  .docs-glow-2 { width: 55vw; height: 55vw; filter: blur(60px); }
+  .docs-glow-3 { display: none; }
+  /* Hide particles 9-12 on tablet */
+  .docs-particle.p9,
+  .docs-particle.p10,
+  .docs-particle.p11,
+  .docs-particle.p12 {
+    display: none;
+  }
+  .docs-hero-orb-3 { display: none; }
+  .docs-hero-pt-7, .docs-hero-pt-8 { display: none; }
+}
+
+@media (max-width: 600px) {
+  .docs-ambient-network {
+    opacity: 0.35;
+  }
+  /* Keep only 6 particles on mobile */
+  .docs-particle.p7,
+  .docs-particle.p8 {
+    display: none;
+  }
+  .docs-particle {
+    animation-duration: 26s !important;
+  }
+  .docs-hero-bloom {
+    display: none; /* remove expensive sweep on mobile */
+  }
+  .docs-hero-pt-5, .docs-hero-pt-6 { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility: Prefers-Reduced-Motion Mode
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .docs-glow,
+  .docs-hero-orb,
+  .docs-hero-bloom,
+  .docs-particle,
+  .docs-hero-pt,
+  .docs-net-line,
+  .docs-net-node,
+  .docs-hero-net-line,
+  .docs-hero-node {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .docs-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .card:hover, .role-card:hover, .endpoint-card:hover,
+  .icon-btn:hover, .endpoint-btn:hover, .copy-btn:hover,
+  .api-filter-btn:hover, .sidebar-collapse-btn:hover, .hero-cta-btn:hover,
+  .nav-link:hover {
+    transform: none !important;
+  }
+}

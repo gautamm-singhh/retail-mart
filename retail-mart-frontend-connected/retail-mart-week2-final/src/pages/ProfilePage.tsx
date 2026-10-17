@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/useAuth";
 import { ROUTES } from "@/constants/routes";
 
-/**
- * Authenticated staff and administrator profile details.
- */
 export default function ProfilePage() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();

@@ -101,22 +101,18 @@ def generate_carrier_tracking_number(carrier_code: str, order_id: str | None = N
     }
 
 
-# Standard status mapping dictionary
 STATUS_MAP = {
-    # Pending
     "info_received": "Pending",
     "order_created": "Pending",
     "registered": "Pending",
     "manifested": "Pending",
     "pending": "Pending",
 
-    # Packed
     "packed": "Packed",
     "pickup_planned": "Packed",
     "ready_for_pickup": "Packed",
     "manifest_created": "Packed",
 
-    # Shipped
     "in_transit": "Shipped",
     "transit": "Shipped",
     "picked_up": "Shipped",
@@ -126,13 +122,11 @@ STATUS_MAP = {
     "linehaul": "Shipped",
     "shipped": "Shipped",
 
-    # Out for Delivery
     "out_for_delivery": "Out for Delivery",
     "outfordelivery": "Out for Delivery",
     "with_courier": "Out for Delivery",
     "with_agent": "Out for Delivery",
 
-    # Delivered
     "delivered": "Delivered",
     "completed": "Delivered",
     "signed": "Delivered",

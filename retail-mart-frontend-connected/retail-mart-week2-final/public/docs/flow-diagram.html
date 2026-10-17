@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Retail Mart — End-to-End Flow Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet"/>
+<style>
+:root{--ink:#0c1a3a;--mute:#56627c;--card:#ffffff;--card2:#f1f5ff;--bd:#d6def0;--sh:rgba(40,60,140,.5);--glass:rgba(255,255,255,.55);--lane:rgba(255,255,255,.42);--line:#8a97b8;--hot:#ff9f1c;--bub:76,110,245;
+--f:'Bricolage Grotesque',system-ui,sans-serif;--m:'IBM Plex Mono',ui-monospace,monospace;--b1:#d9dee7;--b2:#f5f6f8;--b3:#cfd6e1;--bg:#e6e9ee}
+:root[data-theme="dark"]{--ink:#e9eeff;--mute:#9aa8c8;--card:#1a2544;--card2:#131c38;--bd:#2c3a66;--sh:rgba(0,0,0,.75);--glass:rgba(16,24,50,.6);--lane:rgba(20,30,64,.5);--line:#5b6c9c;--bub:130,170,255;--b1:#1a2234;--b2:#121828;--b3:#202a40;--bg:#0b0f18}
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{font-family:var(--f);background:var(--bg);color:var(--ink);overflow:hidden;transition:background .6s,color .4s;padding-top:env(safe-area-inset-top,0)}
+#aur{position:fixed;inset:0;overflow:hidden;z-index:0}
+#aur i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(100px);opacity:.8;animation:dr 22s ease-in-out infinite alternate}
+#aur i:nth-child(1){background:var(--b1);left:-15vmax;top:-20vmax}
+#aur i:nth-child(2){background:var(--b2);right:-20vmax;top:10vmax;animation-delay:-8s;animation-duration:28s}
+#aur i:nth-child(3){background:var(--b3);left:20vmax;bottom:-30vmax;animation-delay:-14s}
+@keyframes dr{to{transform:translate(8vmax,6vmax) scale(1.2) rotate(30deg)}}
+#aur::after{content:'';position:absolute;inset:0;background-image:radial-gradient(color-mix(in srgb,var(--ink) 14%,transparent) 1px,transparent 1.2px);background-size:26px 26px;opacity:.55}
+header{position:relative;z-index:20;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--glass);backdrop-filter:blur(18px);border-bottom:1px solid var(--bd)}
+.logo{display:flex;gap:11px;align-items:center}
+.logo b{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font:800 15px var(--f);letter-spacing:.02em;color:#fff;background:linear-gradient(145deg,#26345a,#0f172e);box-shadow:0 6px 16px -4px rgba(15,23,46,.6)}
+@keyframes fl{50%{transform:translateY(-3px) rotate(-6deg)}}
+h1{font-size:19px;font-weight:800;letter-spacing:-.01em}h1 small{display:block;font-size:11.5px;font-weight:500;color:var(--mute)}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:700 12px var(--f);padding:7px 12px;border-radius:9px;border:1px solid var(--bd);background:var(--card);color:var(--ink);cursor:pointer;transition:.2s}
+button:hover,button:focus-visible{transform:translateY(-2px);box-shadow:0 8px 16px -6px var(--sh);outline:none}
+button.on{background:var(--ink);color:var(--card)}
+button.go{background:#1c2846;border:1px solid #1c2846;color:#fff;box-shadow:0 8px 18px -8px #1c2846}:root[data-theme=dark] button.go{background:#e9eeff;color:#0b0f18;border-color:#e9eeff}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+#vp{position:absolute;z-index:5;top:var(--h,60px);left:0;right:0;bottom:0;overflow:hidden;cursor:grab;touch-action:none;}
+#board{position:absolute;left:0;top:0;width:3700px;height:1060px;transform-origin:0 0}
+#tilt{position:absolute;inset:0}
+.lane{position:absolute;left:0;width:3700px;height:176px;border-radius:22px;background:var(--lane);border:1px solid var(--bd);box-shadow:0 26px 40px -18px var(--sh),inset 0 1px 0 rgba(255,255,255,.4);overflow:hidden}
+.lane::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--c),transparent 22%);opacity:.14}
+.lane b{position:absolute;left:14px;top:0;bottom:0;display:flex;align-items:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:14px;font-weight:800;color:var(--c);letter-spacing:.04em}
+svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.e{fill:none;stroke:var(--line);stroke-width:2.5;stroke-dasharray:8 7;animation:fw 1.2s linear infinite;transition:.3s}
+@keyframes fw{to{stroke-dashoffset:-15}}
+.e.hl{stroke:var(--hot);stroke-width:5;stroke-dasharray:none;filter:drop-shadow(0 0 8px var(--hot))}.e.bad{stroke:#f03e3e}
+.p{fill:var(--hot);filter:drop-shadow(0 0 5px var(--hot))}.p.bad{fill:#f03e3e}
+.lbl{font:800 12px var(--f);fill:var(--ink)}
+.n{position:absolute;width:236px;height:124px;padding:13px 14px 8px;border-radius:16px;background:linear-gradient(150deg,var(--card),var(--card2));border:1px solid var(--bd);box-shadow:0 22px 30px -14px var(--sh),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .25s,box-shadow .3s,opacity .3s;animation:dp .6s ease-out both;animation-delay:var(--d);cursor:pointer;overflow:hidden}
+.n::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 35%,#fff))}
+.n::after{content:"";position:absolute;inset:0;background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.32),transparent 60%);opacity:0;transition:.25s;pointer-events:none}
+.n:hover{transform:translateY(-4px);box-shadow:0 26px 36px -14px var(--sh)}.n:hover::after{opacity:1}
+@keyframes dp{from{opacity:0;transform:translateY(14px)}}
+.n .t{display:flex;gap:9px;align-items:center}
+.n .ic{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.n h3{font-size:14px;font-weight:700;line-height:1.15;padding-right:22px}
+.n .ep{display:inline-block;margin-top:7px;font:500 9.5px var(--m);color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);padding:2px 7px;border-radius:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n .k{margin-top:5px;font-size:11px;line-height:1.35;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.n .no{position:absolute;right:9px;top:14px;width:22px;height:22px;border-radius:50%;background:var(--c);color:#fff;font:800 11px var(--f);display:grid;place-items:center}
+.n.end{background:linear-gradient(140deg,var(--c),color-mix(in srgb,var(--c) 55%,#000));color:#fff;border-radius:60px 16px 60px 16px}
+.n.end .k,.n.end .ep{color:#fff}.n.end .ep{background:rgba(255,255,255,.2)}.n.end::before{display:none}
+.n.dec{border:2px dashed var(--c);border-radius:70px}.n.dec .t{padding-left:8px}
+.n.sel{outline:3px solid var(--hot)}.n.dim{opacity:.16}
+.n.cur{outline:4px solid var(--hot);transform:translateY(-6px);box-shadow:0 0 44px 4px rgba(245,159,0,.5)}
+.n.seen::before{background:var(--hot)}
+#side{position:fixed;z-index:30;right:14px;top:calc(var(--h,60px) + 12px);width:340px;max-height:calc(100% - var(--h,60px) - 96px);overflow:auto;background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--bd);border-radius:18px;padding:16px;box-shadow:0 24px 50px -10px var(--sh);display:none;animation:si .35s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes si{from{opacity:0;transform:translateX(24px)}}
+#side.show{display:block}#side h2{font-size:19px;margin:8px 0 4px}
+.tag{font:800 11px var(--f);color:#fff;padding:3px 10px;border-radius:99px}
+.kid{margin-top:10px;padding:11px 12px;border-radius:14px;background:linear-gradient(135deg,rgba(255,159,28,.2),rgba(255,107,53,.12));border:1px dashed var(--hot);font-size:13.5px;line-height:1.5}
+.kid b{display:block;font-size:12px;margin-bottom:3px}
+#side dt{font:800 11px var(--f);color:var(--mute);margin-top:12px}#side dd{font-size:12.5px;line-height:1.5;margin-top:3px}
+#side code{font:500 11px var(--m);background:color-mix(in srgb,var(--ink) 8%,transparent);padding:6px 8px;border-radius:8px;display:block;word-break:break-all}
+#x{float:right;padding:3px 9px}
+#tour{position:fixed;z-index:40;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--glass);backdrop-filter:blur(18px);border:2px solid var(--hot);border-radius:16px;padding:9px 14px;display:none;align-items:center;gap:12px;max-width:96vw;box-shadow:0 18px 40px -8px var(--sh)}
+#tour.show{display:flex}#tour small{font:800 11px var(--f);color:var(--mute)}#tour strong{display:block;font-size:14px}
+#prog{position:absolute;left:0;bottom:0;height:4px;border-radius:0 0 14px 14px;background:var(--hot);transition:width .5s}
+#hint{position:fixed;z-index:6;left:16px;bottom:calc(12px + env(safe-area-inset-bottom,0));font-size:12px;color:var(--mute)}
+@media(max-width:720px){#side{left:8px;right:8px;top:auto;bottom:74px;width:auto;max-height:46%}#hint{display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before{animation:none!important;transition:none!important}}
+</style></head><body>
+<div id="aur"><i></i><i></i><i></i></div>
+<header id="hd">
+ <div class="logo"><b>RM</b><h1>Retail Mart: order to doorstep<small>React storefront · Flask API · MySQL · Razorpay · Email · Gemini AI</small></h1></div>
+ <div class="bar" id="fl"></div>
+ <div class="bar"><button class="go" id="tb">Trace an order</button><button id="fit">Fit view</button><button id="th">Dark</button></div>
+</header>
+<div id="vp"><div id="board"><div id="tilt"><svg id="svg" width="3700" height="1060"><g id="eg"></g><circle id="pulse" r="9" cx="-60" cy="-60" fill="#ff9f1c" stroke="#fff" stroke-width="3"/></svg></div></div></div>
+<aside id="side"></aside>
+<div id="tour"><button id="pv">Back</button><div><small id="ts"></small><strong id="tt"></strong></div><button id="nx" class="go">Next</button><button id="ps">Auto-play</button><button id="tx">✕</button><div id="prog"></div></div>
+<div id="hint">Drag to pan · scroll to zoom · click a card for details</div>
+<script>
+const L={cust:{n:'Customer',c:'#0d9488',r:0},web:{n:'Storefront (React)',c:'#4c6ef5',r:1},api:{n:'Flask API + Database',c:'#7c4dff',r:2},ops:{n:'Admin console',c:'#d6336c',r:3},ext:{n:'Outside helpers',c:'#2f9e44',r:4}};
+// id,lane,col,icon,title,endpoint,grown-up text,kid text,state,actor,type
+const N=[
+['start','cust',0,'','Sign up / OTP login','POST /auth/otp/verify','Customer registers with email or phone, requests an OTP, verifies it and receives a JWT stored by AuthContext.','Like getting a library card. You tell the shop who you are, and it hands you a secret pass so it remembers you next time.','Logged in with a JWT','Customer','end'],
+['otp','ext',0,'','OTP delivery','sms.py · email.py','A one-time code is sent by SMS or email. Delivery is best-effort with safe logging in development.','The shop sends you a secret code of a few numbers, like a password that only works once, to prove it is really you.','OTP issued','System'],
+['browse','web',1,'','Browse & wishlist','GET /products · /wishlist','Search, category filters, product pages and stock badges. Wishlist rows live in MySQL, private to each customer.','Walking down the toy aisle. You look at things and tap the heart on the ones you want to remember for later.','Browsing','Customer'],
+['cart','web',2,'','Cart & address','CartContext · POST /addresses','Cart totals are computed in the browser; the customer picks a saved address and opens the guarded checkout page.','You drop things into a basket and write your home address on the parcel, so the shop knows where to send it.','Cart ready','Customer'],
+['order','api',3,'','Create order + bill','POST /orders','One transaction creates ORD-xxxxx with items and status history, plus a Pending PAY-xxxxx payment tied to the JWT user.','The shop writes your order on a list and makes a bill that says “not paid yet”. Each gets its own ID number, like a locker number.','Order: Pending · Payment: Pending','Customer'],
+['mail1','ext',3,'','Confirmation email','SMTP · SSL 465 / STARTTLS 587','An order confirmation is emailed best-effort. If sending fails it is logged and the order is never blocked.','A friendly letter lands in your inbox saying “We got your order!”. If the letter gets lost, your order is still safe.','Email sent','System'],
+['rzp','api',4,'','Open payment window','POST /payments/razorpay/order','Converts the amount to paise (INR) and returns razorpayOrderId, keyId and paymentId. Uses a mock client if keys are missing.','The shop asks a payment helper called Razorpay to open a little pay window for exactly the right amount of money.','Awaiting payment','System'],
+['pay','ext',5,'','Razorpay checkout','UPI · Cards · Net banking','The Razorpay widget collects money via UPI, card or net banking on the customer’s device.','You pay with your phone or card. It is like giving money to the cashier, but on a screen and much faster!','Paying','Customer'],
+['ok','api',6,'','Payment real?','POST /payments/razorpay/verify','The HMAC signature is verified. If valid, the same code path as PATCH /payments/:id/status marks it Paid.','A guard checks the payment’s secret stamp. Real stamp? Come in! Fake or missing? The door stays shut.','Decision','System','dec'],
+['paid','api',7,'✅','Mark Paid + receipt','PATCH /payments/:id/status','Payment and order paymentStatus become Paid; a Receipt row and PDF are generated and emailed.','The bill turns green: PAID! The shop prints your receipt (a PDF) and emails it, like the paper you get at the counter.','Payment: Paid','System'],
+['fail','cust',7,'','Payment failed · retry','Payment stays Pending','Order stays Pending; the customer can retry checkout from My Orders.','Oops, the payment did not work. Nothing is lost! Your order waits patiently until you try again.','Retry available','Customer','end'],
+['proc','ops',7,'','Process order','PATCH /orders/:id/status','Admin or Manager moves Pending → Processing (or Cancelled), following ORDER_STATUS_TRANSITIONS.','A shop helper says “I’ll pack this one!” and your order moves from the waiting line to the packing table.','Order: Processing','Admin · Manager'],
+['ship','ops',8,'','Create shipment + AWB','POST /shipments','Choose an active courier (Bluedart, Delhivery, Ekart, DTDC, FedEx); courier_tracker generates a carrier-format AWB if none is given.','The shop picks a delivery company and gives your parcel a name tag (a tracking number) so it can never get lost.','Shipment: Pending','Admin · Manager'],
+['adv','ops',9,'','Move parcel forward','PATCH /shipments/:id/status','Strict sequence Packed → Shipped → Out for Delivery → Delivered; Shipped and Delivered also advance the order.','The parcel climbs a staircase: Packed, Shipped, Out for Delivery, Delivered. It is not allowed to skip a step!','Packed → Delivered','Staff and above'],
+['mail2','ext',9,'','Shipment emails','shipment_*_email()','Shipped, Out for Delivery, Delivered and a thank-you email are sent. “Packed” is internal and never emailed.','At each big step the shop emails you, like a friend texting “I’m on my way!” and then “I’m here!”.','Customer notified','System'],
+['track','web',10,'','Track & download','GET /shipments/:id/track','Carrier checkpoints via a TrackingMore / Ship24 adapter; invoice and receipt PDFs come from reportlab.','You follow your parcel on a little map of check-points, and you can download your bill and receipt anytime.','Live tracking','Customer'],
+['done','cust',11,'','Delivered!','Order: Delivered','Terminal state. The order now counts in customer stats and in the business reports.','Ding-dong! The parcel is at your door. The story of this order is finished. Hooray!','Delivered','Customer','end'],
+['rep','api',11,'','Reports & forecast','GET /reports · /analytics/projections','PII-safe daily, monthly and yearly rollups plus a Holt-Winters forecast for 30, 60 and 90 days.','At the end of the day the shop counts everything it sold, draws charts, and guesses how much it will sell next month.','Aggregated','Admin · Manager'],
+['gem','ext',12,'','Gemini AI story','Gemini 1.5 Pro','Turns the statistical forecast into an executive summary written in Indian Rupees (₹).','A super-smart robot helper reads all the numbers and tells a short story about them in plain words, using rupees (₹).','Insight written','System'],
+['dash','ops',12,'','Boss dashboard','GET /dashboard/summary','KPIs, SVG charts, campaigns (POST /campaigns/:id/send) and forecasts for decision makers.','The boss’s giant screen with colourful charts that show how the whole shop is doing today.','Insight','Admin · Manager']];
+const E=[['start','browse'],['start','otp','OTP code','d'],['browse','cart'],['cart','order'],['order','mail1','','d'],['order','rzp'],['rzp','pay'],['pay','ok'],['ok','paid','yes'],['ok','fail','no','bad'],['paid','proc'],['proc','ship'],['ship','adv'],['adv','mail2','','d'],['adv','track'],['track','done'],['done','rep','feeds','d'],['rep','gem','','d'],['rep','dash']];
+const TOUR=['start','browse','cart','order','rzp','pay','ok','paid','proc','ship','adv','track','done','rep','dash'];
+const X0=96,DX=270,LH=196,Y0=26,NW=236,NH=124,by={},$=id=>document.getElementById(id),tilt=$('tilt'),side=$('side'),NS='http://www.w3.org/2000/svg';
+Object.keys(L).forEach(k=>{const d=document.createElement('div');d.className='lane';d.style.cssText=`top:${L[k].r*LH+20}px;--c:${L[k].c}`;d.innerHTML=`<b>${L[k].n}</b>`;tilt.insertBefore(d,$('svg'))});
+N.forEach((a,i)=>{const [id,l,c,ic,t,ep,g,k,st,who,ty]=a,el=document.createElement('div');el.className='n '+(ty||'');
+ const x=X0+c*DX,y=L[l].r*LH+20+Y0;el.style.cssText=`left:${x}px;top:${y}px;--c:${L[l].c};--d:${(c*.12+i*.03).toFixed(2)}s`;
+ const no=TOUR.indexOf(id)+1;el.innerHTML=`<div class="t"><h3>${t}</h3></div>${no&&!ty?`<span class="no">${no}</span>`:''}<span class="ep">${ep}</span><p class="k">${k}</p>`;
+ el.tabIndex=0;el.onclick=()=>open(id);el.onkeydown=e=>e.key==='Enter'&&open(id);
+ tilt.appendChild(el);by[id]={a,el,l,x,y}});
+const P={};E.forEach(([f,t,lb,st],i)=>{const A=by[f],B=by[t],same=A.x===B.x;let x1,y1,x2,y2;
+ if(same){x1=x2=A.x+NW/2;const dn=B.y>A.y;y1=A.y+(dn?NH:0);y2=B.y+(dn?0:NH)}else{x1=A.x+NW;y1=A.y+NH/2;x2=B.x;y2=B.y+NH/2}
+ const d=same?`M${x1} ${y1}C${x1} ${(y1+y2)/2},${x2} ${(y1+y2)/2},${x2} ${y2}`:`M${x1} ${y1}C${x1+70} ${y1},${x2-70} ${y2},${x2} ${y2}`;
+ const p=document.createElementNS(NS,'path');p.setAttribute('d',d);p.setAttribute('class','e '+(st==='bad'?'bad':''));$('eg').appendChild(p);P[f+'>'+t]=p;p._f=f;p._t=t;
+ [0,1].forEach(j=>{const c=document.createElementNS(NS,'circle');c.setAttribute('r',4.5);c.setAttribute('class','p '+(st==='bad'?'bad':''));c.innerHTML=`<animateMotion dur="${3+i%3}s" begin="${-j*1.6-i*.4}s" repeatCount="indefinite" path="${d}"/>`;$('eg').appendChild(c)});
+ if(lb){const t=document.createElementNS(NS,'text');t.setAttribute('class','lbl');t.setAttribute('x',(x1+x2)/2+6);t.setAttribute('y',(y1+y2)/2-8);t.textContent=lb;$('eg').appendChild(t)}});
+function open(id){document.querySelectorAll('.n').forEach(n=>n.classList.remove('sel'));const o=by[id];o.el.classList.add('sel');const [,l,,ic,t,ep,g,k,st,who]=o.a;
+ const nm=a=>a.map(e=>by[e].a[4]).join(' · ');const nx=nm(E.filter(e=>e[0]===id).map(e=>e[1]))||'The end of the trip!',pv=nm(E.filter(e=>e[1]===id).map(e=>e[0]))||'The very start';
+ side.innerHTML=`<button id="x" onclick="side.classList.remove('show')">✕</button><span class="tag" style="background:${L[l].c}">${L[l].n}</span><h2>${t}</h2><dl><dt>What happens</dt><dd>${g}</dd><dt>Endpoint / component</dt><dd><code>${ep}</code></dd><dt>Status after this step</dt><dd>${st}</dd><dt>Who does it</dt><dd>${who}</dd><dt>Before this</dt><dd>${pv}</dd><dt>After this</dt><dd>${nx}</dd></dl>`;side.classList.add('show')}
+// filters
+[['all','All lanes','#64748b'],...Object.keys(L).map(k=>[k,L[k].n,L[k].c])].forEach(([k,n,c],i)=>{const b=document.createElement('button');b.innerHTML=`<span class="dot" style="background:${c}"></span>${n}`;i||(b.className='on');
+ b.onclick=()=>{$('fl').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');Object.values(by).forEach(o=>o.el.classList.toggle('dim',k!=='all'&&o.l!==k));Object.values(P).forEach(p=>p.style.opacity=k==='all'||by[p._f].l===k||by[p._t].l===k?1:.08)};$('fl').appendChild(b)});
+// camera: pan, zoom, 3D tilt
+const vp=$('vp'),board=$('board');let s=.5,tx=0,ty=0,drag=null;
+const cam=()=>{board.style.transform=`translate(${tx}px,${ty}px) scale(${s})`;};
+function fit(){s=Math.max(.36,Math.min(vp.clientWidth/3300,vp.clientHeight/1050));tx=10;ty=10;cam()}
+function focus(id){const o=by[id];s=Math.max(s,.85);tx=vp.clientWidth/2-(o.x+NW/2)*s-(side.classList.contains('show')&&innerWidth>720?170:0);ty=vp.clientHeight/2-(o.y+NH/2)*s+0;board.style.transition='transform .8s cubic-bezier(.3,.8,.2,1)';cam();setTimeout(()=>board.style.transition='',850)}
+vp.onpointerdown=e=>{if(e.target.closest('.n'))return;drag=[e.clientX-tx,e.clientY-ty];vp.setPointerCapture(e.pointerId)};
+vp.onpointermove=e=>{if(drag){tx=e.clientX-drag[0];ty=e.clientY-drag[1]}cam()};
+vp.onpointerup=()=>drag=null;
+vp.onwheel=e=>{e.preventDefault();const r=vp.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clientY-r.top,ns=Math.min(2.2,Math.max(.25,s*Math.exp(-e.deltaY*.0015)));tx=X-(X-tx)*ns/s;ty=Y-(Y-ty)*ns/s;s=ns;cam()};
+$('fit').onclick=fit;
+// theme
+const R=document.documentElement;function setT(d){R.dataset.theme=d?'dark':'light';$('th').textContent=d?'Light':'Dark';try{localStorage.setItem('rm-theme',d?'dark':'light')}catch(e){}}
+let sv=null;try{sv=localStorage.getItem('rm-theme')}catch(e){}setT(sv?sv==='dark':matchMedia('(prefers-color-scheme:dark)').matches);
+$('th').onclick=()=>setT(R.dataset.theme!=='dark');
+// tour
+const tour=$('tour'),pulse=$('pulse');let ti=-1,timer=null;
+function clr(){document.querySelectorAll('.n').forEach(n=>n.classList.remove('cur','seen'));Object.values(P).forEach(p=>p.classList.remove('hl'));pulse.setAttribute('cx',-60)}
+function step(i){if(i<0||i>=TOUR.length)return stop();ti=i;const id=TOUR[i];document.querySelectorAll('.n').forEach(n=>n.classList.remove('cur'));
+ TOUR.slice(0,i).forEach(x=>by[x].el.classList.add('seen'));by[id].el.classList.add('cur');Object.values(P).forEach(p=>p.classList.remove('hl'));
+ const k=Object.keys(P).find(q=>q.endsWith('>'+id)&&TOUR.includes(q.split('>')[0]));if(k){P[k].classList.add('hl');run(P[k])}
+ $('ts').textContent=`Step ${i+1} of ${TOUR.length} · ${L[by[id].l].n}`;$('tt').textContent=by[id].a[4];$('prog').style.width=(i+1)/TOUR.length*100+'%';open(id);focus(id)}
+function run(p){const len=p.getTotalLength(),t0=performance.now();(function f(t){const q=Math.min(1,(t-t0)/800),pt=p.getPointAtLength(len*q);pulse.setAttribute('cx',pt.x);pulse.setAttribute('cy',pt.y);q<1&&requestAnimationFrame(f)})(t0)}
+function stop(){clearInterval(timer);timer=null;$('ps').textContent='Auto-play'}
+function end(){tour.classList.remove('show');stop();clr();side.classList.remove('show');fit()}
+$('tb').onclick=()=>{if(tour.classList.contains('show'))return end();tour.classList.add('show');clr();step(0)};
+$('tx').onclick=end;$('nx').onclick=()=>step(Math.min(ti+1,TOUR.length-1));$('pv').onclick=()=>{clr();step(Math.max(ti-1,0))};
+$('ps').onclick=()=>{if(timer)return stop();$('ps').textContent='Pause';if(ti>=TOUR.length-1){clr();step(0)}timer=setInterval(()=>ti>=TOUR.length-1?stop():step(ti+1),3200)};
+function rs(){R.style.setProperty('--h',$('hd').offsetHeight+'px')}addEventListener('resize',rs);
+setTimeout(()=>{rs();fit()},60);
+</script></body></html>

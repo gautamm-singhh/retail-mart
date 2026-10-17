@@ -16,12 +16,6 @@ interface ProductFormProps {
   submitLabel: string;
   onSubmit: (values: ProductFormValues) => void;
   onCancel: () => void;
-  /**
-   * Active categories to offer in the dropdown, from useCategories(). Falls
-   * back to a single placeholder option so this component still renders
-   * sensibly when used without a categories fetch behind it (e.g. in
-   * isolated component tests).
-   */
   categoryOptions?: { label: string; value: string }[];
 }
 
@@ -46,9 +40,6 @@ function defaultValues(categoryOptions: { label: string; value: string }[]): Pro
   };
 }
 
-// Raw string state for the two numeric fields (so the input can be
-// temporarily empty while typing) and for imageUrl (so "no image" is a
-// plain empty string in the input rather than null).
 interface FormState extends Omit<ProductFormValues, "price" | "stock" | "imageUrl"> {
   price: string;
   stock: string;

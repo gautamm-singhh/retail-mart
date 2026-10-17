@@ -25,7 +25,6 @@ describe("ShipmentDetailsPage", () => {
 
     expect(screen.getByText(shipment.customer)).toBeInTheDocument();
     expect(screen.getByText(shipment.trackingNumber)).toBeInTheDocument();
-    // Every tracking history entry's status should render as a badge.
     for (const event of shipment.trackingHistory) {
       expect(screen.getAllByText(event.status).length).toBeGreaterThan(0);
     }

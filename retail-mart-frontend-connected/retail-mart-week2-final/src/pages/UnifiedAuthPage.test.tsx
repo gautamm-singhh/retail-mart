@@ -50,17 +50,14 @@ describe("Simplified Authentication UI & RBAC Flow", () => {
   it("2. Simplified auth page contains all expected controls and tabs", () => {
     renderUnifiedAuthApp(ROUTES.shopLogin);
 
-    // Primary header and login tabs
     expect(screen.getByRole("heading", { name: /sign in to retail mart/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /email & password/i })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: /mobile otp/i })).toHaveAttribute("aria-pressed", "false");
 
-    // Form inputs and action button
     expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^sign in$/i })).toBeInTheDocument();
 
-    // Signup link below submit button
     expect(screen.getByRole("link", { name: /create an account/i })).toBeInTheDocument();
   });
 
@@ -152,7 +149,6 @@ describe("Simplified Authentication UI & RBAC Flow", () => {
     await userEvent.type(screen.getByLabelText(/mobile number/i), "9876543210");
     await userEvent.click(screen.getByRole("button", { name: /send otp code/i }));
 
-    // OTP verification field appears
     expect(await screen.findByLabelText(/otp code/i)).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText(/otp code/i), "123456");
     await userEvent.click(screen.getByRole("button", { name: /verify & sign in/i }));

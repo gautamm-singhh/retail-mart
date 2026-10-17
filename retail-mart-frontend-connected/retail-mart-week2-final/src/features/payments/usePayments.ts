@@ -2,13 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { paymentRepository, isRefund } from "@/features/payments/services/paymentRepository";
 import type { Payment } from "@/types";
 
-/**
- * Single reactive source of truth (`allPayments`) with `payments` and
- * `refunds` derived from it via the same `isRefund` predicate the
- * repository uses. Keeping one fetched array (rather than two independent
- * requests) means a refund action can never leave the two views out of
- * sync with each other.
- */
 export function usePayments() {
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);

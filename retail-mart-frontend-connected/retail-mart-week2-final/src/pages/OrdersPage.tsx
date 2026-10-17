@@ -131,7 +131,6 @@ export default function OrdersPage() {
         description="Track customer orders, monitor fulfillment stages, and issue automated tax invoices."
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminStatCard
           label="Total Orders"

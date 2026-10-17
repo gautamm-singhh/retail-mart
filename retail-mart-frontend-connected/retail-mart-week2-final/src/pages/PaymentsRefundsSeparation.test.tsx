@@ -35,7 +35,6 @@ describe("Payments vs Refunds separation", () => {
     expect(paidPayment).toBeDefined();
     expect(refundedPayment).toBeDefined();
 
-    // Wait for the list to actually load before asserting on its contents.
     expect(await screen.findByText(paidPayment!.customer)).toBeInTheDocument();
     expect(screen.queryByText(refundedPayment!.customer)).not.toBeInTheDocument();
   });

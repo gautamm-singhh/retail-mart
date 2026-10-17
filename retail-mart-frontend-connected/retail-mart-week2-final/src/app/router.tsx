@@ -9,7 +9,6 @@ import { PageFallback } from "@/components/common/PageFallback";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ROUTES } from "@/constants/routes";
 
-// Admin pages — lazy loaded for optimal initial bundle performance
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const UsersPage = lazy(() => import("@/pages/UsersPage"));
 const UserDetailsPage = lazy(() => import("@/pages/UserDetailsPage"));
@@ -30,7 +29,6 @@ const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 
-// Storefront pages — lazy loaded
 const ShopHomePage = lazy(() => import("@/pages/ShopHomePage"));
 const ShopProductDetailPage = lazy(() => import("@/pages/ShopProductDetailPage"));
 const CartPage = lazy(() => import("@/pages/CartPage"));
@@ -40,32 +38,9 @@ const AccountPage = lazy(() => import("@/pages/AccountPage"));
 const WishlistPage = lazy(() => import("@/pages/WishlistPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
-// Routing lives in a single place so every screen's URL is defined once and
-// the nav sidebar, breadcrumbs, and redirects can all reference ROUTES
-// instead of hardcoded strings scattered across the app.
-//
-// There are two portals sharing one JWT/AuthContext but with separate
-// layouts and separate logins:
-//   - Admin console: "/" and below, gated by ProtectedRoute with
-//     allowedRoles={["Admin","Manager","Staff"]} (default redirect:
-//     /login). A signed-in Customer visiting any admin URL is redirected
-//     to /shop rather than rendering admin content.
-//   - Storefront (Week 4): "/shop" and below, its own layout
-//     (StorefrontLayout) with a top nav instead of a sidebar. Browsing
-//     (/shop, /shop/product/:id) and the cart (/shop/cart) are public so
-//     guests can browse and build a cart before signing in; checkout,
-//     order history, and account are gated by the *same* ProtectedRoute
-//     component with allowedRoles={["Customer"]} and redirectTo={
-//     ROUTES.shopLogin} - an Admin/Staff account wandering in here is
-//     sent to /dashboard instead of hitting 403s from customer-only
-//     endpoints like GET /addresses.
-//
-// /payments/refunds is declared as its own static route rather than a
-// query param on /payments so it has a real, shareable, back/forward-able
-// URL - React Router ranks a static segment ("refunds") above the dynamic
-// ":id" segment regardless of declaration order, so this never collides
-// with /payments/:id. The same is true of /orders/mine vs /orders/:id on
-// the backend.
+const ApiDocumentationPage = lazy(() => import("@/pages/help/ApiDocumentationPage"));
+const FsdDocumentationPage = lazy(() => import("@/pages/help/FsdDocumentationPage"));
+
 export const routes: RouteObject[] = [
   { path: ROUTES.root, element: <Navigate to={ROUTES.shopLogin} replace /> },
   { path: ROUTES.login, element: <LoginPage /> },
@@ -118,6 +93,28 @@ export const routes: RouteObject[] = [
         ],
       },
       { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+  {
+    path: ROUTES.help,
+    children: [
+      { index: true, element: <Navigate to={ROUTES.helpFsd} replace /> },
+      {
+        path: "fsd",
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <FsdDocumentationPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "api",
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <ApiDocumentationPage />
+          </Suspense>
+        ),
+      },
     ],
   },
   {

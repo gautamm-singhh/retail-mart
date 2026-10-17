@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, Link } from "react-router-dom";
-import { NAV_ROUTES } from "@/constants/routes";
+import { NAV_ROUTES, ROUTES } from "@/constants/routes";
 import { NavIcon } from "@/components/common/NavIcon";
+import { Logo } from "@/components/common/Logo";
 import { useOrders } from "@/features/orders/useOrders";
 import { cn } from "@/utils/cn";
 
 interface SidebarProps {
-  /** Called after a nav item is activated, used to close mobile drawer. */
   onNavigate?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -21,7 +21,6 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
     (o) => o.status === "Pending" || o.status === "Processing",
   ).length;
 
-  // Global Ctrl+K / Cmd+K listener to focus menu search
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -45,11 +44,11 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
         isCollapsed ? "w-20" : "w-64",
       )}
     >
-      {/* Brand Header */}
       <div className={cn("flex h-16 shrink-0 items-center gap-3 border-b border-white/5 px-4", isCollapsed && "justify-center px-2")}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-sm shadow-md shadow-emerald-950/40 transition-transform duration-200 hover:scale-105">
-          RM
-        </div>
+        <Logo
+          size="md"
+          className="rounded-xl shadow-md shadow-emerald-950/40 transition-transform duration-200 hover:scale-105"
+        />
         {!isCollapsed && (
           <div className="flex flex-col overflow-hidden animate-fade-in">
             <span className="text-base font-extrabold tracking-tight text-white leading-tight">
@@ -62,7 +61,6 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
         )}
       </div>
 
-      {/* Menu Quick Search */}
       {!isCollapsed && (
         <div className="px-3 pt-3 pb-1">
           <div className="relative flex items-center">
@@ -87,7 +85,6 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
         </div>
       )}
 
-      {/* Navigation Routes List */}
       <ul className="flex flex-1 flex-col gap-1 px-3 py-2 overflow-y-auto no-scrollbar">
         {filteredRoutes.map((route) => {
           const isOrders = route.path.includes("orders");
@@ -132,8 +129,26 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
         })}
       </ul>
 
-      {/* Footer Quick Link to Customer Storefront */}
-      <div className="shrink-0 border-t border-white/5 p-3">
+      <div className="shrink-0 border-t border-white/5 p-3 space-y-1.5">
+        <Link
+          to={ROUTES.helpApi}
+          title="API Documentation"
+          className={cn(
+            "group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-2 text-xs font-medium text-slate-400 transition-all hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-300",
+            isCollapsed && "justify-center px-0",
+          )}
+        >
+          <span className="text-sm">⚡</span>
+          {!isCollapsed && (
+            <>
+              <span className="flex-1 truncate">API Documentation</span>
+              <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-500/30">
+                Docs
+              </span>
+            </>
+          )}
+        </Link>
+
         <Link
           to="/shop"
           target="_blank"

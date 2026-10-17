@@ -1,9 +1,5 @@
 import { Order } from "@/types";
 
-// Mock data only - stands in for a future GET /orders response from
-// Sorav's backend. `items` and `statusHistory` exist so the Order Details
-// workflow has something realistic to render; a real API would return this
-// same shape from an order detail endpoint.
 export const mockOrders: Order[] = [
   {
     id: "ORD-58421",

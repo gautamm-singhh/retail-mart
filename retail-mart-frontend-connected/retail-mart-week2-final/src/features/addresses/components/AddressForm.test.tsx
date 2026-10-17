@@ -56,14 +56,12 @@ describe("AddressForm & PIN Code Auto-Fill", () => {
     );
 
     const phoneInput = screen.getByLabelText(/phone number/i);
-    // Invalid phone starting with 2
     await userEvent.type(phoneInput, "2876543210");
     await userEvent.click(screen.getByRole("button", { name: /save address/i }));
 
     expect(await screen.findByText(/indian mobile numbers must start with 6, 7, 8, or 9/i)).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
 
-    // Valid formatted phone: +91 98765 43210
     await userEvent.clear(phoneInput);
     await userEvent.type(phoneInput, "+91 98765 43210");
     await userEvent.click(screen.getByRole("button", { name: /save address/i }));
@@ -71,7 +69,7 @@ describe("AddressForm & PIN Code Auto-Fill", () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
-          phone: "9876543210", // Normalized to 10 digits
+          phone: "9876543210",
           city: "Bengaluru",
           state: "Karnataka",
         }),
@@ -91,7 +89,6 @@ describe("AddressForm & PIN Code Auto-Fill", () => {
       expect(screen.getByText(/you can enter city and state manually/i)).toBeInTheDocument();
     });
 
-    // Fill line1, city, state manually
     await userEvent.type(screen.getByLabelText(/address line 1/i), "Main Road 12");
     await userEvent.type(screen.getByLabelText(/^city \*/i), "RemoteTown");
     await userEvent.type(screen.getByLabelText(/^state \*/i), "RemoteState");

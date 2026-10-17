@@ -127,7 +127,6 @@ export default function OrderDetailsPage() {
         }
       />
 
-      {/* Progress Stepper Banner */}
       <Card className="p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -159,7 +158,6 @@ export default function OrderDetailsPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* Order Items */}
           <Card className="p-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
               <h2 className="text-base font-bold text-slate-900 dark:text-white">Order Items</h2>
@@ -192,7 +190,6 @@ export default function OrderDetailsPage() {
             </div>
           </Card>
 
-          {/* Status History Timeline */}
           <Card className="p-6">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Status Timeline</h2>
             <ol className="relative mt-5 border-l border-slate-200 dark:border-slate-800 ml-3 space-y-6">
@@ -212,7 +209,6 @@ export default function OrderDetailsPage() {
         </div>
 
         <div className="flex flex-col gap-6">
-          {/* Customer Details Card */}
           <Card className="p-6">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Customer Information</h2>
             <div className="mt-4 flex items-center gap-3">
@@ -241,7 +237,6 @@ export default function OrderDetailsPage() {
             </dl>
           </Card>
 
-          {/* Quick Support Card */}
           <Card className="p-6">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">Order Actions & Notifications</h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">

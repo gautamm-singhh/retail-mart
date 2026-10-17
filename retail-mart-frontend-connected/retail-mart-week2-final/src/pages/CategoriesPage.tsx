@@ -90,7 +90,6 @@ export default function CategoriesPage() {
         action={<Button>+ Add Category</Button>}
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStatCard
           label="Total Categories"

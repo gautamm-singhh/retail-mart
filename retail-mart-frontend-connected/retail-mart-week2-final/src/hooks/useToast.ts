@@ -3,7 +3,6 @@ import { ToastContext, ToastContextValue } from "@/components/common/ToastProvid
 
 const fallbackToast: ToastContextValue = {
   showToast: (message: string) => {
-    // Graceful no-op fallback when ToastProvider is not yet mounted
     console.debug("[Toast]:", message);
   },
 };

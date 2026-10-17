@@ -27,7 +27,6 @@ const dotStyles: Record<BadgeTone, string> = {
   danger: "bg-danger-600",
 };
 
-/** Generic colored pill. For domain statuses (order/payment/shipment), use StatusBadge instead. */
 export function Badge({ tone = "neutral", className, children, ...props }: BadgeProps) {
   return (
     <span

@@ -52,7 +52,6 @@ export function TrendLineChart({ data, title, height = 220 }: TrendLineChartProp
             </linearGradient>
           </defs>
 
-          {/* Grid lines */}
           {[0, 0.33, 0.66, 1].map((ratio) => {
             const y = padding.top + chartH * (1 - ratio);
             const val = maxRevenue * ratio;
@@ -66,13 +65,10 @@ export function TrendLineChart({ data, title, height = 220 }: TrendLineChartProp
             );
           })}
 
-          {/* Area under curve */}
           <path d={areaD} fill="url(#trendGrad)" />
 
-          {/* Line stroke */}
           <path d={pathD} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-          {/* Data Points */}
           {points.map((pt, idx) => (
             <g
               key={idx}
@@ -96,7 +92,6 @@ export function TrendLineChart({ data, title, height = 220 }: TrendLineChartProp
           ))}
         </svg>
 
-        {/* Hover Tooltip */}
         {hoveredIdx !== null && points[hoveredIdx] && (
           <div
             className="pointer-events-none absolute -top-2 rounded-md bg-ink-950 px-2.5 py-1.5 text-xs text-white shadow-lg transition-all dark:bg-slate-800 dark:border dark:border-slate-700"
@@ -167,7 +162,6 @@ export function StatusDistribution({ data }: StatusBreakdownProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Segmented bar */}
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         {data.map((item) => (
           <div
@@ -179,7 +173,6 @@ export function StatusDistribution({ data }: StatusBreakdownProps) {
         ))}
       </div>
 
-      {/* Legend */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {data.map((item) => (
           <div key={item.status} className="flex items-center gap-2 text-xs">
@@ -297,7 +290,6 @@ export function ForecastComparisonChart({ history, forecast }: ForecastChartProp
       </div>
 
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible select-none">
-        {/* Grid lines */}
         {[0, 0.5, 1].map((ratio) => {
           const y = padding.top + chartH * (1 - ratio);
           const val = maxValue * ratio;
@@ -311,13 +303,10 @@ export function ForecastComparisonChart({ history, forecast }: ForecastChartProp
           );
         })}
 
-        {/* Historical solid line */}
         {histPath && <path d={histPath} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
 
-        {/* Projected dashed line */}
         {bridgePath && <path d={bridgePath} fill="none" stroke="#9333ea" strokeWidth="2.5" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />}
 
-        {/* Points */}
         {points.map((pt, idx) => (
           <g
             key={idx}

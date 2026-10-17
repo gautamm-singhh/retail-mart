@@ -1,6 +1,3 @@
-/**
- * In-memory repository interface and fallback provider for offline test suites.
- */
 export interface InMemoryRepository<T extends { id: string }> {
   list: () => T[];
   getById: (id: string) => T | undefined;

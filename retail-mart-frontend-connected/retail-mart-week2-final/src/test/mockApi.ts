@@ -8,18 +8,9 @@ import { mockShipments } from "@/features/shipping/data/shipments";
 import { ORDER_STATUS_TRANSITIONS } from "@/types";
 import type { Category, Order, OrderStatus, Payment, PaymentStatus, Product, Shipment, User } from "@/types";
 
-/**
- * A minimal in-memory stand-in for retail-mart-backend, used only in
- * tests. It mirrors the handful of behaviours our tests actually rely on
- * (auth, order status transitions, payment status updates) so tests keep
- * exercising "what happens when the API responds like X" rather than
- * reaching into repository internals. It is deliberately not a full
- * reimplementation of the Flask app - see that project for the real rules.
- */
 
 const API_BASE = "http://localhost:4000/api";
 
-/** Any seeded user can sign in with this password in tests (matches the backend's seed.py). */
 const TEST_PASSWORD = "password123";
 
 let users: User[] = [];
@@ -72,7 +63,6 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
   const method = (init?.method ?? "GET").toUpperCase();
   const body = parseBody(init);
 
-  // --- Auth ---------------------------------------------------------
   if (path === "/auth/login" && method === "POST") {
     const email = String(body.email ?? "").toLowerCase();
     const password = String(body.password ?? "");
@@ -128,7 +118,6 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
     return json(user);
   }
 
-  // --- Users ----------------------------------------------------------
   if (path === "/users" && method === "GET") return json(users);
   const userMatch = /^\/users\/([^/]+)$/.exec(path);
   if (userMatch && method === "DELETE") {
@@ -161,13 +150,10 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
     return json(newUser, 201);
   }
 
-  // --- Categories -------------------------------------------------------
   if (path === "/categories" && method === "GET") return json(categories);
 
-  // --- Products ---------------------------------------------------------
   if (path === "/products" && method === "GET") return json(products);
 
-  // --- Orders -------------------------------------------------------
   if (path === "/orders" && method === "GET") return json(orders);
   const orderStatusMatch = /^\/orders\/([^/]+)\/status$/.exec(path);
   if (orderStatusMatch && method === "PATCH") {
@@ -186,7 +172,6 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
     return json(order);
   }
 
-  // --- Payments -----------------------------------------------------
   if (path === "/payments" && method === "GET") return json(payments);
   const paymentStatusMatch = /^\/payments\/([^/]+)\/status$/.exec(path);
   if (paymentStatusMatch && method === "PATCH") {
@@ -198,10 +183,8 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
     return json(payment);
   }
 
-  // --- Shipments ----------------------------------------------------
   if (path === "/shipments" && method === "GET") return json(shipments);
 
-  // --- Dashboard ------------------------------------------------------
   if (path === "/dashboard/summary" && method === "GET") {
     return json([
       { label: "Active Users", value: String(users.filter((u) => u.status === "active").length), hint: `${users.length} total accounts` },
@@ -212,7 +195,6 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
     ]);
   }
 
-  // --- Analytics & Projections ----------------------------------------
   if (path.startsWith("/analytics/projections") && method === "GET") {
     const periodMatch = /[?&]period=([^&]+)/.exec(path);
     const period = periodMatch ? periodMatch[1] : "monthly";
@@ -248,7 +230,6 @@ async function handle(path: string, init?: RequestInit): Promise<Response> {
       });
     }
 
-    // Default monthly
     return json({
       period: "monthly",
       history: [

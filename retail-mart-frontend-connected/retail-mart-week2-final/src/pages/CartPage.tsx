@@ -27,7 +27,6 @@ export default function CartPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-200">
-      {/* Page Header */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-slate-800/70">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -50,7 +49,6 @@ export default function CartPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Items List */}
         <div className="flex flex-col gap-3 lg:col-span-8">
           {items.map((item, idx) => (
             <div
@@ -58,12 +56,10 @@ export default function CartPage() {
               className="group flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs transition-all duration-200 hover:border-emerald-400/40 hover:shadow-sm dark:border-slate-800/70 dark:bg-slate-900"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
-              {/* Product Avatar */}
               <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 text-2xl font-black text-emerald-600 dark:from-slate-800 dark:to-slate-800 dark:text-emerald-400 shadow-xs">
                 {item.productName.charAt(0).toUpperCase()}
               </div>
 
-              {/* Name & price */}
               <div className="min-w-0 flex-1">
                 <Link
                   to={`${ROUTES.shopProduct}/${item.productId}`}
@@ -76,9 +72,7 @@ export default function CartPage() {
                 </p>
               </div>
 
-              {/* Controls */}
               <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-5">
-                {/* Qty selector */}
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -102,12 +96,10 @@ export default function CartPage() {
                   </button>
                 </div>
 
-                {/* Line total */}
                 <p className="w-20 text-right text-sm font-extrabold text-slate-900 dark:text-white">
                   {formatCurrency(item.price * item.quantity)}
                 </p>
 
-                {/* Remove */}
                 <button
                   type="button"
                   onClick={() => removeItem(item.productId)}
@@ -124,7 +116,6 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Order Summary Sidebar */}
         <div className="lg:col-span-4">
           <div className="sticky top-20 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900 transition-colors">
             <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
@@ -173,7 +164,6 @@ export default function CartPage() {
               </svg>
             </Button>
 
-            {/* Trust signal */}
             <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5 text-emerald-500">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -182,7 +172,6 @@ export default function CartPage() {
               <span>256-bit SSL Secure Checkout</span>
             </div>
 
-            {/* Payment method icons */}
             <div className="mt-3 flex items-center justify-center gap-2">
               {["Visa", "MC", "UPI", "Net"].map((method) => (
                 <span

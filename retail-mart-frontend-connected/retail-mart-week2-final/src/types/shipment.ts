@@ -18,7 +18,6 @@ export interface Shipment {
   trackingHistory: ShipmentStatusEvent[];
 }
 
-/** Sequential status transitions matching the backend's SHIPMENT_STATUS_TRANSITIONS. */
 export const SHIPMENT_STATUS_TRANSITIONS: Record<ShipmentStatus, ShipmentStatus[]> = {
   Pending: ["Packed"],
   Packed: ["Shipped"],
@@ -27,7 +26,6 @@ export const SHIPMENT_STATUS_TRANSITIONS: Record<ShipmentStatus, ShipmentStatus[
   Delivered: [],
 };
 
-/** Fields collected by ShipmentForm when creating a new shipment. */
 export interface ShipmentFormValues {
   orderId: string;
   courier: string;

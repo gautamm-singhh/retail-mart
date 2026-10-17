@@ -25,7 +25,34 @@ couriers_bp = Blueprint("couriers", __name__)
 @couriers_bp.get("")
 @roles_required("Admin", "Manager", "Staff")
 def list_couriers():
-    """Returns all couriers.  ?active=true returns only is_active=True ones."""
+    """
+    List Shipping Couriers
+    Get the list of shipping courier partners. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Couriers
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: active
+        type: boolean
+        required: false
+        description: Set to true to return only active courier partners.
+    responses:
+      200:
+        description: Request successful. Returns the list of couriers.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Courier'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     active_only = request.args.get("active", "").lower() == "true"
     query = Courier.query
     if active_only:
@@ -37,6 +64,65 @@ def list_couriers():
 @couriers_bp.post("")
 @roles_required("Admin", "Manager")
 def create_courier():
+    """
+    Create Courier Partner
+    Register a new shipping courier partner with its name, carrier code, and optional tracking URL. Admin or Manager access required.
+    ---
+    tags:
+      - Couriers
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the courier partner details. name and code are required.
+        schema:
+          type: object
+          required:
+            - name
+            - code
+          properties:
+            name:
+              type: string
+              description: Courier company name.
+              example: Blue Dart Express
+            code:
+              type: string
+              description: Unique uppercase carrier code.
+              example: BLUEDART
+            contactEmail:
+              type: string
+              description: Support or dispatch contact email.
+              example: support@bluedart.com
+            trackingUrlTemplate:
+              type: string
+              description: Tracking URL pattern containing {tracking_number} placeholder.
+              example: https://www.bluedart.com/track?numbers={tracking_number}
+            isActive:
+              type: boolean
+              description: Whether this courier partner is currently active.
+              example: true
+    responses:
+      201:
+        description: Courier created successfully.
+        schema:
+          $ref: '#/definitions/Courier'
+      400:
+        description: Invalid or missing request data. name and code are required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin or Manager role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: A courier with this name or code already exists.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
     code = (data.get("code") or "").strip().upper()
@@ -49,7 +135,6 @@ def create_courier():
     if not code:
         return jsonify({"error": "code is required"}), 400
 
-    # Uniqueness checks
     if Courier.query.filter_by(name=name).first():
         return jsonify({"error": f"A courier named '{name}' already exists"}), 409
     if Courier.query.filter_by(code=code).first():
@@ -71,6 +156,36 @@ def create_courier():
 @couriers_bp.get("/<courier_id>")
 @roles_required("Admin", "Manager", "Staff")
 def get_courier(courier_id):
+    """
+    Get Courier Details
+    Get details of a specific shipping courier partner using its courier ID. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Couriers
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: courier_id
+        type: string
+        required: true
+        description: Unique courier ID (e.g. CUR-BLUDT).
+    responses:
+      200:
+        description: Request successful. Returns the courier partner details.
+        schema:
+          $ref: '#/definitions/Courier'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested courier was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     courier = Courier.query.get(courier_id)
     if not courier:
         return jsonify({"error": "Courier not found"}), 404
@@ -80,6 +195,74 @@ def get_courier(courier_id):
 @couriers_bp.put("/<courier_id>")
 @roles_required("Admin", "Manager")
 def update_courier(courier_id):
+    """
+    Update Courier Partner
+    Update an existing shipping courier partner using its courier ID. Admin or Manager access required.
+    ---
+    tags:
+      - Couriers
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: courier_id
+        type: string
+        required: true
+        description: Unique courier ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the updated courier partner details. name and code are required.
+        schema:
+          type: object
+          required:
+            - name
+            - code
+          properties:
+            name:
+              type: string
+              description: Updated courier company name.
+              example: Blue Dart Express
+            code:
+              type: string
+              description: Updated unique carrier code.
+              example: BLUEDART
+            contactEmail:
+              type: string
+              description: Updated support contact email.
+              example: dispatch@bluedart.com
+            trackingUrlTemplate:
+              type: string
+              description: Updated tracking URL pattern with {tracking_number}.
+              example: https://www.bluedart.com/track?numbers={tracking_number}
+            isActive:
+              type: boolean
+              description: Updated active status.
+              example: true
+    responses:
+      200:
+        description: Courier updated successfully.
+        schema:
+          $ref: '#/definitions/Courier'
+      400:
+        description: Invalid or missing request data. name and code are required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin or Manager role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested courier was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Courier name or code conflicts with another partner.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     courier = Courier.query.get(courier_id)
     if not courier:
         return jsonify({"error": "Courier not found"}), 404
@@ -115,6 +298,53 @@ def update_courier(courier_id):
 @couriers_bp.patch("/<courier_id>/status")
 @roles_required("Admin", "Manager")
 def toggle_courier_status(courier_id):
+    """
+    Toggle Courier Status
+    Enable or disable a shipping courier partner using its courier ID. Admin or Manager access required.
+    ---
+    tags:
+      - Couriers
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: courier_id
+        type: string
+        required: true
+        description: Unique courier ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the new active status for the courier.
+        schema:
+          type: object
+          required:
+            - isActive
+          properties:
+            isActive:
+              type: boolean
+              description: Set to true to activate or false to deactivate.
+              example: false
+    responses:
+      200:
+        description: Courier status updated successfully.
+        schema:
+          $ref: '#/definitions/Courier'
+      400:
+        description: Invalid or missing request data. isActive (boolean) is required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin or Manager role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested courier was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     courier = Courier.query.get(courier_id)
     if not courier:
         return jsonify({"error": "Courier not found"}), 404
@@ -132,6 +362,38 @@ def toggle_courier_status(courier_id):
 @couriers_bp.delete("/<courier_id>")
 @roles_required("Admin")
 def delete_courier(courier_id):
+    """
+    Delete Courier Partner
+    Delete a shipping courier partner using its courier ID. Admin access required.
+    ---
+    tags:
+      - Couriers
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: courier_id
+        type: string
+        required: true
+        description: Unique courier ID to delete.
+    responses:
+      204:
+        description: Courier deleted successfully.
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested courier was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Cannot delete courier because existing shipments are linked to it.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     courier = Courier.query.get(courier_id)
     if not courier:
         return jsonify({"error": "Courier not found"}), 404

@@ -30,8 +30,6 @@ export default function AnalyticsPage() {
     setIsLoading(true);
     setError(null);
 
-    // Timeout safety: backend Gemini inference takes ~12-16s. Set 25s client timeout.
-    // If AI fails or times out, fall back gracefully to statistical projection with honest state.
     const executeFetch = async (): Promise<SalesProjection> => {
       if (mode === "ai") {
         try {
@@ -40,7 +38,6 @@ export default function AnalyticsPage() {
           );
           return await Promise.race([fetchAiProjections(period), timeoutPromise]);
         } catch (err) {
-          // Fall back gracefully to standard statistical projection with honest fallback narrative
           try {
             const fallbackData = await fetchProjections(period);
             return {
@@ -73,7 +70,6 @@ export default function AnalyticsPage() {
     };
   }, [period, mode, reloadToken]);
 
-  // Derived real analytics metrics (NO hardcoded multipliers or synthetic numbers)
   const metrics = useMemo(() => {
     const history = projection?.history || [];
     const forecast = projection?.forecast || [];
@@ -102,7 +98,6 @@ export default function AnalyticsPage() {
     };
   }, [projection]);
 
-  // Handle Export CSV
   function handleExportReport() {
     if (!projection) return;
     const rows = [
@@ -134,7 +129,6 @@ export default function AnalyticsPage() {
     document.body.removeChild(link);
   }
 
-  // Table Column Definitions
   const historyColumns: TableColumn<SalesProjection["history"][number]>[] = [
     {
       header: "Period",
@@ -179,7 +173,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 1. Clean Executive Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 shadow-2xs dark:border-emerald-500/30 dark:bg-emerald-950/50 dark:text-emerald-400">
@@ -194,7 +187,6 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        {/* Export Button */}
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -210,9 +202,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* 2. Top 4 Focused KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Card 1: Historical Revenue */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -232,7 +222,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Card 2: Projected Peak */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
@@ -254,7 +243,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Card 3: Historical Orders */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
@@ -276,7 +264,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Card 4: Model Engine */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-start justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400">
@@ -305,7 +292,6 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* 3. Controls Toolbar: Period & Mode Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -329,7 +315,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Engine Switcher */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Forecasting:
@@ -364,7 +349,6 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* 4. Main Body: Loading / Error / Content */}
       {isLoading ? (
         <LoadingState
           label={
@@ -387,7 +371,6 @@ export default function AnalyticsPage() {
         />
       ) : (
         <div className="flex flex-col gap-6">
-          {/* Executive AI / Statistical Narrative Briefing */}
           {projection.narrative ? (
             <div
               className={`rounded-2xl border p-4 text-xs sm:text-sm shadow-2xs transition-all ${
@@ -434,7 +417,6 @@ export default function AnalyticsPage() {
             </div>
           ) : null}
 
-          {/* Revenue Trend & Projection Chart */}
           <Card className="p-5">
             <div className="mb-4">
               <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
@@ -454,7 +436,6 @@ export default function AnalyticsPage() {
             />
           </Card>
 
-          {/* Audited Data Tables: History vs Forecast */}
           <Card className="p-5">
             <div className="mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
@@ -466,7 +447,6 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* History Table */}
               <div>
                 <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                   Historical Records ({projection.history.length})
@@ -480,7 +460,6 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Forecast Table */}
               <div>
                 <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
                   Forecast Trajectory Points ({projection.forecast.length})

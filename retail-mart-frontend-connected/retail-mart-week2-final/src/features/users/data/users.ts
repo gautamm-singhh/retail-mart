@@ -1,10 +1,5 @@
 import { User } from "@/types";
 
-// Mock data only - stands in for a future GET /users response from Sorav's
-// backend / Authorization Management module. Kept out of the page
-// component so swapping this for a real API call later doesn't touch any
-// JSX. See src/features/users/services/userRepository.ts for how the UI
-// workflow (add/edit/deactivate) operates on this list in memory.
 export const mockUsers: User[] = [
   {
     id: "u-001",

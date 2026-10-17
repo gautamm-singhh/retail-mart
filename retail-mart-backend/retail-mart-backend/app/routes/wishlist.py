@@ -14,8 +14,28 @@ wishlist_bp = Blueprint("wishlist", __name__)
 @roles_required("Customer", "Admin", "Manager", "Staff")
 def get_wishlist():
     """
-    Returns all wishlist items for the authenticated customer.
-    User isolation: only items belonging to get_jwt_identity() are returned.
+    Get Wishlist
+    Get all items currently in your personal wishlist. Authentication required.
+    ---
+    tags:
+      - Wishlist
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Request successful. Returns the list of wishlist items.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/WishlistItem'
+      401:
+        description: Authentication is required or the provided token is invalid.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     user_id = get_jwt_identity()
     items = (
@@ -30,8 +50,76 @@ def get_wishlist():
 @roles_required("Customer", "Admin", "Manager", "Staff")
 def add_to_wishlist():
     """
-    Adds a product to the authenticated customer's wishlist.
-    Idempotent: if already in wishlist, returns existing item.
+    Add Product to Wishlist
+    Add a product to your personal wishlist by sending its product ID. Authentication required.
+    ---
+    tags:
+      - Wishlist
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the product ID to add to your wishlist.
+        schema:
+          type: object
+          required:
+            - productId
+          properties:
+            productId:
+              type: string
+              description: Unique product ID to add.
+              example: "prod_uuid_123"
+            product_id:
+              type: string
+              description: Alternative alias for product ID.
+              example: "prod_uuid_123"
+    responses:
+      201:
+        description: Product added to wishlist successfully.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Added to wishlist"
+            item:
+              $ref: '#/definitions/WishlistItem'
+      200:
+        description: Product already in wishlist.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Product already in wishlist"
+            item:
+              $ref: '#/definitions/WishlistItem'
+      400:
+        description: Invalid or missing request data. productId is required.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "productId is required"
+      401:
+        description: Authentication is required or the provided token is invalid.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested product was not found.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Product not found"
     """
     user_id = get_jwt_identity()
     data = request.get_json(silent=True) or {}
@@ -70,9 +158,37 @@ def add_to_wishlist():
 @roles_required("Customer", "Admin", "Manager", "Staff")
 def remove_from_wishlist(product_id):
     """
-    Removes a product from the authenticated customer's wishlist.
-    Accepts either the product_id or the wishlist item id.
-    Strict user isolation: only deletes item matching user_id.
+    Remove Product from Wishlist
+    Remove a product from your wishlist using its product ID or wishlist item ID. Authentication required.
+    ---
+    tags:
+      - Wishlist
+    security:
+      - Bearer: []
+    parameters:
+      - name: product_id
+        in: path
+        type: string
+        required: true
+        description: Product ID or wishlist item ID to remove.
+        example: "prod_uuid_123"
+    responses:
+      200:
+        description: Request successful. Item removed from wishlist.
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Removed from wishlist"
+      401:
+        description: Authentication is required or the provided token is invalid.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     user_id = get_jwt_identity()
     item = WishlistItem.query.filter_by(user_id=user_id, product_id=product_id).first()

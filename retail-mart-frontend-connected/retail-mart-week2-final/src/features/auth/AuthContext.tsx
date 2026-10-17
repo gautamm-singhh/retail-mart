@@ -18,23 +18,16 @@ interface LoginResponse {
 }
 
 export interface AuthContextValue {
-  /** True as soon as a token exists locally - does not wait on /auth/me. */
   isAuthenticated: boolean;
-  /** Null until /auth/me resolves (or when signed out). */
   currentUser: CurrentUser | null;
-  /** True while /auth/me is resolving after a token is found on load. */
   isLoadingUser: boolean;
-  /** Resolves with the signed-in user on success, null on invalid credentials. Throws on network/server errors. */
   login: (
     email: string,
     password: string,
     targetPortal?: "customer" | "admin",
   ) => Promise<CurrentUser | null>;
-  /** Customer signup (storefront). Throws ApiError on validation failure (e.g. email already taken). */
   signup: (values: { name: string; email: string; password: string; phone?: string }) => Promise<void>;
-  /** Step 1 of mobile OTP auth: sends a code to `phone`. */
   requestOtp: (phone: string) => Promise<void>;
-  /** Step 2: verifies the code, logging in or auto-creating a Customer account. */
   verifyOtp: (phone: string, code: string, name?: string) => Promise<{ isNewUser: boolean }>;
   logout: () => void;
 }
@@ -42,16 +35,6 @@ export interface AuthContextValue {
 // eslint-disable-next-line react-refresh/only-export-components -- context object is intentionally colocated with its provider
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-/**
- * Real authentication backed by Sorav's Flask API (JWT).
- *
- * - `login()` calls POST /api/auth/login, stores the returned token, and
- *   sets `currentUser` from the response immediately.
- * - On mount, if a token is already in sessionStorage (e.g. after a page
- *   refresh), this calls GET /api/auth/me to re-hydrate `currentUser`. If
- *   that call fails (expired/invalid token), the token is cleared and the
- *   user is treated as signed out.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getAuthToken());
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -72,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setCurrentUser(user);
       })
       .catch(() => {
-        // Token is invalid/expired - drop it and fall back to signed-out.
         if (!cancelled) {
           setAuthToken(null);
           setToken(null);
@@ -101,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ email: cleanEmail, password }),
         });
 
-        // Enforce role security against intended portal without relying on UI state
         if (targetPortal === "customer" && data.user.role !== "Customer") {
           throw new ApiError(
             403,
@@ -126,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (err.status === 401) {
             return null;
           }
-          // Preserve specific 403 role-mismatch messages for caller
           throw err;
         }
         throw err;

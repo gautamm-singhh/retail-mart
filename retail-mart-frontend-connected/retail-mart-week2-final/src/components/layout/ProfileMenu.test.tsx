@@ -7,10 +7,6 @@ import { setAuthToken } from "@/features/auth/authStorage";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
 
 function renderProfileMenu() {
-  // Seed a valid token before render, the same state a real person would
-  // be in after a successful /login and a page refresh - AuthProvider
-  // re-hydrates currentUser via GET /auth/me (see src/test/mockApi.ts for
-  // how the fake backend resolves this token to a user).
   setAuthToken("test-token-u-001");
 
   return render(
@@ -72,8 +68,6 @@ describe("ProfileMenu", () => {
     await userEvent.click(await screen.findByRole("button", { name: /account menu/i }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 
-    // Signing out unmounts ProfileMenu (currentUser becomes null), which is
-    // itself proof the sign-out action ran.
     expect(
       screen.queryByRole("button", { name: /account menu/i }),
     ).not.toBeInTheDocument();

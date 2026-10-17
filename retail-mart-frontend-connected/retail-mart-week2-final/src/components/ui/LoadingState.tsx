@@ -3,10 +3,6 @@ interface LoadingStateProps {
   label?: string;
 }
 
-/**
- * Skeleton shimmer placeholder displayed while async data resolves.
- * Rows fade progressively for visual depth without multiple animation delays.
- */
 export function LoadingState({ rows = 4, label = "Loading" }: LoadingStateProps) {
   return (
     <div role="status" aria-label={label} className="space-y-3 p-4 animate-in fade-in-50 duration-200">
@@ -16,7 +12,6 @@ export function LoadingState({ rows = 4, label = "Loading" }: LoadingStateProps)
           className="relative h-11 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800/60"
           style={{ opacity: Math.max(0.35, 1 - index * 0.15) }}
         >
-          {/* Shimmer sweep */}
           <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_linear_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-slate-700/40" />
         </div>
       ))}

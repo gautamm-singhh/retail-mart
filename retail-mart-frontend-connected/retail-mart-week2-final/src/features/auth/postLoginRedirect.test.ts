@@ -12,9 +12,6 @@ describe("getPostLoginRedirect", () => {
   });
 
   it("does NOT send a Customer to an admin path even if that's what they were bounced from", () => {
-    // Regression test: this is the exact bug report - an unauthenticated
-    // visit to "/" redirects to /login with from: "/", and a Customer
-    // logging in there must not be sent back to the admin dashboard.
     expect(getPostLoginRedirect("Customer", "/")).toBe(ROUTES.shop);
     expect(getPostLoginRedirect("Customer", "/dashboard")).toBe(ROUTES.shop);
     expect(getPostLoginRedirect("Customer", "/users")).toBe(ROUTES.shop);

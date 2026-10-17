@@ -24,18 +24,63 @@ customer_stats_bp = Blueprint("customer_stats", __name__)
 @roles_required("Customer")
 def customer_summary():
     """
-    Returns aggregated purchase statistics for the logged-in customer.
-
-    Response shape (matches src/types/customerStats.ts -> CustomerStats):
-      totalOrders             int   — all orders ever placed
-      totalSpent              float — sum of non-Cancelled order amounts
-      totalItemsPurchased     int   — sum of item quantities across non-Cancelled orders
-      uniqueProductsPurchased int   — distinct product names across non-Cancelled orders
-      activeShipments         int   — shipments not yet Delivered
-      lastOrderDate           str|null — most recent order date (YYYY-MM-DD)
-      last30DaysOrders        int
-      last30DaysSpent         float
-      categoryBreakdown       list[{ category, orderCount, totalSpent }]
+    Get Customer Statistics
+    Get purchase statistics for your customer account, including total orders, total amount spent, and category breakdown. Customer authentication required.
+    ---
+    tags:
+      - Customer Statistics
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Request successful. Returns customer purchase statistics.
+        schema:
+          type: object
+          properties:
+            totalOrders:
+              type: integer
+              example: 4
+            totalSpent:
+              type: number
+              example: 12499.50
+            totalItemsPurchased:
+              type: integer
+              example: 8
+            uniqueProductsPurchased:
+              type: integer
+              example: 5
+            activeShipments:
+              type: integer
+              example: 1
+            lastOrderDate:
+              type: string
+              example: 2026-09-22
+            last30DaysOrders:
+              type: integer
+              example: 2
+            last30DaysSpent:
+              type: number
+              example: 4999.0
+            categoryBreakdown:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                    example: Electronics
+                  orderCount:
+                    type: integer
+                    example: 3
+                  totalSpent:
+                    type: number
+                    example: 8999.0
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Customer role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     user_id = get_jwt_identity()
     thirty_days_ago = date.today() - timedelta(days=30)

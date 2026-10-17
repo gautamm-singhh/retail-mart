@@ -145,7 +145,6 @@ export default function MyOrdersPage() {
             className="group rounded-2xl border border-slate-200/70 bg-white shadow-sm transition-all duration-200 hover:border-emerald-400/40 hover:shadow-md dark:border-slate-800/70 dark:bg-slate-900 overflow-hidden"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
-            {/* Order Card Header */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5 dark:border-slate-800/80">
               <div>
                 <div className="flex items-center gap-2">
@@ -164,7 +163,6 @@ export default function MyOrdersPage() {
               </div>
             </div>
 
-            {/* Items List */}
             <ul className="px-4 sm:px-5 py-3 space-y-1.5 divide-y divide-slate-100/70 dark:divide-slate-800/60">
               {order.items.map((item, i) => (
                 <li key={i} className="flex justify-between py-1.5 first:pt-0 text-xs sm:text-sm">
@@ -179,7 +177,6 @@ export default function MyOrdersPage() {
               ))}
             </ul>
 
-            {/* Shipment & Live Carrier Tracking Block */}
             {order.shipment ? (
               <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-4 text-xs dark:border-slate-800 dark:bg-slate-800/40">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -237,7 +234,6 @@ export default function MyOrdersPage() {
               <p className="mt-3 text-xs text-slate-400 italic">Shipping information will be assigned shortly.</p>
             )}
 
-            {/* Order Card Footer */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 sm:px-5 py-3.5 dark:border-slate-800/80">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs text-slate-500 dark:text-slate-400">Order Total:</span>

@@ -31,18 +31,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [pendingProductIds, setPendingProductIds] = useState<Set<string>>(new Set());
 
-  // Migrate / remove legacy localStorage wishlist data
   useEffect(() => {
     try {
       if (localStorage.getItem(OLD_LOCAL_STORAGE_KEY)) {
         localStorage.removeItem(OLD_LOCAL_STORAGE_KEY);
       }
     } catch {
-      // Ignore
+      /* ignore */
     }
   }, []);
 
-  // Fetch authenticated user's wishlist from MySQL backend
   const refresh = useCallback(async () => {
     if (!isAuthenticated) {
       setItems([]);
@@ -89,7 +87,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
       setPendingProductIds((prev) => new Set(prev).add(product.id));
 
-      // Optimistically add to UI
       const tempItem: WishlistItem = {
         id: `temp-${Date.now()}`,
         userId: currentUser?.id ?? "",
@@ -123,7 +120,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         }
         showToast(`Saved ${product.name} to wishlist.`);
       } catch (err: unknown) {
-        // Roll back on failure
         setItems((prev) => prev.filter((it) => it.productId !== product.id));
         const msg = err instanceof Error ? err.message : "Could not save to wishlist";
         showToast(msg, "error");
@@ -152,14 +148,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       const targetItem = items.find((it) => it.productId === productId);
       const productName = targetItem?.product?.name || "Product";
 
-      // Optimistically remove from UI
       setItems((prev) => prev.filter((it) => it.productId !== productId));
 
       try {
         await apiRemove(productId);
         showToast(`Removed ${productName} from wishlist.`);
       } catch (err: unknown) {
-        // Rollback on failure
         setItems(previousItems);
         const msg = err instanceof Error ? err.message : "Could not remove from wishlist";
         showToast(msg, "error");

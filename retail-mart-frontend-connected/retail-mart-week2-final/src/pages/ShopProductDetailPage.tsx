@@ -75,7 +75,7 @@ export default function ShopProductDetailPage() {
     try {
       await toggleWishlist(product);
     } catch {
-      // Handled in context
+      /* ignore */
     }
   }
 
@@ -104,7 +104,6 @@ export default function ShopProductDetailPage() {
 
   return (
     <div className="space-y-6 pb-16 sm:pb-0 animate-in fade-in-50 duration-200">
-      {/* Breadcrumb Bar */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <Link to={ROUTES.shop} className="hover:text-emerald-600 transition-colors dark:hover:text-emerald-400">
           Storefront
@@ -122,9 +121,7 @@ export default function ShopProductDetailPage() {
         </span>
       </nav>
 
-      {/* Main Product Card */}
       <div className="grid grid-cols-1 gap-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8 md:grid-cols-12 lg:gap-12 dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
-        {/* Left Column: Image Area */}
         <div className="md:col-span-6 lg:col-span-6">
           <div className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-100 bg-slate-100 dark:border-slate-800 dark:bg-slate-800/80 shadow-xs">
             {getProductExactImage(product) && !imgError ? (
@@ -140,7 +137,6 @@ export default function ShopProductDetailPage() {
               </div>
             )}
 
-            {/* Floating Wishlist Button */}
             <button
               type="button"
               onClick={handleToggleWishlist}
@@ -171,7 +167,6 @@ export default function ShopProductDetailPage() {
           </div>
         </div>
 
-        {/* Right Column: Details & Actions */}
         <div className="flex flex-col justify-between md:col-span-6 lg:col-span-6">
           <div className="space-y-4">
             <div>
@@ -210,7 +205,6 @@ export default function ShopProductDetailPage() {
               )}
             </div>
 
-            {/* Quantity Stepper */}
             {product.stock > 0 && (
               <div className="flex items-center gap-3 pt-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -245,7 +239,6 @@ export default function ShopProductDetailPage() {
               </div>
             )}
 
-            {/* Action Buttons */}
             <div className="mt-4 flex flex-wrap items-center gap-3 pt-4">
               <Button
                 variant="secondary"
@@ -294,7 +287,6 @@ export default function ShopProductDetailPage() {
             </div>
           </div>
 
-          {/* Guarantee Highlights */}
           <div className="mt-8 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 dark:border-slate-800 dark:from-slate-800/50 dark:to-slate-900/50">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
@@ -314,7 +306,6 @@ export default function ShopProductDetailPage() {
         </div>
       </div>
 
-      {/* Recommended Products Collection (Minimum 6 items) */}
       {recommended.length > 0 && (
         <div className="mt-14 pt-10 border-t border-slate-200/80 dark:border-slate-800/80">
           <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -346,7 +337,6 @@ export default function ShopProductDetailPage() {
         </div>
       )}
 
-      {/* Sticky Mobile Purchase Bar */}
       <aside
         aria-label="Quick purchase actions"
         className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-slate-200/90 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-md dark:border-slate-800/90 dark:bg-slate-900/95 sm:hidden"

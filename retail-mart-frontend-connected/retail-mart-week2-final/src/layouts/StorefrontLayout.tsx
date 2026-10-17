@@ -9,6 +9,7 @@ import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { PageFallback } from "@/components/common/PageFallback";
+import { Logo } from "@/components/common/Logo";
 import { ROUTES } from "@/constants/routes";
 
 export default function StorefrontLayout() {
@@ -28,19 +29,18 @@ export default function StorefrontLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F5F4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
-      {/* Elevated Commercial Navbar */}
+    <div className="flex flex-col min-h-screen bg-[#F2F5F4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs dark:border-slate-800/90 dark:bg-slate-900/95 dark:shadow-sm transition-all duration-200">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          {/* LEFT: Retail Mart Brand Logo */}
           <div className="flex shrink-0 items-center">
             <Link
               to={ROUTES.shop}
               className="group flex items-center gap-2.5 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-sm shadow-xs transition-transform duration-200 group-hover:scale-105 group-active:scale-95">
-                RM
-              </span>
+              <Logo
+                size="md"
+                className="rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-105 group-active:scale-95"
+              />
               <div className="flex flex-col">
                 <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight transition-colors group-hover:text-emerald-700 dark:group-hover:text-emerald-400">
                   Retail Mart
@@ -52,7 +52,6 @@ export default function StorefrontLayout() {
             </Link>
           </div>
 
-          {/* CENTER: Visually Centered Search Input */}
           <div className="hidden md:flex flex-1 max-w-xl mx-auto items-center justify-center px-4">
             <form onSubmit={handleSearchSubmit} className="w-full">
               <div className="group relative">
@@ -104,12 +103,9 @@ export default function StorefrontLayout() {
             </form>
           </div>
 
-          {/* FAR RIGHT: Theme Toggle Pill, Account, Cart */}
           <div className="flex shrink-0 items-center justify-end gap-2.5 sm:gap-3">
-            {/* Single Segmented Light / Dark Toggle Pill */}
-            <ThemeToggle variant="segmented" />
+            <ThemeToggle variant="icon" />
 
-            {/* Account / User Control */}
             {isAuthenticated ? (
               <ProfileMenu showName={true} />
             ) : (
@@ -134,7 +130,17 @@ export default function StorefrontLayout() {
               </Button>
             )}
 
-            {/* Wishlist Button with Real-time Count Badge */}
+            {(currentUser?.role === "Admin" || currentUser?.role?.toLowerCase() === "admin") && (
+              <Link
+                to={ROUTES.helpApi}
+                title="Retail Mart REST API Documentation"
+                className="hidden lg:flex h-9 items-center gap-1.5 rounded-full border border-slate-200/90 bg-white px-3 text-xs font-semibold text-slate-700 shadow-xs hover:border-emerald-500 hover:text-emerald-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400 transition-all"
+              >
+                <span className="text-xs">⚡</span>
+                <span>API Docs</span>
+              </Link>
+            )}
+
             <Link
               to={ROUTES.wishlist}
               aria-label={`Saved wishlist with ${wishlistCount} item${wishlistCount === 1 ? "" : "s"}`}
@@ -165,7 +171,6 @@ export default function StorefrontLayout() {
               )}
             </Link>
 
-            {/* Prominent Cart Button with Count Badge */}
             <Link
               to={ROUTES.cart}
               aria-label={`Shopping cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
@@ -197,7 +202,6 @@ export default function StorefrontLayout() {
           </div>
         </div>
 
-        {/* Mobile Search Input */}
         <div className="border-t border-slate-200/70 px-4 py-2.5 md:hidden dark:border-slate-800/80">
           <form onSubmit={handleSearchSubmit}>
             <div className="relative">
@@ -227,17 +231,105 @@ export default function StorefrontLayout() {
         </div>
       </header>
 
-      {/* Customer appreciation marquee */}
       {isAuthenticated && currentUser && (
         <AppreciationMarquee stats={stats} customerName={currentUser.name} />
       )}
 
-      {/* Centered Max-Width Storefront Body with Smooth Page Entrance */}
-      <main key={location.pathname} className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-page-entrance">
+      <main key={location.pathname} className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-page-entrance">
         <Suspense fallback={<PageFallback />}>
           <Outlet />
         </Suspense>
       </main>
+
+      <footer className="mt-auto border-t border-slate-200/80 bg-white/70 dark:border-slate-800/80 dark:bg-slate-900/70 backdrop-blur-xs text-xs text-slate-500 dark:text-slate-400">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="sm:col-span-2 md:col-span-1">
+              <Link to={ROUTES.shop} className="flex items-center gap-2 mb-2.5">
+                <Logo size="sm" className="rounded-lg shadow-2xs" />
+                <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">
+                  Retail Mart Platform
+                </span>
+              </Link>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Enterprise retail &amp; e-commerce management platform.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-200 mb-3">
+                Storefront
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to={ROUTES.shop} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    Browse Catalog
+                  </Link>
+                </li>
+                <li>
+                  <Link to={ROUTES.cart} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    Shopping Cart
+                  </Link>
+                </li>
+                <li>
+                  <Link to={ROUTES.wishlist} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    Saved Wishlist
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-200 mb-3">
+                Account
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to={ROUTES.myOrders} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    Orders
+                  </Link>
+                </li>
+                <li>
+                  <Link to={ROUTES.account} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    Profile
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-slate-200 mb-3">
+                Developers
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to={ROUTES.helpApi}
+                    className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    API Documentation
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to={ROUTES.helpFsd}
+                    className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    Functional Documentation
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400 dark:text-slate-500">
+            <div>&copy; {new Date().getFullYear()} Retail Mart Platform. All rights reserved.</div>
+            <div className="flex items-center gap-4">
+              <span>Secure &amp; Scalable Cloud Architecture</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

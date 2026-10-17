@@ -17,7 +17,6 @@ export interface SalesProjection {
   period: ReportPeriod;
   history: SalesReportBucket[];
   forecast: ProjectionForecastPoint[];
-  /** Only present on the AI projections endpoint. */
   narrative?: string;
   aiGenerated?: boolean;
 }

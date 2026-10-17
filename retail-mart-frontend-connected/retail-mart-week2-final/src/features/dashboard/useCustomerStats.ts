@@ -8,11 +8,6 @@ interface UseCustomerStatsResult {
   error: string | null;
 }
 
-/**
- * Fetches and caches the authenticated customer's purchase statistics.
- * Mirrors the pattern used by useShipments, useAddresses, etc.
- * Only mounts a real request when rendered inside a Customer-role session.
- */
 export function useCustomerStats(): UseCustomerStatsResult {
   const [stats, setStats] = useState<CustomerStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);

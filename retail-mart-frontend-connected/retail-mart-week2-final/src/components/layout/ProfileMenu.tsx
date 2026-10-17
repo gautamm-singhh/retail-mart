@@ -10,9 +10,6 @@ interface ProfileMenuProps {
   showName?: boolean;
 }
 
-/**
- * Authenticated user avatar button and context menu with profile navigation and sign out.
- */
 export function ProfileMenu({ showName = false }: ProfileMenuProps) {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();

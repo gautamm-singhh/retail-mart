@@ -5,7 +5,6 @@ import "@/styles/index.css";
 import { router } from "@/app/router";
 import { initGA, setupRouterAnalytics } from "@/lib/analytics";
 
-// Initialize Google Analytics 4 and subscribe to SPA route transitions
 initGA();
 setupRouterAnalytics(router);
 

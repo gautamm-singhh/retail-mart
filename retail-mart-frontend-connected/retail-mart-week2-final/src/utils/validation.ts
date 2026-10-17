@@ -1,4 +1,3 @@
-// Lightweight, dependency-free validation helpers for client-side form validation.
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -26,10 +25,6 @@ export function hasMinLength(value: string, min: number): string | undefined {
   return value.trim().length >= min ? undefined : `Must be at least ${min} characters.`;
 }
 
-/**
- * Normalizes an Indian phone number to 10 digits if valid.
- * Strips formatting characters (spaces, dashes, parentheses) and country code (+91, 91, or 0 prefix).
- */
 export function normalizeIndianPhone(phone: string): string {
   if (!phone) return "";
   const cleaned = phone.trim().replace(/[\s\-().]/g, "");
@@ -45,16 +40,12 @@ export function normalizeIndianPhone(phone: string): string {
   return cleaned;
 }
 
-/**
- * Validates that an Indian mobile phone number has a valid 10-digit format starting with 6-9.
- */
 export function validateIndianPhone(phone: string, required = false): string | undefined {
   const trimmed = phone ? phone.trim() : "";
   if (!trimmed) {
     return required ? "Mobile number is required." : undefined;
   }
 
-  // Reject unsupported characters
   if (!/^[+\d\s\-().]+$/.test(trimmed)) {
     return "Phone number can only contain digits, spaces, and +91 prefix.";
   }
@@ -71,15 +62,11 @@ export function validateIndianPhone(phone: string, required = false): string | u
   return undefined;
 }
 
-/**
- * Validates a 6-digit Indian Postal PIN code (cannot start with 0).
- */
 export function isValidIndianPincode(pincode: string): boolean {
   if (!pincode) return false;
   return /^[1-9]\d{5}$/.test(pincode.trim());
 }
 
-/** True if every value in an errors record is undefined. */
 export function isValid(errors: Record<string, string | undefined>): boolean {
   return Object.values(errors).every((error) => !error);
 }

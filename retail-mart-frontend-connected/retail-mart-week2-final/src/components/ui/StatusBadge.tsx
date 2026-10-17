@@ -1,8 +1,5 @@
 import { Badge } from "@/components/ui/Badge";
 
-// One lookup table covers every status used across products, orders,
-// payments, and shipments so each feature doesn't need its own badge
-// mapping. Statuses that aren't listed fall back to the neutral tone.
 const STATUS_TONE: Record<
   string,
   "neutral" | "brand" | "success" | "warning" | "danger"

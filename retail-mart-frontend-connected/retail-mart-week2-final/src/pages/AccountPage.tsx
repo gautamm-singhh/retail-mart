@@ -62,10 +62,8 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-200">
-      {/* Account Page Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900 transition-colors">
         <div className="flex items-center gap-4">
-          {/* Avatar with ring */}
           <div className="relative">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-2xl font-black text-white shadow-md">
               {initial}
@@ -112,7 +110,6 @@ export default function AccountPage() {
         </Button>
       </div>
 
-      {/* Purchase Summary Section */}
       <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800/80">
           <div>
@@ -131,7 +128,6 @@ export default function AccountPage() {
           <ErrorState title="Couldn't load purchase summary" description={statsError} />
         ) : stats ? (
           <div className="space-y-6">
-            {/* 5 Primary Stat Cards */}
             <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-5">
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs dark:border-emerald-950/60 dark:bg-emerald-950/30">
                 <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{stats.totalOrders}</p>
@@ -155,7 +151,6 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Recent 30-Day Activity Bar */}
             <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-800/60">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Recent Activity (Past 30 Days)
@@ -177,7 +172,6 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Category Breakdown Table */}
             {stats.categoryBreakdown.length > 0 && (
               <div>
                 <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -218,7 +212,6 @@ export default function AccountPage() {
         ) : null}
       </section>
 
-      {/* Saved Wishlist Summary Card */}
       <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-rose-100 bg-rose-50/40 p-5 shadow-xs dark:border-rose-950/60 dark:bg-rose-950/20 transition-colors">
         <div className="flex items-center gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white shadow-xs">
@@ -253,7 +246,6 @@ export default function AccountPage() {
         </Button>
       </section>
 
-      {/* Address Book Section */}
       <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800/80">
           <div>
@@ -331,7 +323,6 @@ export default function AccountPage() {
         )}
       </section>
 
-      {/* Address Edit Modal */}
       <Modal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
@@ -345,7 +336,6 @@ export default function AccountPage() {
         />
       </Modal>
 
-      {/* Confirm Delete Dialog */}
       <ConfirmDialog
         isOpen={Boolean(deletingAddress)}
         title="Remove address"

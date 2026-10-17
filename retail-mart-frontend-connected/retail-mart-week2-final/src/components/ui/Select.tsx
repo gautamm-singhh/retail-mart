@@ -10,7 +10,6 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   hideLabel?: boolean;
   options: SelectOption[];
-  /** Validation error message. When set, renders below the field and marks it invalid for assistive tech. */
   error?: string;
 }
 

@@ -27,12 +27,6 @@ const DEFAULT_VALUES: UserFormValues = {
 
 type FormErrors = Partial<Record<keyof UserFormValues, string>>;
 
-/**
- * One form component for both "Add User" and "Edit User" - the caller
- * decides which by passing (or omitting) initialValues and a submitLabel.
- * Keeping this in its own file (rather than inline in UsersPage) is what
- * lets UserDetailsPage reuse the exact same form for its "Edit" action.
- */
 export function UserForm({
   initialValues,
   submitLabel,

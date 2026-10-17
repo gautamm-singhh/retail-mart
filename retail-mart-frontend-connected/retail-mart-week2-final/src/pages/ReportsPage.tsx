@@ -72,7 +72,6 @@ export default function ReportsPage() {
         description="Comprehensive performance diagnostics, financial revenue trajectories, and aggregated cohort metrics."
       />
 
-      {/* High-Level Executive KPI Cards */}
       {summary && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <AdminStatCard
@@ -106,10 +105,8 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Visual Charts Grid */}
       {summary && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Revenue Trend Chart */}
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -123,7 +120,6 @@ export default function ReportsPage() {
             <TrendLineChart data={summary.monthlyTrends} />
           </Card>
 
-          {/* Category Sales Distribution */}
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -134,7 +130,6 @@ export default function ReportsPage() {
             <CategoryBarChart data={summary.categoryBreakdown} />
           </Card>
 
-          {/* Order Status Distribution */}
           <Card className="p-5">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-ink-950 dark:text-slate-100">Order Lifecycle Breakdown</h2>
@@ -143,7 +138,6 @@ export default function ReportsPage() {
             <StatusDistribution data={summary.orderStatusBreakdown} />
           </Card>
 
-          {/* Payment Method Distribution */}
           <Card className="p-5">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-ink-950 dark:text-slate-100">Payment Channels</h2>
@@ -154,7 +148,6 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Detailed Period Report Table */}
       <Card className="p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

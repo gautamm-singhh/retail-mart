@@ -12,6 +12,28 @@ addresses_bp = Blueprint("addresses", __name__)
 @addresses_bp.get("")
 @roles_required("Customer")
 def list_addresses():
+    """
+    List Saved Addresses
+    Get all saved shipping and billing addresses for your customer account. Customer authentication required.
+    ---
+    tags:
+      - Addresses
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Request successful. Returns the list of saved addresses.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Address'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Customer role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     addresses = Address.query.filter_by(user_id=get_jwt_identity()).order_by(Address.created_at).all()
     return jsonify([a.to_dict() for a in addresses])
 
@@ -19,6 +41,75 @@ def list_addresses():
 @addresses_bp.post("")
 @roles_required("Customer")
 def create_address():
+    """
+    Create New Address
+    Save a new shipping or billing address to your account. Customer authentication required.
+    ---
+    tags:
+      - Addresses
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the address details. line1, city, state, and postalCode are required.
+        schema:
+          type: object
+          required:
+            - line1
+            - city
+            - state
+            - postalCode
+          properties:
+            label:
+              type: string
+              description: Friendly label for the address (e.g. Home, Work).
+              example: Home
+            line1:
+              type: string
+              description: Primary street address or building details.
+              example: Flat 402, Lotus Residency
+            line2:
+              type: string
+              description: Apartment, suite, unit, or landmark details.
+              example: Indiranagar 100ft Road
+            city:
+              type: string
+              description: City name.
+              example: Bengaluru
+            state:
+              type: string
+              description: State or province name.
+              example: Karnataka
+            postalCode:
+              type: string
+              description: Postal or PIN code.
+              example: "560038"
+            phone:
+              type: string
+              description: Contact phone number for delivery.
+              example: "+919876543210"
+            isDefault:
+              type: boolean
+              description: Set to true to make this your default address.
+              example: true
+    responses:
+      201:
+        description: Address created successfully.
+        schema:
+          $ref: '#/definitions/Address'
+      400:
+        description: Invalid or missing request data. line1, city, state, and postalCode are required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Customer role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     line1 = (data.get("line1") or "").strip()
     city = (data.get("city") or "").strip()
@@ -54,6 +145,75 @@ def create_address():
 @addresses_bp.put("/<address_id>")
 @roles_required("Customer")
 def update_address(address_id):
+    """
+    Update Address
+    Update an existing address using its address ID. Customer authentication required.
+    ---
+    tags:
+      - Addresses
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: address_id
+        type: string
+        required: true
+        description: Unique address ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter one or more address fields to update.
+        schema:
+          type: object
+          properties:
+            label:
+              type: string
+              description: Updated label for the address.
+              example: Office
+            line1:
+              type: string
+              description: Updated primary street address.
+              example: Suite 1201, Tech Park
+            line2:
+              type: string
+              description: Updated landmark or suite details.
+              example: Whitefield
+            city:
+              type: string
+              description: Updated city name.
+              example: Bengaluru
+            state:
+              type: string
+              description: Updated state or province name.
+              example: Karnataka
+            postalCode:
+              type: string
+              description: Updated postal or PIN code.
+              example: "560066"
+            phone:
+              type: string
+              description: Updated contact phone number.
+              example: "+919876543210"
+            isDefault:
+              type: boolean
+              description: Set to true to make this the default address.
+              example: true
+    responses:
+      200:
+        description: Address updated successfully.
+        schema:
+          $ref: '#/definitions/Address'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Customer role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested address was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     user_id = get_jwt_identity()
     address = Address.query.filter_by(id=address_id, user_id=user_id).first()
     if not address:
@@ -78,6 +238,34 @@ def update_address(address_id):
 @addresses_bp.delete("/<address_id>")
 @roles_required("Customer")
 def delete_address(address_id):
+    """
+    Delete Address
+    Delete a saved address using its address ID. Customer authentication required.
+    ---
+    tags:
+      - Addresses
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: address_id
+        type: string
+        required: true
+        description: Unique address ID to delete.
+    responses:
+      204:
+        description: Address deleted successfully.
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Customer role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested address was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     address = Address.query.filter_by(id=address_id, user_id=get_jwt_identity()).first()
     if not address:
         return jsonify({"error": "Address not found"}), 404

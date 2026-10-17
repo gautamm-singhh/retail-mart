@@ -17,16 +17,16 @@ from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
 
-BRAND_COLOR = colors.HexColor("#059669")   # Retail Mart emerald-600
-BRAND_DARK = colors.HexColor("#064e3b")    # Emerald 900
-BRAND_TINT = colors.HexColor("#f0fdf4")    # Emerald 50
-BADGE_BG = colors.HexColor("#d1fae5")      # Emerald 100
-BADGE_TEXT = colors.HexColor("#065f46")    # Emerald 800
-MUTED_COLOR = colors.HexColor("#64748b")   # Slate 500
-DARK_COLOR = colors.HexColor("#0f172a")    # Slate 900
-BODY_COLOR = colors.HexColor("#334155")    # Slate 700
-BORDER_COLOR = colors.HexColor("#e2e8f0")  # Slate 200
-LIGHT_BG = colors.HexColor("#f8fafc")      # Slate 50
+BRAND_COLOR = colors.HexColor("#059669")
+BRAND_DARK = colors.HexColor("#064e3b")
+BRAND_TINT = colors.HexColor("#f0fdf4")
+BADGE_BG = colors.HexColor("#d1fae5")
+BADGE_TEXT = colors.HexColor("#065f46")
+MUTED_COLOR = colors.HexColor("#64748b")
+DARK_COLOR = colors.HexColor("#0f172a")
+BODY_COLOR = colors.HexColor("#334155")
+BORDER_COLOR = colors.HexColor("#e2e8f0")
+LIGHT_BG = colors.HexColor("#f8fafc")
 
 _FONT_CONFIG = None
 
@@ -277,7 +277,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         fontSize=10.5,
         leading=13,
         textColor=DARK_COLOR,
-        alignment=2,  # Right
+        alignment=2,
     )
     right_date_style = ParagraphStyle(
         "RightDate",
@@ -285,7 +285,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         fontSize=8,
         leading=11,
         textColor=MUTED_COLOR,
-        alignment=2,  # Right
+        alignment=2,
     )
 
     issued_date_str = (

@@ -30,12 +30,10 @@ export default function DashboardPage() {
 
   useOnClickOutside(quickActionsRef, () => setShowQuickActions(false), showQuickActions);
 
-  // Auto-scrolling effect for Recent Orders table
   useEffect(() => {
     const el = ordersScrollRef.current;
     if (!el) return;
 
-    // Check prefers-reduced-motion
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
@@ -54,7 +52,6 @@ export default function DashboardPage() {
     return () => clearInterval(intervalId);
   }, [isOrdersPaused]);
 
-  // Derived metrics - 100% real data
   const lowStockCount = useMemo(() => products.filter((p) => p.stock > 0 && p.stock <= 20).length, [products]);
   const outOfStockCount = useMemo(() => products.filter((p) => p.status === "out-of-stock" || p.stock <= 0).length, [products]);
   const inStockCount = useMemo(() => Math.max(0, products.length - lowStockCount - outOfStockCount), [products, lowStockCount, outOfStockCount]);
@@ -68,13 +65,11 @@ export default function DashboardPage() {
   );
   const failedPaymentsCount = useMemo(() => payments.filter((p) => p.status === "Failed").length, [payments]);
 
-  // Derived real stock percentages for Donut chart
   const totalProductsCount = products.length || 1;
   const inStockPct = Math.round((inStockCount / totalProductsCount) * 100);
   const lowStockPct = Math.round((lowStockCount / totalProductsCount) * 100);
   const outOfStockPct = Math.max(0, 100 - inStockPct - lowStockPct);
 
-  // Dynamic real categories from products
   const topCategories = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of products) {
@@ -99,12 +94,10 @@ export default function DashboardPage() {
       .slice(0, 5);
   }, [products]);
 
-  // Sorted orders list for recent table
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [orders]);
 
-  // Dynamic real recent activity from orders, payments, shipments, products
   const recentActivities = useMemo(() => {
     const events = [];
     if (sortedOrders.length > 0) {
@@ -171,7 +164,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 1. Welcome Header & Action Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -185,9 +177,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Right Controls: Date Pill & Quick Actions */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Date & Productivity Pill */}
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               📅
@@ -202,7 +192,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Actions Dropdown */}
           <div className="relative" ref={quickActionsRef}>
             <button
               type="button"
@@ -274,9 +263,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Row of 5 Real KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {/* KPI 1: Active Users */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -297,14 +284,12 @@ export default function DashboardPage() {
               <span>● Active Directory</span>
               <span className="text-slate-400 font-normal">{users.length} accounts</span>
             </div>
-            {/* Emerald Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-emerald-500">
               <path d="M2 16 L12 14 L24 10 L36 12 L48 6 L58 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
         </div>
 
-        {/* KPI 2: Total Products */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
@@ -324,14 +309,12 @@ export default function DashboardPage() {
               <span>{outOfStockCount > 0 ? "⚠️" : "✓"}</span>
               <span className="text-slate-400 font-normal">{outOfStockCount} out of stock</span>
             </div>
-            {/* Blue Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-blue-500">
               <path d="M2 8 L14 12 L26 7 L38 14 L50 9 L58 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
         </div>
 
-        {/* KPI 3: Pending Orders */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
@@ -351,14 +334,12 @@ export default function DashboardPage() {
               <span>● Fulfillment</span>
               <span className="text-slate-400 font-normal">{orders.length} orders total</span>
             </div>
-            {/* Amber Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-amber-500">
               <path d="M2 14 L12 12 L24 15 L36 8 L48 6 L58 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
         </div>
 
-        {/* KPI 4: Total Payments */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
@@ -378,14 +359,12 @@ export default function DashboardPage() {
               <span>● Transactions</span>
               <span className="text-slate-400 font-normal">{failedPaymentsCount} failed</span>
             </div>
-            {/* Purple Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-purple-500">
               <path d="M2 16 L14 12 L26 14 L38 9 L48 11 L58 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
         </div>
 
-        {/* KPI 5: Pending Shipments */}
         <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
@@ -406,7 +385,6 @@ export default function DashboardPage() {
               <span>● Logistics</span>
               <span className="text-slate-400 font-normal">{shipments.length} total</span>
             </div>
-            {/* Rose Mini Sparkline */}
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-rose-500">
               <path d="M2 15 L14 13 L26 9 L38 12 L50 6 L58 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
@@ -414,7 +392,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 3. Promotional Growth Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-emerald-100/40 p-5 shadow-xs dark:border-emerald-900/60 dark:from-emerald-950/40 dark:via-slate-900 dark:to-teal-950/30">
         <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -456,9 +433,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. Middle Section: Recent Orders (Left 8) + Inventory & Payments (Right 4) */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        {/* Left 8 Cols: Recent Orders Table with Auto-Scroll */}
         <div className="xl:col-span-8 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900 flex flex-col">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -475,7 +450,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Table container with gentle auto-scroll & pause controls */}
           <div
             ref={ordersScrollRef}
             onMouseEnter={() => setIsOrdersPaused(true)}
@@ -549,9 +523,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right 4 Cols: Inventory & Payments Summary */}
         <div className="xl:col-span-4 flex flex-col gap-6">
-          {/* Inventory Summary Card */}
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -569,12 +541,9 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-4">
-              {/* SVG Donut Chart with Real Proportions */}
               <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
                 <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-                  {/* Background circle */}
                   <circle cx="18" cy="18" r="14" fill="none" stroke="#E2E8F0" strokeWidth="3.5" className="dark:stroke-slate-800" />
-                  {/* In stock arc (emerald) */}
                   <circle
                     cx="18"
                     cy="18"
@@ -585,7 +554,6 @@ export default function DashboardPage() {
                     strokeDasharray={`${inStockPct} 100`}
                     strokeDashoffset="0"
                   />
-                  {/* Low stock arc (amber) */}
                   <circle
                     cx="18"
                     cy="18"
@@ -596,7 +564,6 @@ export default function DashboardPage() {
                     strokeDasharray={`${lowStockPct} 100`}
                     strokeDashoffset={`-${inStockPct}`}
                   />
-                  {/* Out of stock arc (rose) */}
                   <circle
                     cx="18"
                     cy="18"
@@ -614,7 +581,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Legend List with Real Counts */}
               <div className="flex-1 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -641,7 +607,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Payments Summary Card */}
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -659,7 +624,6 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-4 flex items-center justify-between gap-4">
-              {/* Mini Bar Graph */}
               <div className="flex h-16 items-end gap-1.5">
                 <span className="h-8 w-2.5 rounded-sm bg-emerald-400/50" />
                 <span className="h-12 w-2.5 rounded-sm bg-emerald-500/70" />
@@ -683,9 +647,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 5. Bottom Section: Sales Overview (5), Top Categories (3), Recent Activity (4) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Sales Overview (5 cols) */}
         <div className="lg:col-span-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -705,7 +667,6 @@ export default function DashboardPage() {
             </select>
           </div>
 
-          {/* Area Chart with Bezier Curve */}
           <div className="mt-4">
             <svg viewBox="0 0 320 120" className="w-full overflow-visible">
               <defs>
@@ -714,18 +675,15 @@ export default function DashboardPage() {
                   <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              {/* Grid Lines */}
               <line x1="0" y1="20" x2="320" y2="20" stroke="#E2E8F0" strokeDasharray="3 3" className="dark:stroke-slate-800" />
               <line x1="0" y1="50" x2="320" y2="50" stroke="#E2E8F0" strokeDasharray="3 3" className="dark:stroke-slate-800" />
               <line x1="0" y1="80" x2="320" y2="80" stroke="#E2E8F0" strokeDasharray="3 3" className="dark:stroke-slate-800" />
               <line x1="0" y1="110" x2="320" y2="110" stroke="#E2E8F0" className="dark:stroke-slate-800" />
 
-              {/* Gradient Area Fill */}
               <path
                 d="M 10 95 Q 40 85, 75 90 T 145 75 T 215 60 T 285 45 L 310 25 L 310 110 L 10 110 Z"
                 fill="url(#salesGrad)"
               />
-              {/* Line Curve */}
               <path
                 d="M 10 95 Q 40 85, 75 90 T 145 75 T 215 60 T 285 45 L 310 25"
                 fill="none"
@@ -733,7 +691,6 @@ export default function DashboardPage() {
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
-              {/* Data Point Dots */}
               <circle cx="310" cy="25" r="4" fill="#10B981" className="animate-pulse" />
             </svg>
             <div className="mt-2 flex justify-between text-[10px] font-semibold text-slate-400">
@@ -750,7 +707,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Top Categories (3 cols) - 100% Real from Products */}
         <div className="lg:col-span-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -782,7 +738,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity (4 cols) - 100% Real from Live Store Events */}
         <div className="lg:col-span-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">

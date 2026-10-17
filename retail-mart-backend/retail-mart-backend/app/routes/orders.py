@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, date
 
 from flask import Blueprint, request, jsonify, send_file, current_app
@@ -12,11 +13,45 @@ from app.utils.pdf import build_invoice_pdf
 from app.utils.email import send_email, order_confirmation_email, ensure_delivery_result
 
 orders_bp = Blueprint("orders", __name__)
+logger = logging.getLogger(__name__)
 
 
 @orders_bp.get("")
 @roles_required("Admin", "Manager", "Staff")
 def list_orders():
+    """
+    List All Orders
+    Get the list of all customer orders with their items, payment status, and delivery status. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: status
+        type: string
+        required: false
+        description: Filter by order status (Pending, Processing, Shipped, Delivered, Cancelled).
+      - in: query
+        name: paymentStatus
+        type: string
+        required: false
+        description: Filter by payment status (Pending, Paid, Failed, Refunded).
+    responses:
+      200:
+        description: Request successful. Returns the list of orders.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Order'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     query = Order.query
     status = request.args.get("status")
     payment_status = request.args.get("paymentStatus")
@@ -31,7 +66,28 @@ def list_orders():
 @orders_bp.get("/mine")
 @roles_required("Customer")
 def list_my_orders():
-    """Storefront "My Orders" page - the customer analogue of the admin's GET /orders."""
+    """
+    List Customer Orders
+    Get the list of orders placed by the currently logged-in customer. Customer authentication required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Request successful. Returns the customer's order history.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Order'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     orders = (
         Order.query.filter_by(user_id=get_jwt_identity()).order_by(Order.created_at.desc()).all()
     )
@@ -41,6 +97,36 @@ def list_my_orders():
 @orders_bp.get("/<order_id>")
 @roles_required("Admin", "Manager", "Staff")
 def get_order(order_id):
+    """
+    Get Order by ID
+    Get the details of a specific order using its order ID. Authentication is required. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: order_id
+        type: string
+        required: true
+        description: Unique order ID (e.g. ORD-1001).
+    responses:
+      200:
+        description: Request successful. Returns the requested order details.
+        schema:
+          $ref: '#/definitions/Order'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
@@ -50,7 +136,55 @@ def get_order(order_id):
 @orders_bp.post("")
 @roles_required("Admin", "Manager", "Staff", "Customer")
 def create_order():
-    """Used by both the admin console (manual order entry) and the storefront checkout."""
+    """
+    Create Order
+    Create a new order by sending the required order and product details. Authentication is required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter order details including customer name, email, and item list.
+        schema:
+          type: object
+          required:
+            - customer
+            - customerEmail
+            - items
+          properties:
+            customer:
+              type: string
+              description: Customer full name.
+              example: Ananya Rao
+            customerEmail:
+              type: string
+              description: Customer email address.
+              example: ananya.rao@example.com
+            items:
+              type: array
+              description: List of purchased items with product name, quantity, and price.
+              items:
+                $ref: '#/definitions/OrderItem'
+    responses:
+      201:
+        description: Order created successfully.
+        schema:
+          $ref: '#/definitions/Order'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     customer = (data.get("customer") or "").strip()
     customer_email = (data.get("customerEmail") or "").strip()
@@ -64,7 +198,7 @@ def create_order():
     amount = sum(float(i["price"]) * int(i["quantity"]) for i in items)
     order = Order(
         id=f"ORD-{random_suffix(5)}",
-        user_id=get_jwt_identity(),  # ties the order to whoever's logged in, for GET /orders/mine
+        user_id=get_jwt_identity(),
         customer=customer,
         customer_email=customer_email,
         date=date.today(),
@@ -77,14 +211,9 @@ def create_order():
     order.status_history.append(OrderStatusEvent(status="Pending", date=date.today()))
 
     db.session.add(order)
-    db.session.flush()  # assigns order.id before the Payment below references it
+    db.session.flush()
 
-    # Every order gets a Payment record up front, in "Pending" status - this
-    # is what the storefront checkout immediately hands to RazorPay (see
-    # POST /payments/razorpay/order), and what an admin can later collect
-    # via PATCH /payments/<id>/status. One Payment per Order, created here
-    # rather than as a separate step, means the checkout flow never has to
-    # ask "does a payment exist yet?" - it always does.
+    # Pre-create initial Pending payment record for Razorpay checkout or manual collection
     payment = Payment(
         id=f"PAY-{random_suffix(5)}",
         order_id=order.id,
@@ -97,6 +226,9 @@ def create_order():
     payment.history.append(PaymentStatusEvent(status="Pending", date=date.today()))
     db.session.add(payment)
     db.session.commit()
+
+    logger.info("Order created order_id=%s user_id=%s amount=%.2f items=%d",
+                order.id, order.user_id, amount, len(items))
 
     recipient_email = (order.customer_email or "").strip() or (order.user.email.strip() if getattr(order, "user", None) and order.user.email else None)
     if recipient_email:
@@ -125,8 +257,56 @@ def create_order():
 @jwt_required()
 def update_order_status(order_id):
     """
-    Enforces the same forward-only workflow as ORDER_STATUS_TRANSITIONS in
-    src/types/order.ts, and appends a row to statusHistory.
+    Update Order Status
+    Update the status of an existing order. The allowed status values are shown in the request body. Admin or Manager access required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: order_id
+        type: string
+        required: true
+        description: Unique order ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the new order status.
+        schema:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              description: New order status (Pending, Processing, Shipped, Delivered, Cancelled).
+              example: Processing
+              enum: [Pending, Processing, Shipped, Delivered, Cancelled]
+    responses:
+      200:
+        description: Order status updated successfully.
+        schema:
+          $ref: '#/definitions/Order'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Status transition not allowed.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     order = Order.query.get(order_id)
     if not order:
@@ -143,17 +323,67 @@ def update_order_status(order_id):
             {"error": f"Cannot move an order from '{order.status}' to '{new_status}'. Allowed: {allowed}"}
         ), 409
 
+    old_status = order.status
     order.status = new_status
     order.status_history.append(
         OrderStatusEvent(status=new_status, date=date.today(), changed_by=get_jwt_identity())
     )
     db.session.commit()
+    logger.info("Order status changed order_id=%s from=%s to=%s", order_id, old_status, new_status)
     return jsonify(order.to_dict())
 
 
 @orders_bp.patch("/<order_id>/payment-status")
 @roles_required("Admin", "Manager")
 def update_order_payment_status(order_id):
+    """
+    Update Order Payment Status
+    Update the payment status of an existing order using its order ID. Admin or Manager access required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: order_id
+        type: string
+        required: true
+        description: Unique order ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the target payment status.
+        schema:
+          type: object
+          required:
+            - paymentStatus
+          properties:
+            paymentStatus:
+              type: string
+              description: New payment status (Pending, Paid, Failed, Refunded).
+              example: Paid
+              enum: [Pending, Paid, Failed, Refunded]
+    responses:
+      200:
+        description: Order payment status updated successfully.
+        schema:
+          $ref: '#/definitions/Order'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
@@ -161,20 +391,55 @@ def update_order_payment_status(order_id):
     status = data.get("paymentStatus")
     if status not in ORDER_PAYMENT_STATUSES:
         return jsonify({"error": f"paymentStatus must be one of {ORDER_PAYMENT_STATUSES}"}), 400
+    old_pay_status = order.payment_status
     order.payment_status = status
     db.session.commit()
+    logger.info("Order payment status changed order_id=%s from=%s to=%s", order_id, old_pay_status, status)
     return jsonify(order.to_dict())
 
 
 @orders_bp.get("/<order_id>/invoice")
 @roles_required("Admin", "Manager", "Staff", "Customer")
 def download_order_invoice(order_id):
+    """
+    Download Order Invoice PDF
+    Download the official PDF invoice for a specific order using its order ID. Authentication is required. Customers can only download their own invoices.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    produces:
+      - application/pdf
+    parameters:
+      - in: path
+        name: order_id
+        type: string
+        required: true
+        description: Unique order ID.
+    responses:
+      200:
+        description: Request successful. Returns the invoice PDF file.
+        schema:
+          type: file
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
     if get_jwt().get("role") == "Customer" and order.user_id != get_jwt_identity():
         return jsonify({"error": "Forbidden"}), 403
 
+    logger.info("Invoice downloaded order_id=%s", order_id)
     pdf_buffer = build_invoice_pdf(order)
     return send_file(
         pdf_buffer,
@@ -187,9 +452,40 @@ def download_order_invoice(order_id):
 @orders_bp.delete("/<order_id>")
 @roles_required("Admin")
 def delete_order(order_id):
+    """
+    Delete Order
+    Permanently delete an order and associated records using the order ID. Admin access required.
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: order_id
+        type: string
+        required: true
+        description: Unique order ID to delete.
+    responses:
+      204:
+        description: Order deleted successfully.
+        schema:
+          type: string
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
     db.session.delete(order)
     db.session.commit()
+    logger.info("Order deleted order_id=%s", order_id)
     return "", 204

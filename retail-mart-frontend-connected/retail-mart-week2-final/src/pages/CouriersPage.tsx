@@ -262,7 +262,6 @@ export default function CouriersPage() {
         }
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStatCard
           label="Registered Couriers"
@@ -314,7 +313,6 @@ export default function CouriersPage() {
         </div>
       </Card>
 
-      {/* Add / Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         title={editingCourier ? `Edit ${editingCourier.name}` : "Register Courier Partner"}
@@ -333,7 +331,6 @@ export default function CouriersPage() {
         />
       </Modal>
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={Boolean(deletingCourier)}
         title="Delete Courier Partner"

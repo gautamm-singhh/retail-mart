@@ -16,7 +16,6 @@ import type { Payment } from "@/types";
 import { formatCurrency, formatDate } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 
-/** The date the refund actually happened - the last "Refunded" entry in the payment's history, not the original payment date. */
 function getRefundDate(payment: Payment): string {
   const refundEvent = [...payment.history]
     .reverse()
@@ -106,7 +105,6 @@ export default function RefundsPage() {
         description="Audit log of processed and recorded customer refund transactions and reversals."
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStatCard
           label="Total Refunds"

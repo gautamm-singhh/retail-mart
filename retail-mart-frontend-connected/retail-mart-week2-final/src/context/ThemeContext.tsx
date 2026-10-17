@@ -20,7 +20,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         return saved;
       }
     } catch {
-      // Ignore localStorage read errors in restricted contexts
+      /* ignore */
     }
     return "system";
   });
@@ -61,7 +61,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, newTheme);
     } catch {
-      // Ignore write errors
+      /* ignore */
     }
   };
 

@@ -14,7 +14,6 @@ export interface Campaign {
   status: CampaignStatus;
 }
 
-/** Fields collected by CampaignForm when creating or editing a campaign. */
 export type CampaignFormValues = Pick<
   Campaign,
   "name" | "description" | "discountType" | "discountValue" | "minPurchase" | "startDate" | "endDate" | "status"

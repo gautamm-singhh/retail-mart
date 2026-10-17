@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 
 export interface TableColumn<T> {
   header: string;
-  /** Optional: hide this column below the given breakpoint to reduce clutter on small screens. */
   hideBelow?: "sm" | "md" | "lg";
   render: (row: T) => ReactNode;
 }
@@ -20,12 +19,6 @@ const HIDE_CLASS: Record<NonNullable<TableColumn<unknown>["hideBelow"]>, string>
   lg: "hidden lg:table-cell",
 };
 
-/**
- * One generic table drives every management screen (products, categories,
- * orders, payments, shipping) instead of five near-identical hand-rolled
- * tables. Wide tables scroll horizontally within their own container so the
- * page itself never overflows.
- */
 export function Table<T>({ columns, rows, getRowKey, emptyState }: TableProps<T>) {
   if (rows.length === 0 && emptyState) {
     return <>{emptyState}</>;

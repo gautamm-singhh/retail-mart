@@ -7,11 +7,6 @@ interface Disclosure {
   toggle: () => void;
 }
 
-/**
- * Small state hook for anything with an open/closed shape: the mobile nav
- * drawer today, and potentially modals or dropdowns later. Centralizing it
- * here avoids re-writing the same three callbacks in every component.
- */
 export function useDisclosure(initial = false): Disclosure {
   const [isOpen, setIsOpen] = useState(initial);
 

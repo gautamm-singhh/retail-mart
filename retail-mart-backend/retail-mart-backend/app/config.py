@@ -130,6 +130,10 @@ _DB_URI, _DB_ENGINE_OPTIONS = _configure_database()
 class BaseConfig:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
+    # Logging - read from env or fall back per-environment below
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+    LOG_BACKUP_COUNT = int(os.environ.get("LOG_BACKUP_COUNT", "30"))
+
     # Default to SQLite so the API runs with zero setup. Point
     # DATABASE_URL at MySQL to match the ERD/production schema, e.g.
     # mysql+pymysql://user:password@localhost:3306/retail_mart
@@ -205,16 +209,20 @@ class BaseConfig:
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG").upper()
 
 
 class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS = {}
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
 
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
 
 _CONFIGS = {

@@ -44,7 +44,6 @@ export function AddressForm({
   );
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Pincode lookup state
   const [pincodeLoading, setPincodeLoading] = useState(false);
   const [pincodeFeedback, setPincodeFeedback] = useState<{
     type: "success" | "info" | "none";
@@ -53,7 +52,6 @@ export function AddressForm({
 
   const lastLookedUpPin = useRef("");
 
-  // Debounced Indian postal PIN code auto-fill
   useEffect(() => {
     const cleanPin = values.postalCode ? values.postalCode.trim() : "";
 
@@ -89,7 +87,6 @@ export function AddressForm({
           lastLookedUpPin.current = cleanPin;
           setValues((prev) => ({
             ...prev,
-            // Only update city/state if empty or matching prior auto-fill
             city: result.city || prev.city,
             state: result.state || prev.state,
           }));
@@ -149,7 +146,6 @@ export function AddressForm({
     setErrors(nextErrors);
     if (!isValid(nextErrors)) return;
 
-    // Normalize phone number if present before submitting
     const payload: AddressFormValues = {
       ...values,
       phone: values.phone ? normalizeIndianPhone(values.phone) : "",
@@ -184,7 +180,6 @@ export function AddressForm({
         onChange={(e) => setValues((v) => ({ ...v, line2: e.target.value }))}
       />
 
-      {/* Postal PIN Code with Auto-Fill Indicator */}
       <div>
         <div className="relative">
           <Input

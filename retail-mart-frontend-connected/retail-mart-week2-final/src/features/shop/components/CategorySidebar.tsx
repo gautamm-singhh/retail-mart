@@ -82,7 +82,6 @@ export function CategorySidebar({
 
   return (
     <div className="w-full">
-      {/* Mobile/Tablet Horizontal Scrollable Ribbon */}
       <div className="lg:hidden mb-6">
         <div className="flex items-center justify-between pb-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -135,7 +134,6 @@ export function CategorySidebar({
         </div>
       </div>
 
-      {/* Desktop Vertical Category Card */}
       <aside className="hidden lg:block w-full">
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors duration-200 max-h-[calc(100vh-6.5rem)] overflow-y-auto custom-scrollbar">
           <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800/80">
@@ -209,7 +207,6 @@ export function CategorySidebar({
             })}
           </nav>
 
-          {/* Quick Perks Mini-Card */}
           <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5 dark:border-emerald-950/60 dark:bg-emerald-950/20 transition-all">
             <div className="flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-xs">

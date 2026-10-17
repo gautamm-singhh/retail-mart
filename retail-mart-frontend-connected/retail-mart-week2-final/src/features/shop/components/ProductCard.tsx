@@ -10,7 +10,6 @@ import { getProductExactImage } from "@/features/shop/utils/productImages";
 
 interface ProductCardProps {
   product: Product;
-  /** Optional animation delay for staggered grid entrances (in ms) */
   animDelay?: number;
 }
 
@@ -32,7 +31,7 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
     try {
       await toggleWishlist(product);
     } catch {
-      // Handled in context
+      /* ignore */
     }
   }
 
@@ -42,7 +41,6 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
     if (product.stock <= 0) return;
     addItem(product);
     showToast(`Added ${product.name} to cart.`);
-    // Micro-feedback: momentary green pulse on button
     setCartPop(true);
     setTimeout(() => setCartPop(false), 600);
   }
@@ -55,7 +53,6 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
       className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-400/50 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-900 dark:hover:border-emerald-500/40"
       style={animDelay ? { animationDelay: `${animDelay}ms` } : undefined}
     >
-      {/* Product Image Container */}
       <Link
         to={`${ROUTES.shopProduct}/${product.id}`}
         className="relative block aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80"
@@ -75,10 +72,8 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
           </div>
         )}
 
-        {/* Hover overlay gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        {/* Wishlist Heart Button */}
         <button
           type="button"
           onClick={handleToggleWishlist}
@@ -115,7 +110,6 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
           </svg>
         </button>
 
-        {/* Stock Status Pill */}
         {isOutOfStock && (
           <div className="absolute left-2.5 top-2.5 z-10 rounded-lg bg-rose-600/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-sm">
             Out of Stock
@@ -128,14 +122,11 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
         )}
       </Link>
 
-      {/* Product Information Body */}
       <div className="flex flex-1 flex-col p-4">
-        {/* Category label */}
         <span className="text-[10.5px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
           {product.category}
         </span>
 
-        {/* Product name */}
         <Link
           to={`${ROUTES.shopProduct}/${product.id}`}
           className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-slate-900 transition-colors duration-150 hover:text-emerald-600 dark:text-slate-100 dark:hover:text-emerald-400"
@@ -143,7 +134,6 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
           {product.name}
         </Link>
 
-        {/* Price & Action Row */}
         <div className="mt-auto pt-3">
           <div className="flex items-baseline justify-between gap-2 mb-3">
             <p className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white">
@@ -169,7 +159,6 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
                   : "",
             ].join(" ")}
           >
-            {/* Cart icon */}
             <svg
               aria-hidden="true"
               viewBox="0 0 24 24"

@@ -1,5 +1,3 @@
-// Single source of truth for route paths. Import ROUTES instead of writing
-// path strings inline, so renaming a route only requires a change here.
 export const ROUTES = {
   root: "/",
   login: "/login",
@@ -18,10 +16,6 @@ export const ROUTES = {
   analytics: "/analytics",
   profile: "/profile",
   signup: "/shop/signup",
-  // Storefront (Week 4) - a separate portal from the admin console above,
-  // with its own layout (StorefrontLayout) and its own nav. See the
-  // router's comment for why these are a sibling route tree, not nested
-  // under the admin's ProtectedRoute.
   shop: "/shop",
   shopLogin: "/shop/login",
   shopProduct: "/shop/product",
@@ -30,6 +24,9 @@ export const ROUTES = {
   myOrders: "/shop/orders",
   account: "/shop/account",
   wishlist: "/shop/wishlist",
+  help: "/help",
+  helpFsd: "/help/fsd",
+  helpApi: "/help/api",
 } as const;
 
 export type NavRoute = {
@@ -50,8 +47,6 @@ export type NavRoute = {
     | "analytics";
 };
 
-// Sidebar order and labels are driven from this list so AdminLayout doesn't
-// need to know the routes itself.
 export const NAV_ROUTES: NavRoute[] = [
   { label: "Dashboard", path: ROUTES.dashboard, icon: "dashboard" },
   { label: "Users", path: ROUTES.users, icon: "users" },

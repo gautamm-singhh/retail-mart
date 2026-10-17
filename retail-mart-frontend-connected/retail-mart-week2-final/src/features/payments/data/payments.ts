@@ -1,8 +1,5 @@
 import { Payment } from "@/types";
 
-// Mock data only - stands in for a future GET /payments response from
-// Sorav's backend. `history` exists so the Payment Details workflow has
-// something realistic to render.
 export const mockPayments: Payment[] = [
   {
     id: "PAY-90211",

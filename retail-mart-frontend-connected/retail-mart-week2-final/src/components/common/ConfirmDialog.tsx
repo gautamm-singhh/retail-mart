@@ -6,19 +6,12 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   confirmLabel?: string;
-  /** "danger" for destructive actions (delete); "primary" for neutral confirmations (status changes). */
   tone?: "danger" | "primary";
   isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-/**
- * One confirmation pattern reused for every action that shouldn't happen by
- * accident: deleting a user/product, cancelling an order, marking a payment
- * refunded. Built on the existing Modal instead of a second dialog
- * implementation.
- */
 export function ConfirmDialog({
   isOpen,
   title,

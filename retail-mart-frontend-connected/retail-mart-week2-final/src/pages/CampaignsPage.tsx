@@ -177,7 +177,6 @@ export default function CampaignsPage() {
         action={<Button onClick={openAddForm}>+ Add Campaign</Button>}
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStatCard
           label="Total Campaigns"

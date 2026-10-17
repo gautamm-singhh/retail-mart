@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from flask import Blueprint, request, jsonify, send_file, current_app
@@ -13,6 +14,7 @@ from app.utils.razorpay_client import get_razorpay_client, is_razorpay_live
 from app.utils.email import send_email, receipt_email, ensure_delivery_result
 
 payments_bp = Blueprint("payments", __name__)
+logger = logging.getLogger(__name__)
 
 
 def _get_or_create_receipt(payment: Payment) -> Receipt:
@@ -80,6 +82,39 @@ def _is_payment_owner(payment: Payment) -> bool:
 @payments_bp.get("")
 @roles_required("Admin", "Manager", "Staff")
 def list_payments():
+    """
+    List Payments
+    Get the list of all payment transactions with their status, amount, and payment method. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: status
+        type: string
+        required: false
+        description: Filter by status (Pending, Paid, Failed, Refunded).
+      - in: query
+        name: orderId
+        type: string
+        required: false
+        description: Filter by specific order ID.
+    responses:
+      200:
+        description: Request successful. Returns the list of payments.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Payment'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     query = Payment.query
     status = request.args.get("status")
     order_id = request.args.get("orderId")
@@ -94,6 +129,36 @@ def list_payments():
 @payments_bp.get("/<payment_id>")
 @roles_required("Admin", "Manager", "Staff", "Customer")
 def get_payment(payment_id):
+    """
+    Get Payment by ID
+    Get the details and status history of a specific payment using its payment ID. Authentication is required. Customers can only view their own payments.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: payment_id
+        type: string
+        required: true
+        description: Unique payment ID (e.g. PAY-1001).
+    responses:
+      200:
+        description: Request successful. Returns the requested payment details.
+        schema:
+          $ref: '#/definitions/Payment'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     payment = Payment.query.get(payment_id)
     if not payment:
         return jsonify({"error": "Payment not found"}), 404
@@ -105,7 +170,54 @@ def get_payment(payment_id):
 @payments_bp.post("")
 @roles_required("Admin", "Manager", "Staff")
 def create_payment():
-    """Records a payment attempt against an existing order. Storefront checkout doesn't use this - see create_order(), which creates one automatically."""
+    """
+    Create Payment Record
+    Record a new payment attempt for an existing order by sending the order ID, method, and amount. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter payment details including order ID, payment method, and amount.
+        schema:
+          type: object
+          required:
+            - orderId
+            - method
+          properties:
+            orderId:
+              type: string
+              description: Associated order ID.
+              example: ORD-1001
+            method:
+              type: string
+              description: Payment method used.
+              example: UPI
+              enum: [RazorPay, UPI, Card, COD, Pending]
+            amount:
+              type: number
+              description: Total payment amount.
+              example: 3499.0
+    responses:
+      201:
+        description: Payment recorded successfully.
+        schema:
+          $ref: '#/definitions/Payment'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     order_id = data.get("orderId")
     method = data.get("method")
@@ -128,12 +240,62 @@ def create_payment():
     payment.history.append(PaymentStatusEvent(status="Pending", date=date.today()))
     db.session.add(payment)
     db.session.commit()
+    logger.info("Payment record created payment_id=%s order_id=%s method=%s amount=%.2f",
+                payment.id, order.id, method, payment.amount)
     return jsonify(payment.to_dict()), 201
 
 
 @payments_bp.patch("/<payment_id>/status")
 @roles_required("Admin", "Manager")
 def update_payment_status(payment_id):
+    """
+    Update Payment Status
+    Update the payment status of an existing transaction using its payment ID. Admin or Manager access required.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: payment_id
+        type: string
+        required: true
+        description: Unique payment ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the new payment status.
+        schema:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              description: Target payment status (Pending, Paid, Failed, Refunded).
+              example: Paid
+              enum: [Pending, Paid, Failed, Refunded]
+    responses:
+      200:
+        description: Payment status updated successfully.
+        schema:
+          $ref: '#/definitions/Payment'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     payment = Payment.query.get(payment_id)
     if not payment:
         return jsonify({"error": "Payment not found"}), 404
@@ -144,6 +306,7 @@ def update_payment_status(payment_id):
         return jsonify({"error": f"status must be one of {PAYMENT_STATUSES}"}), 400
 
     was_paid_already = payment.status == "Paid"
+    old_status = payment.status
     payment.status = new_status
     payment.history.append(PaymentStatusEvent(status=new_status, date=date.today()))
 
@@ -152,6 +315,9 @@ def update_payment_status(payment_id):
         payment.order.payment_status = new_status
 
     db.session.commit()
+
+    logger.info("Payment status changed payment_id=%s order_id=%s from=%s to=%s",
+                payment_id, payment.order_id, old_status, new_status)
 
     if new_status == "Paid" and not was_paid_already:
         _email_receipt(payment)  # best-effort, see _email_receipt()
@@ -163,11 +329,40 @@ def update_payment_status(payment_id):
 @roles_required("Admin", "Manager", "Staff", "Customer")
 def download_payment_receipt(payment_id):
     """
-    Streams a PDF receipt for a payment, generating (and persisting) the
-    Receipt record on first download if one doesn't exist yet - so the
-    button just works without a separate "generate receipt" step, while
-    still leaving a real Receipt row behind (ERD: RECEIPTS) for the record.
-    Only available once the payment's status is "Paid".
+    Download Payment Receipt PDF
+    Download the official PDF receipt for a paid transaction using its payment ID. Authentication is required. Customers can only download their own receipts.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    produces:
+      - application/pdf
+    parameters:
+      - in: path
+        name: payment_id
+        type: string
+        required: true
+        description: Unique payment ID.
+    responses:
+      200:
+        description: Request successful. Returns the payment receipt PDF file.
+        schema:
+          type: file
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Receipt is only available for Paid payments.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     payment = Payment.query.get(payment_id)
     if not payment:
@@ -191,13 +386,62 @@ def download_payment_receipt(payment_id):
 @roles_required("Admin", "Manager", "Staff", "Customer")
 def create_razorpay_order():
     """
-    RazorPay integration, step 1: create a RazorPay order for an existing
-    Payment record. Returns what the frontend's RazorPay Checkout widget
-    needs to open. Works against a mock RazorPay client when no real keys
-    are configured (see app/utils/razorpay_client.py) - the checkout flow
-    is fully testable before a real account exists. Used by both the
-    storefront checkout (Customer role) and the admin's payment detail
-    page (Admin/Manager/Staff).
+    Create Razorpay Order
+    Create a Razorpay order for online checkout using the payment ID. Returns checkout order credentials. Authentication is required.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the payment ID to initialize Razorpay checkout.
+        schema:
+          type: object
+          required:
+            - paymentId
+          properties:
+            paymentId:
+              type: string
+              description: Target payment ID.
+              example: PAY-1001
+    responses:
+      200:
+        description: Request successful. Returns Razorpay order details for checkout.
+        schema:
+          type: object
+          properties:
+            razorpayOrderId:
+              type: string
+              example: order_mock_123456
+            amount:
+              type: integer
+              description: Amount in paise (1 INR = 100 paise)
+              example: 349900
+            currency:
+              type: string
+              example: INR
+            keyId:
+              type: string
+              example: rzp_test_mock
+            paymentId:
+              type: string
+              example: PAY-1001
+            live:
+              type: boolean
+              example: false
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     data = request.get_json(silent=True) or {}
     payment_id = data.get("paymentId")
@@ -211,6 +455,9 @@ def create_razorpay_order():
     client = get_razorpay_client()
     amount_paise = int(round(float(payment.amount) * 100))
     razorpay_order = client.order.create({"amount": amount_paise, "currency": "INR", "receipt": payment.id})
+
+    logger.info("Razorpay order created payment_id=%s amount_paise=%d live=%s",
+                payment.id, amount_paise, is_razorpay_live())
 
     return jsonify(
         {
@@ -228,11 +475,57 @@ def create_razorpay_order():
 @roles_required("Admin", "Manager", "Staff", "Customer")
 def verify_razorpay_payment():
     """
-    RazorPay integration, step 2: verify RazorPay's signature and, if
-    valid, mark the Payment "Paid" - reusing the exact same status-history/
-    order-sync code path as PATCH /payments/<id>/status, so receipts,
-    invoices, and the order's paymentStatus all just work once this
-    succeeds. Also triggers the automatic receipt email (_email_receipt).
+    Verify Razorpay Payment Signature
+    Verify the cryptographic payment signature returned by Razorpay after checkout. Marks payment as Paid upon success. Authentication is required.
+    ---
+    tags:
+      - Payments
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the payment ID, Razorpay order ID, payment ID, and HMAC signature.
+        schema:
+          type: object
+          required:
+            - paymentId
+            - razorpayOrderId
+            - razorpayPaymentId
+            - razorpaySignature
+          properties:
+            paymentId:
+              type: string
+              description: Associated payment ID.
+              example: PAY-1001
+            razorpayOrderId:
+              type: string
+              description: Order ID generated by Razorpay.
+              example: order_mock_123456
+            razorpayPaymentId:
+              type: string
+              description: Payment transaction ID generated by Razorpay.
+              example: pay_mock_654321
+            razorpaySignature:
+              type: string
+              description: Cryptographic signature received from Razorpay.
+              example: mock_signature_abc123
+    responses:
+      200:
+        description: Request successful. Payment verified and marked as Paid.
+        schema:
+          $ref: '#/definitions/Payment'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     data = request.get_json(silent=True) or {}
     payment_id = data.get("paymentId")
@@ -255,6 +548,7 @@ def verify_razorpay_payment():
         }
     )
     if not is_valid:
+        logger.warning("Razorpay signature verification failed payment_id=%s", payment_id)
         return jsonify({"error": "Payment signature verification failed"}), 400
 
     payment.status = "Paid"
@@ -263,6 +557,9 @@ def verify_razorpay_payment():
     if payment.order:
         payment.order.payment_status = "Paid"
     db.session.commit()
+
+    logger.info("Razorpay payment verified and marked Paid payment_id=%s order_id=%s",
+                payment_id, payment.order_id)
 
     _email_receipt(payment)  # best-effort, see _email_receipt()
 

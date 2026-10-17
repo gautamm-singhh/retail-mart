@@ -14,8 +14,36 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @roles_required("Admin", "Manager", "Staff")
 def summary():
     """
-    Matches the shape of src/features/dashboard/data/summary.ts's
-    `dashboardSummary`, computed live from the database instead of mocks.
+    Get Dashboard Summary
+    Get operational dashboard metrics including counts for active users, total products, pending orders, payments, and shipments. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Dashboard
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Request successful. Returns dashboard KPI summary cards.
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+                example: Active Users
+              value:
+                type: string
+                example: "12"
+              hint:
+                type: string
+                example: 15 total accounts
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     users = User.query.all()
     products = Product.query.all()

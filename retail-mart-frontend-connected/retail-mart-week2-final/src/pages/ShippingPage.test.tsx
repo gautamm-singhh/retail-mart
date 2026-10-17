@@ -23,8 +23,6 @@ describe("ShippingPage", () => {
       screen.getByRole("status", { name: /loading shipments/i }),
     ).toBeInTheDocument();
 
-    // Let the (synchronous, Promise-wrapped) mock fetch resolve before the
-    // test ends, so the state update it triggers happens inside act().
     await waitFor(() => {
       expect(screen.getByText(mockShipments[0].customer)).toBeInTheDocument();
     });

@@ -1,9 +1,5 @@
 import { Shipment } from "@/types";
 
-// Mock data only - stands in for a future GET /shipments response from
-// Sorav's backend. `trackingHistory` exists so the Shipment Details
-// tracking timeline has something realistic to render, the same way
-// Orders' statusHistory and Payments' history do.
 export const mockShipments: Shipment[] = [
   {
     id: "SHP-77001",

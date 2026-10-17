@@ -11,11 +11,6 @@ interface UseCommunicationsResult {
   sendConfirmation: (orderId: string) => Promise<boolean>;
 }
 
-/**
- * Hook wrapping the two communications endpoints with loading state and
- * duplicate-submit prevention. Returns the `sent` boolean from the backend
- * so the caller can decide on toast wording.
- */
 export function useCommunications(): UseCommunicationsResult {
   const [isSending, setIsSending] = useState(false);
 

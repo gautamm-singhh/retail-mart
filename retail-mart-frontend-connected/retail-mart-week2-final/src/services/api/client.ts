@@ -1,7 +1,3 @@
-/**
- * Central HTTP client communicating with the Retail Mart backend API.
- * Configures authentication headers, error shapes, and base endpoints.
- */
 import { getAuthToken } from "@/features/auth/authStorage";
 
 const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
@@ -20,7 +16,6 @@ export const apiConfig: ApiClientConfig = {
   baseUrl: API_BASE_URL,
 };
 
-/** Thrown for any non-2xx response. `status` lets callers branch on 401/403/404/409 etc. */
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -42,7 +37,6 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     },
   });
 
-  // DELETE endpoints return 204 No Content - nothing to parse.
   if (response.status === 204) {
     return undefined as T;
   }
@@ -60,12 +54,6 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   return data as T;
 }
 
-/**
- * For endpoints that return a file (PDF invoices/receipts) rather than
- * JSON. Fetches the file as a blob, then triggers a normal browser
- * "Save As" download using a temporary object URL - no separate tab, no
- * navigating away from the current page.
- */
 export async function downloadFile(path: string, fallbackFilename: string): Promise<void> {
   const token = getAuthToken();
 

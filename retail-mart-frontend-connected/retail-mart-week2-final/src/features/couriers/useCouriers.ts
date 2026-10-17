@@ -19,10 +19,6 @@ interface UseCouriersResult {
   removeCourier: (id: string) => Promise<void>;
 }
 
-/**
- * Data hook for registered couriers — mirrors the pattern of useCampaigns,
- * useShipments, etc. Used by CouriersPage for the admin management table.
- */
 export function useCouriers(): UseCouriersResult {
   const [couriers, setCouriers] = useState<Courier[]>([]);
   const [isLoading, setIsLoading] = useState(true);

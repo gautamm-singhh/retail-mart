@@ -17,3 +17,6 @@ instance/
 .env.*
 !.env.example
 *.log
+
+# Application logs directory
+logs/

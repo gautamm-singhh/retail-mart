@@ -1,7 +1,10 @@
+import logging
 from functools import wraps
 
 from flask import jsonify
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
+
+logger = logging.getLogger(__name__)
 
 
 def roles_required(*allowed_roles):
@@ -18,6 +21,13 @@ def roles_required(*allowed_roles):
             verify_jwt_in_request()
             claims = get_jwt()
             if allowed_roles and claims.get("role") not in allowed_roles:
+                logger.warning(
+                    "Unauthorized access attempt: user_id=%s role=%s endpoint=%s required_roles=%s",
+                    claims.get("sub"),
+                    claims.get("role"),
+                    fn.__name__,
+                    allowed_roles,
+                )
                 return jsonify({"error": "Forbidden: insufficient role"}), 403
             return fn(*args, **kwargs)
 

@@ -5,11 +5,6 @@ interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
 }
 
-/**
- * A dedicated component (rather than <Input type="search"> with a class)
- * because every management page needs this exact search-with-icon pattern,
- * so it is worth naming and reusing.
- */
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
   ({ label, id, className, ...props }, ref) => {
     const generatedId = useId();

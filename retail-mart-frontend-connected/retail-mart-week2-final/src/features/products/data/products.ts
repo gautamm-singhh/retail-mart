@@ -1,9 +1,6 @@
 import { Product } from "@/types";
 
 export const mockProducts: Product[] = [
-  // ==========================================
-  // APPAREL (6 Items)
-  // ==========================================
   {
     id: "p-1001",
     name: "Cotton Crew T-Shirt",
@@ -71,9 +68,6 @@ export const mockProducts: Product[] = [
     status: "active",
   },
 
-  // ==========================================
-  // HOME & KITCHEN (6 Items)
-  // ==========================================
   {
     id: "p-1003",
     name: "Stainless Steel Water Bottle 1L",
@@ -141,9 +135,6 @@ export const mockProducts: Product[] = [
     status: "active",
   },
 
-  // ==========================================
-  // ELECTRONICS (6 Items)
-  // ==========================================
   {
     id: "p-1004",
     name: "Wireless Earbuds Pro",
@@ -211,9 +202,6 @@ export const mockProducts: Product[] = [
     status: "active",
   },
 
-  // ==========================================
-  // FOOTWEAR (6 Items)
-  // ==========================================
   {
     id: "p-1006",
     name: "Running Shoes - Trail",
@@ -281,9 +269,6 @@ export const mockProducts: Product[] = [
     status: "active",
   },
 
-  // ==========================================
-  // SPORTS & FITNESS (6 Items)
-  // ==========================================
   {
     id: "p-1008",
     name: "Yoga Mat 6mm",
@@ -351,9 +336,6 @@ export const mockProducts: Product[] = [
     status: "active",
   },
 
-  // ==========================================
-  // ACCESSORIES (6 Items)
-  // ==========================================
   {
     id: "p-1010",
     name: "Leather Wallet - Bifold",

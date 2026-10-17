@@ -1,0 +1,269 @@
+/* Scoped enhancements for Retail Mart API Documentation page */
+.api-filter-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin: 18px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+}
+
+.api-method-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.method-chip {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  background: var(--bg);
+  color: var(--ink2);
+  transition: all .15s ease;
+  user-select: none;
+}
+
+.method-chip:hover {
+  background: var(--blue-bg);
+  color: var(--primary2);
+  border-color: var(--accent2);
+}
+
+.method-chip.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(7, 155, 112, .18);
+}
+
+.method-chip.chip-get.active {
+  background: #07543F;
+  color: #fff;
+  border-color: #07543F;
+}
+
+.method-chip.chip-post.active {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}
+
+.method-chip.chip-put.active {
+  background: #d97706;
+  color: #fff;
+  border-color: #d97706;
+}
+
+.method-chip.chip-patch.active {
+  background: #048A75;
+  color: #fff;
+  border-color: #048A75;
+}
+
+.method-chip.chip-delete.active {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.api-filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.api-filter-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink2);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.api-filter-btn:hover {
+  background: var(--blue-bg);
+  color: var(--primary);
+  border-color: var(--accent2);
+}
+
+.api-search-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.api-search-input {
+  width: 100%;
+  padding: 7px 12px 7px 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  outline: none;
+  transition: all .15s;
+}
+
+.api-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(7, 155, 112, .18);
+  background: var(--surface);
+}
+
+.api-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* Endpoint card enhancements */
+.endpoint-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin: 14px 0;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(28, 58, 92, .04);
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.endpoint-card:hover {
+  border-color: var(--border2);
+  box-shadow: 0 4px 14px rgba(28, 58, 92, .08);
+}
+
+.endpoint-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  flex-wrap: wrap;
+}
+
+.endpoint-card-head:hover {
+  background: var(--bg2);
+}
+
+.endpoint-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+  min-width: 180px;
+}
+
+.endpoint-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.endpoint-btn {
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all .15s;
+  text-decoration: none;
+}
+
+.endpoint-btn:hover {
+  color: var(--primary2);
+  border-color: var(--accent);
+  background: var(--blue-bg);
+}
+
+.endpoint-btn-primary {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  border-color: var(--accent);
+}
+
+.endpoint-btn-primary:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.endpoint-details {
+  padding: 20px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.endpoint-subhead {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.param-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.param-table th {
+  padding: 7px 12px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.param-table td {
+  padding: 8px 12px;
+}
+
+/* Skeleton loader */
+.skeleton-box {
+  background: linear-gradient(90deg, rgba(0,0,0,.05) 25%, rgba(0,0,0,.09) 37%, rgba(0,0,0,.05) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+html[data-theme="dark"] .skeleton-box, html.dark .skeleton-box {
+  background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 37%, rgba(255,255,255,.04) 63%);
+  background-size: 400% 100%;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

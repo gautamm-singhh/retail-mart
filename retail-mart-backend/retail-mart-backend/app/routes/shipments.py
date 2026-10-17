@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from flask import Blueprint, request, jsonify, current_app
@@ -11,11 +12,45 @@ from app.utils.ids import random_suffix
 from app.utils.email import ensure_delivery_result
 
 shipments_bp = Blueprint("shipments", __name__)
+logger = logging.getLogger(__name__)
 
 
 @shipments_bp.get("")
 @roles_required("Admin", "Manager", "Staff")
 def list_shipments():
+    """
+    List Shipments
+    Get the list of all shipments with their tracking numbers, carrier details, and fulfillment status. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Shipments
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: status
+        type: string
+        required: false
+        description: Filter by status (Pending, Packed, Shipped, Out for Delivery, Delivered).
+      - in: query
+        name: orderId
+        type: string
+        required: false
+        description: Filter shipments by parent order ID.
+    responses:
+      200:
+        description: Request successful. Returns the list of shipments.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Shipment'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     query = Shipment.query
     status = request.args.get("status")
     order_id = request.args.get("orderId")
@@ -30,6 +65,36 @@ def list_shipments():
 @shipments_bp.get("/<shipment_id>")
 @roles_required("Admin", "Manager", "Staff")
 def get_shipment(shipment_id):
+    """
+    Get Shipment by ID
+    Get the details and tracking history of a specific shipment using its shipment ID. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Shipments
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: shipment_id
+        type: string
+        required: true
+        description: Unique shipment ID (e.g. SHP-1001).
+    responses:
+      200:
+        description: Request successful. Returns the requested shipment details.
+        schema:
+          $ref: '#/definitions/Shipment'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     shipment = Shipment.query.get(shipment_id)
     if not shipment:
         return jsonify({"error": "Shipment not found"}), 404
@@ -39,6 +104,60 @@ def get_shipment(shipment_id):
 @shipments_bp.post("")
 @roles_required("Admin", "Manager")
 def create_shipment():
+    """
+    Create Shipment
+    Create a new shipment for an order by providing the order ID and courier information. Admin or Manager access required.
+    ---
+    tags:
+      - Shipments
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter shipment details including order ID, courier ID, and optional tracking number.
+        schema:
+          type: object
+          required:
+            - orderId
+          properties:
+            orderId:
+              type: string
+              description: Associated order ID.
+              example: ORD-1001
+            courierId:
+              type: string
+              description: Unique courier partner ID.
+              example: CUR-BLUDT
+            courier:
+              type: string
+              description: Courier partner name.
+              example: Blue Dart Express
+            trackingNumber:
+              type: string
+              description: Courier tracking AWB number.
+              example: BD882194012IN
+            expectedDelivery:
+              type: string
+              description: Estimated delivery date (YYYY-MM-DD).
+              example: 2026-09-26
+    responses:
+      201:
+        description: Shipment created successfully.
+        schema:
+          $ref: '#/definitions/Shipment'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     order_id = data.get("orderId")
     courier_id = (data.get("courierId") or "").strip() or None
@@ -102,6 +221,9 @@ def create_shipment():
     db.session.add(shipment)
     db.session.commit()
 
+    logger.info("Shipment created shipment_id=%s order_id=%s courier=%s tracking=%s",
+                shipment.id, order.id, courier_name, tracking_number)
+
     # Dedicated shipment tracking email (best-effort)
     customer_email = (getattr(order, "customer_email", None) or "").strip() or (order.user.email.strip() if getattr(order, "user", None) and order.user.email else None)
     if customer_email:
@@ -129,10 +251,64 @@ def create_shipment():
 @roles_required("Admin", "Manager", "Staff")
 def update_shipment_status(shipment_id):
     """
-    Delivery workflow: enforces the sequential Pending -> Packed -> Shipped
-    -> Out for Delivery -> Delivered flow and appends to trackingHistory.
-    When a shipment reaches "Delivered", the parent order's status is
-    advanced too (if the order's own workflow allows it).
+    Update Shipment Status
+    Update the tracking status of an existing shipment (such as Shipped, Out for Delivery, or Delivered). Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Shipments
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: shipment_id
+        type: string
+        required: true
+        description: Unique shipment ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter the new shipment status along with optional location and note.
+        schema:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              description: New delivery status (Pending, Packed, Shipped, Out for Delivery, Delivered).
+              example: Shipped
+              enum: [Pending, Packed, Shipped, Out for Delivery, Delivered]
+            location:
+              type: string
+              description: Checkpoint transit hub or city name.
+              example: Mumbai Logistics Hub
+            note:
+              type: string
+              description: Additional checkpoint tracking note.
+              example: Handed over to courier partner
+    responses:
+      200:
+        description: Shipment status updated successfully.
+        schema:
+          $ref: '#/definitions/Shipment'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Status transition not allowed.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     shipment = Shipment.query.get(shipment_id)
     if not shipment:
@@ -318,6 +494,8 @@ def update_shipment_status(shipment_id):
         else:
             current_app.logger.warning("[EMAIL TRIGGER] Flow=SHIPPING Event=status_%s ShipmentId=%s - SKIPPED: No recipient email found", new_status, shipment.id)
 
+    logger.info("Shipment status changed shipment_id=%s from=%s to=%s",
+                shipment_id, shipment.status, new_status)
     return jsonify(shipment.to_dict())
 
 
@@ -325,8 +503,62 @@ def update_shipment_status(shipment_id):
 @roles_required("Customer", "Admin", "Manager", "Staff")
 def track_shipment(shipment_id):
     """
-    Customer & Staff shipment tracking. Returns the full local tracking history
-    plus external live courier API tracking with status mapping.
+    Track Shipment Live
+    Get live tracking updates and milestone checkpoints for a shipment using its shipment ID. Authentication is required. Customers can only track their own shipments.
+    ---
+    tags:
+      - Shipments
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: shipment_id
+        type: string
+        required: true
+        description: Unique shipment ID.
+    responses:
+      200:
+        description: Request successful. Returns tracking details and checkpoint history.
+        schema:
+          type: object
+          properties:
+            shipmentId:
+              type: string
+              example: SHP-1001
+            status:
+              type: string
+              example: Shipped
+            courier:
+              type: string
+              example: Blue Dart Express
+            courierId:
+              type: string
+              example: CUR-BLUDT
+            trackingNumber:
+              type: string
+              example: BD882194012IN
+            expectedDelivery:
+              type: string
+              example: 2026-09-26
+            trackingHistory:
+              type: array
+              items:
+                $ref: '#/definitions/ShipmentStatusEvent'
+            trackingUrl:
+              type: string
+              example: https://www.bluedart.com/track?numbers=BD882194012IN
+            externalTracking:
+              type: object
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     from flask_jwt_extended import get_jwt
     claims = get_jwt() or {}
@@ -368,8 +600,52 @@ def track_shipment(shipment_id):
 @roles_required("Admin", "Manager", "Staff")
 def sync_tracking(shipment_id):
     """
-    Syncs the shipment status with the external carrier API.
-    If external status has advanced, updates shipment status and appends history.
+    Sync External Tracking Checkpoints
+    Fetch and sync latest tracking checkpoints from the carrier's API for a shipment. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Shipments
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: shipment_id
+        type: string
+        required: true
+        description: Unique shipment ID.
+    responses:
+      200:
+        description: Request successful. Returns tracking sync status.
+        schema:
+          type: object
+          properties:
+            synced:
+              type: boolean
+              example: true
+            previousStatus:
+              type: string
+              example: Packed
+            currentStatus:
+              type: string
+              example: Shipped
+            externalStatus:
+              type: string
+              example: IN_TRANSIT
+            mappedStatus:
+              type: string
+              example: Shipped
+            externalTracking:
+              type: object
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     shipment = Shipment.query.get(shipment_id)
     if not shipment:

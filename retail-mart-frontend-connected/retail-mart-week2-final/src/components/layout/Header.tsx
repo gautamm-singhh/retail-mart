@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { ROUTES } from "@/constants/routes";
@@ -33,7 +33,6 @@ export function Header({ onMenuClick, onToggleCollapse, isCollapsed }: HeaderPro
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 shadow-xs backdrop-blur-md transition-colors dark:border-slate-800/90 dark:bg-slate-900/95 sm:px-6">
-      {/* Left: Hamburger & Navigation Toggle */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -56,7 +55,6 @@ export function Header({ onMenuClick, onToggleCollapse, isCollapsed }: HeaderPro
         </button>
       </div>
 
-      {/* Center: Omni-Search Bar */}
       <div className="flex flex-1 max-w-lg mx-4 items-center justify-center">
         <form onSubmit={handleSearchSubmit} className="w-full">
           <div className="relative flex items-center">
@@ -77,12 +75,18 @@ export function Header({ onMenuClick, onToggleCollapse, isCollapsed }: HeaderPro
         </form>
       </div>
 
-      {/* Right Controls: Theme Toggle & User Profile */}
       <div className="flex items-center gap-3">
-        {/* Segmented Light / Dark Toggle */}
-        <ThemeToggle variant="segmented" />
+        <Link
+          to={ROUTES.helpApi}
+          title="API Documentation & Reference"
+          className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white py-1.5 px-2.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+        >
+          <span className="text-xs">⚡</span>
+          <span>API Docs</span>
+        </Link>
 
-        {/* User Profile Info & Menu */}
+        <ThemeToggle variant="icon" />
+
         <div className="flex items-center gap-2.5 pl-1 border-l border-slate-200/80 dark:border-slate-800">
           <ProfileMenu showName={true} />
         </div>

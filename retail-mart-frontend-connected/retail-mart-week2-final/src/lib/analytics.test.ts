@@ -15,7 +15,6 @@ describe("Google Analytics 4 Utility & Router Integration", () => {
     eventCalls = [];
     document.title = "Retail Mart - Test";
 
-    // Setup mock window.gtag
     window.dataLayer = [];
     window.gtag = vi.fn((...args: any[]) => {
       window.dataLayer.push(args);
@@ -43,7 +42,6 @@ describe("Google Analytics 4 Utility & Router Integration", () => {
     expect(script).not.toBeNull();
     expect(script?.async).toBe(true);
 
-    // Verify config called with send_page_view: false
     expect(window.gtag).toHaveBeenCalledWith(
       "config",
       "G-W9V37G74WZ",
@@ -89,12 +87,10 @@ describe("Google Analytics 4 Utility & Router Integration", () => {
 
     expect(eventCalls.length).toBe(1);
 
-    // Navigating to a new page fires an event
     trackPageView("/shop");
     expect(eventCalls.length).toBe(2);
     expect(eventCalls[1].params.page_path).toBe("/shop");
 
-    // Returning to /shop/login fires again because path changed
     trackPageView("/shop/login");
     expect(eventCalls.length).toBe(3);
     expect(eventCalls[2].params.page_path).toBe("/shop/login");
@@ -125,31 +121,25 @@ describe("Google Analytics 4 Utility & Router Integration", () => {
 
     const cleanup = setupRouterAnalytics(fakeRouter as any);
 
-    // Initial load tracked
     expect(eventCalls.length).toBe(1);
     expect(eventCalls[0].params.page_path).toBe("/shop/login");
 
-    // Route transition to /shop
     subscriber!({ location: { pathname: "/shop", search: "" } });
     expect(eventCalls.length).toBe(2);
     expect(eventCalls[1].params.page_path).toBe("/shop");
 
-    // Route transition to /login (Admin)
     subscriber!({ location: { pathname: "/login", search: "" } });
     expect(eventCalls.length).toBe(3);
     expect(eventCalls[2].params.page_path).toBe("/login");
 
-    // Browser back to /shop
     subscriber!({ location: { pathname: "/shop", search: "" } });
     expect(eventCalls.length).toBe(4);
     expect(eventCalls[3].params.page_path).toBe("/shop");
 
-    // Browser forward to /login
     subscriber!({ location: { pathname: "/login", search: "" } });
     expect(eventCalls.length).toBe(5);
     expect(eventCalls[4].params.page_path).toBe("/login");
 
-    // Cleanup unsubscribes
     cleanup();
   });
 

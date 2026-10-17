@@ -20,7 +20,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
     <div
       className="relative mb-8 overflow-hidden rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 p-6 shadow-xs sm:p-8 md:p-10 lg:p-12 dark:border-slate-800/90 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/40 dark:shadow-md transition-colors duration-200"
     >
-      {/* Ambient background glowing orbs with subtle floating animations */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-16 -top-16 h-96 w-96 rounded-full bg-gradient-to-br from-emerald-400/25 via-teal-400/20 to-transparent blur-3xl animate-pulse dark:from-emerald-500/15 dark:via-teal-500/10"
@@ -33,9 +32,7 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
       />
 
       <div className="relative z-10 grid grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
-        {/* ── LEFT CONTENT ── */}
         <div className="lg:col-span-7">
-          {/* Badge */}
           <div
             className="hero-entrance-badge inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-white/85 px-3.5 py-1 text-xs font-semibold text-emerald-800 shadow-xs backdrop-blur-sm dark:border-emerald-900/60 dark:bg-emerald-950/70 dark:text-emerald-300"
             style={{ animationDelay: "0.05s" }}
@@ -44,7 +41,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
             <span>NEW SEASON COLLECTION</span>
           </div>
 
-          {/* Headline */}
           <h1
             className="hero-entrance-slide mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl md:text-5xl dark:text-white leading-[1.15]"
             style={{ animationDelay: "0.13s" }}
@@ -56,7 +52,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
             </span>
           </h1>
 
-          {/* Sub-text */}
           <p
             className="hero-entrance-fade mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300"
             style={{ animationDelay: "0.22s" }}
@@ -64,7 +59,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
             Discover trending apparel, active footwear, premium electronics and everyday essentials — delivered fast with verified live carrier tracking.
           </p>
 
-          {/* CTAs */}
           <div
             className="hero-entrance-fade mt-6 flex flex-wrap items-center gap-3.5 sm:mt-8"
             style={{ animationDelay: "0.31s" }}
@@ -99,7 +93,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
             </button>
           </div>
 
-          {/* Trust indicators */}
           <div
             className="hero-entrance-fade mt-8 grid grid-cols-1 gap-2.5 pt-6 border-t border-slate-200/70 sm:grid-cols-3 sm:gap-4 dark:border-slate-800/80"
             style={{ animationDelay: "0.4s" }}
@@ -119,12 +112,9 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
           </div>
         </div>
 
-        {/* ── RIGHT VISUAL ── */}
         <div className="relative lg:col-span-5 flex justify-center">
-          {/* Image card – entrance then continuous float */}
           <div className="hero-entrance-rise relative w-full max-w-sm sm:max-w-md pb-20 pl-8" style={{ animationDelay: "0.18s" }}>
             <div className="hero-float-only">
-              {/* Main product image */}
               <div className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/40 bg-gradient-to-tr from-slate-100 to-white shadow-xl dark:border-slate-700/60 dark:bg-slate-800 transition-all duration-300">
                 <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md shadow-xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -146,7 +136,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
                 </div>
               </div>
 
-              {/* Offer badge – entrance then float offset */}
               <div className="hero-badge-entrance absolute -bottom-14 -left-6 sm:-bottom-16 sm:-left-7 rounded-2xl border border-amber-200/80 bg-white p-3.5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-amber-900/60 dark:bg-slate-900">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400 font-black text-sm">
@@ -163,7 +152,6 @@ export function StorefrontHero({ onShopNowClick, onExploreDealsClick }: Storefro
                 </div>
               </div>
 
-              {/* Authentic quality pill */}
               <div className="hero-pill-entrance absolute -top-3 -right-3 rounded-full border border-emerald-200/80 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:border-emerald-800/80 dark:bg-slate-900/95">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
                   <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 text-[10px] font-black">

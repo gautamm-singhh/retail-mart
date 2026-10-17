@@ -2,11 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { userRepository } from "@/features/users/services/userRepository";
 import type { User, UserFormValues } from "@/types";
 
-/**
- * Feature-level hook that owns the Users list state and exposes the CRUD
- * operations UsersPage/UserDetailsPage need. Pages never import
- * userRepository directly.
- */
 export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);

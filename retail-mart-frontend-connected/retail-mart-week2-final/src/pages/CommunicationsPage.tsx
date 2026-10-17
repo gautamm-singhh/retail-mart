@@ -81,7 +81,6 @@ export default function CommunicationsPage() {
         description="Dispatch verified customer emails, monitor SMTP delivery engine, and manage notification templates."
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <AdminStatCard
           label="SMTP Gateway"

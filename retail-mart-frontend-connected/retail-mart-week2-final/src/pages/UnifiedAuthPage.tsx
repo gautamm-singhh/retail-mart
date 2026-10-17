@@ -12,6 +12,7 @@ import { useAuth } from "@/features/auth/useAuth";
 import { getPostLoginRedirect } from "@/features/auth/postLoginRedirect";
 import { ApiError } from "@/services/api/client";
 import { ROUTES } from "@/constants/routes";
+import { Logo } from "@/components/common/Logo";
 import type { Role } from "@/types";
 import { normalizeIndianPhone, validateIndianPhone } from "@/utils/validation";
 
@@ -31,9 +32,6 @@ export interface UnifiedAuthPageProps {
 const HEADLINE_WORDS = ["SHOP", "SMARTER.", "LIVE", "BETTER."];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/* ─────────────────────────────────────────────────────────────
-   THEME TOGGLE BUTTON
-   ───────────────────────────────────────────────────────────── */
 
 function ThemeToggleButton() {
   const [isDark, setIsDark] = useState(() => {
@@ -52,8 +50,8 @@ function ThemeToggleButton() {
       try {
         localStorage.setItem("retail_mart_theme", next ? "dark" : "light");
       } catch {
-        /* ignore */
-      }
+      /* ignore */
+    }
     }
   };
 
@@ -97,9 +95,6 @@ function ThemeToggleButton() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   PARTICLE NETWORK CANVAS (LEFT PANEL)
-   ───────────────────────────────────────────────────────────── */
 
 function ParticleNetwork() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -116,7 +111,7 @@ function ParticleNetwork() {
         reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       }
     } catch {
-      /* jsdom safety */
+      /* ignore */
     }
     if (reduce) return;
 
@@ -126,7 +121,7 @@ function ParticleNetwork() {
     try {
       ctx = canvas.getContext("2d");
     } catch {
-      /* jsdom safety */
+      /* ignore */
     }
     if (!ctx) return;
 
@@ -226,9 +221,6 @@ function ParticleNetwork() {
   return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-75" />;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   SIMPLIFIED UNIFIED AUTHENTICATION PAGE COMPONENT
-   ───────────────────────────────────────────────────────────── */
 
 export default function UnifiedAuthPage({
   initialMode,
@@ -241,7 +233,6 @@ export default function UnifiedAuthPage({
   const searchParams = new URLSearchParams(location.search);
   const isSignupPath = currentPath === ROUTES.signup || currentPath === "/signup";
 
-  // Determine mode: signup if /shop/signup, otherwise normal login
   const resolvedMode: AuthMode =
     initialMode ?? (isSignupPath || searchParams.get("mode") === "signup" ? "signup" : "login");
 
@@ -255,21 +246,18 @@ export default function UnifiedAuthPage({
     }
   }, [currentPath, isSignupPath, searchParams]);
 
-  // Login Sub-tab: Password vs Mobile OTP (Email & Password is the primary default)
   const [customerLoginTab, setCustomerLoginTab] = useState<CustomerLoginTab>("password");
   const [otpStep, setOtpStep] = useState<OtpStep>("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [nameForOtp, setNameForOtp] = useState("");
 
-  // Email/Password form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
 
-  // Customer Signup form state
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
@@ -278,13 +266,11 @@ export default function UnifiedAuthPage({
   const [signupEmailTouched, setSignupEmailTouched] = useState(false);
   const [signupCapsLock, setSignupCapsLock] = useState(false);
 
-  // UI status feedback
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [btnState, setBtnState] = useState<BtnState>("idle");
   const [cardShake, setCardShake] = useState(false);
 
-  // 3D Card tilt & magnetic button state
   const cardRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
@@ -292,7 +278,6 @@ export default function UnifiedAuthPage({
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number; size: number }[]>([]);
   const isTouchDevice = useRef(false);
 
-  // Validation status
   const cleanEmail = email.trim();
   const isEmailValid = cleanEmail.length > 0 && EMAIL_REGEX.test(cleanEmail);
   const isEmailInvalid = emailTouched && cleanEmail.length > 0 && !isEmailValid;
@@ -307,7 +292,7 @@ export default function UnifiedAuthPage({
         isTouchDevice.current = window.matchMedia("(hover: none)").matches;
       }
     } catch {
-      /* jsdom safety */
+      /* ignore */
     }
   }, []);
 
@@ -316,7 +301,6 @@ export default function UnifiedAuthPage({
     setTimeout(() => setCardShake(false), 450);
   };
 
-  // Ambient mouse glow and 3D tilt
   const handleSideMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     if (isTouchDevice.current) return;
     try {
@@ -345,7 +329,6 @@ export default function UnifiedAuthPage({
     setTilt({ x: 0, y: 0 });
   }, []);
 
-  // Magnetic button hover
   const handleBtnMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (isSubmitting || btnState === "done") return;
     try {
@@ -366,7 +349,6 @@ export default function UnifiedAuthPage({
     setBtnPos({ x: 0, y: 0 });
   };
 
-  // Button click ripple
   const createRipple = (e: ReactMouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget.getBoundingClientRect();
     const cx = e.clientX ? e.clientX - btn.left : btn.width / 2;
@@ -379,13 +361,11 @@ export default function UnifiedAuthPage({
     }, 600);
   };
 
-  // Safe redirect helper based entirely on backend-verified role
   function redirectAfterAuth(authenticatedRole: Role) {
     const requestedFrom = (location.state as LocationState | null)?.from?.pathname;
     navigate(getPostLoginRedirect(authenticatedRole, requestedFrom), { replace: true });
   }
 
-  // Already authenticated guard: if already logged in, navigate to appropriate portal
   if (isAuthenticated) {
     if (isLoadingUser || !currentUser) return null;
     const requestedFrom = (location.state as LocationState | null)?.from?.pathname;
@@ -398,7 +378,6 @@ export default function UnifiedAuthPage({
       ? 0
       : 650;
 
-  // ── SUBMISSION HANDLER: Email & Password ──
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setEmailTouched(true);
@@ -414,7 +393,6 @@ export default function UnifiedAuthPage({
     setError(null);
 
     try {
-      // Backend validates credentials and returns authenticated user with their verified role
       const user = await login(targetEmail, password);
       if (!user) {
         setError("Invalid email or password.");
@@ -437,7 +415,6 @@ export default function UnifiedAuthPage({
     }
   }
 
-  // ── SUBMISSION HANDLER: Customer Mobile OTP Step 1 ──
   async function handleSendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!phone.trim()) {
@@ -477,7 +454,6 @@ export default function UnifiedAuthPage({
     }
   }
 
-  // ── SUBMISSION HANDLER: Customer Mobile OTP Step 2 ──
   async function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!code.trim()) {
@@ -506,7 +482,6 @@ export default function UnifiedAuthPage({
     }
   }
 
-  // ── SUBMISSION HANDLER: Customer Signup ──
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSignupEmailTouched(true);
@@ -559,14 +534,9 @@ export default function UnifiedAuthPage({
 
   return (
     <div className="relative grid min-h-screen w-full select-none overflow-hidden bg-[var(--paper)] text-[var(--ink)] font-sans grid-cols-1 md:grid-cols-[1.1fr_1fr]">
-      {/* =========================================================
-          LEFT: LIVING BRAND PANEL (DESKTOP)
-          ========================================================= */}
       <div className="relative hidden md:flex flex-col justify-between overflow-hidden bg-[#08281c] p-11 text-[var(--panel-ink)] select-none">
-        {/* Particle Network Canvas */}
         <ParticleNetwork />
 
-        {/* Animated Gradient Mesh Blobs */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -inset-[25%] opacity-85 filter blur-[70px] saturate-[1.3]"
@@ -576,29 +546,13 @@ export default function UnifiedAuthPage({
           <span className="mesh-m3 absolute bottom-[-24%] left-[14%] h-[42vmax] w-[42vmax] rounded-full bg-[radial-gradient(circle,#0a6b4a,transparent_66%)] mix-blend-screen" />
         </div>
 
-        {/* SVG Noise Grain Overlay */}
         <div aria-hidden="true" className="panel-grain" />
 
-        {/* Top: Logo & Platform Badge */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-white/20 bg-white/15 shadow-sm backdrop-blur-md transition-transform duration-300 hover:scale-105">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-white"
-            >
-              <path d="M3 4.5h3.1a1.6 1.6 0 0 1 1.57 1.29L8.2 8.5" />
-              <path d="M8.2 8.5h20l-2.4 9.9a2.2 2.2 0 0 1-2.14 1.68H11.6a2.2 2.2 0 0 1-2.16-1.79L7.1 6.8" />
-              <circle cx="12.6" cy="26" r="2" />
-              <circle cx="23.4" cy="26" r="2" />
-            </svg>
-          </div>
+          <Logo
+            size="lg"
+            className="rounded-xl shadow-sm transition-transform duration-300 hover:scale-105"
+          />
           <div>
             <span className="font-fraunces text-lg font-semibold tracking-tight text-white block">
               Retail Mart
@@ -609,7 +563,6 @@ export default function UnifiedAuthPage({
           </div>
         </div>
 
-        {/* Middle: Dynamic Headline */}
         <div className="relative z-10 my-auto py-8">
           <h2 className="font-fraunces mb-4 max-w-[14ch] text-4xl font-semibold leading-[1.14] tracking-[-0.01em] text-white">
             {HEADLINE_WORDS.map((word, i) => (
@@ -634,7 +587,6 @@ export default function UnifiedAuthPage({
           </p>
         </div>
 
-        {/* Bottom: Verified Capabilities Highlights */}
         <div className="relative z-10 flex flex-wrap gap-8 text-[var(--panel-ink)]">
           <div className="stat opacity-0" style={{ animation: "wordIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards" }}>
             <b className="font-fraunces flex items-center text-xl font-semibold text-white">
@@ -649,27 +601,20 @@ export default function UnifiedAuthPage({
         </div>
       </div>
 
-      {/* =========================================================
-          RIGHT: AUTHENTICATION FORM CARD
-          ========================================================= */}
       <div
         className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 sm:p-8"
         onMouseMove={handleSideMouseMove}
         onMouseLeave={handleSideMouseLeave}
       >
-        {/* Ambient background glows */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <span className="side-sg1 absolute top-[-10%] right-[-10%] h-[34vw] w-[34vw] rounded-full bg-[radial-gradient(circle,var(--mint),transparent_65%)] filter blur-[70px] opacity-35 dark:opacity-20" />
           <span className="side-sg2 absolute bottom-[-10%] left-[-8%] h-[28vw] w-[28vw] rounded-full bg-[radial-gradient(circle,var(--brand),transparent_65%)] filter blur-[70px] opacity-35 dark:opacity-20" />
         </div>
 
-        {/* SVG Noise Grain Overlay */}
         <div aria-hidden="true" className="side-grain" />
 
-        {/* Theme Toggle Button */}
         <ThemeToggleButton />
 
-        {/* Form Wrap / Card */}
         <div
           ref={cardRef}
           className={`relative z-10 w-full max-w-[420px] rounded-3xl border border-white/60 bg-[var(--card)] p-7 sm:p-8 shadow-xl backdrop-blur-xl dark:border-slate-800/80 dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] transition-[height,transform] duration-300 ${
@@ -681,20 +626,18 @@ export default function UnifiedAuthPage({
             transformStyle: "preserve-3d",
           }}
         >
-          {/* Top Logo RM */}
           <div className="flex flex-col items-center gap-3 mb-4">
             <div
               id="unified-rm-logo"
-              className="relative flex h-13 w-13 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--mint)] to-[var(--brand)] font-fraunces text-xl font-bold text-white shadow-lg shadow-emerald-700/20 overflow-hidden animate-logo-float transition-transform duration-300 hover:scale-105"
+              className="relative flex h-13 w-13 items-center justify-center rounded-2xl shadow-lg shadow-emerald-700/20 overflow-hidden animate-logo-float transition-transform duration-300 hover:scale-105"
             >
-              RM
+              <Logo size="xl" className="h-full w-full object-contain rounded-2xl" />
               <span
                 aria-hidden="true"
                 className="absolute top-0 -left-[80%] h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none animate-shine"
               />
             </div>
 
-            {/* Title / Header */}
             <div className="text-center">
               {mode === "login" ? (
                 <>
@@ -718,12 +661,9 @@ export default function UnifiedAuthPage({
             </div>
           </div>
 
-          {/* ── AUTHENTICATION FORMS ── */}
 
-          {/* CASE A: SIGN IN (Email & Password OR Mobile OTP) */}
           {mode === "login" && (
             <div key="login-container" className="animate-form-in">
-              {/* Login Method Sub-Tabs */}
               <div className="mb-4 flex gap-2">
                 <button
                   type="button"
@@ -762,10 +702,8 @@ export default function UnifiedAuthPage({
                 </button>
               </div>
 
-              {/* Sub-tab 1: Email & Password */}
               {customerLoginTab === "password" ? (
                 <form onSubmit={handlePasswordLogin} noValidate>
-                  {/* Email Field */}
                   <div>
                     <div
                       className={`ref-field ${cleanEmail.length > 0 ? "has-val" : ""} ${
@@ -815,7 +753,6 @@ export default function UnifiedAuthPage({
                     </div>
                   </div>
 
-                  {/* Password Field */}
                   <div className="mt-3">
                     <div className={`ref-field ${password.length > 0 ? "has-val" : ""}`}>
                       <input
@@ -884,7 +821,6 @@ export default function UnifiedAuthPage({
                     </div>
                   )}
 
-                  {/* Submit Button */}
                   <div
                     className="relative mt-3"
                     onMouseMove={handleBtnMouseMove}
@@ -925,7 +861,6 @@ export default function UnifiedAuthPage({
                   </div>
                 </form>
               ) : (
-                /* Sub-tab 2: Mobile OTP */
                 <div key="otp-container">
                   {otpStep === "phone" ? (
                     <form onSubmit={handleSendOtp} noValidate>
@@ -1110,7 +1045,6 @@ export default function UnifiedAuthPage({
                 </div>
               )}
 
-              {/* Single Clean Signup Link */}
               <p className="mt-5 text-center text-xs sm:text-sm text-[var(--ink-soft)]">
                 New here?{" "}
                 <Link
@@ -1125,10 +1059,8 @@ export default function UnifiedAuthPage({
             </div>
           )}
 
-          {/* CASE B: CUSTOMER CREATE ACCOUNT */}
           {mode === "signup" && (
             <form key="customer-signup-container" onSubmit={handleSignup} noValidate className="animate-form-in">
-              {/* Name Field */}
               <div>
                 <div className={`ref-field ${signupName.length > 0 ? "has-val" : ""}`}>
                   <input
@@ -1154,7 +1086,6 @@ export default function UnifiedAuthPage({
                 </div>
               </div>
 
-              {/* Email Field */}
               <div className="mt-3">
                 <div
                   className={`ref-field ${cleanSignupEmail.length > 0 ? "has-val" : ""} ${
@@ -1204,7 +1135,6 @@ export default function UnifiedAuthPage({
                 </div>
               </div>
 
-              {/* Mobile Phone Field */}
               <div className="mt-3">
                 <div className={`ref-field ${signupPhone.length > 0 ? "has-val" : ""}`}>
                   <input
@@ -1226,7 +1156,6 @@ export default function UnifiedAuthPage({
                 </div>
               </div>
 
-              {/* Password Field */}
               <div className="mt-3">
                 <div className={`ref-field ${signupPassword.length > 0 ? "has-val" : ""}`}>
                   <input
@@ -1295,7 +1224,6 @@ export default function UnifiedAuthPage({
                 </div>
               )}
 
-              {/* Submit Button */}
               <div
                 className="relative mt-3"
                 onMouseMove={handleBtnMouseMove}
@@ -1335,7 +1263,6 @@ export default function UnifiedAuthPage({
                 </button>
               </div>
 
-              {/* Back to Login Link */}
               <p className="mt-5 text-center text-xs sm:text-sm text-[var(--ink-soft)]">
                 Already have an account?{" "}
                 <Link

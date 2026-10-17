@@ -1,13 +1,5 @@
-/**
- * Exact, verified high-resolution product photography mapping for Retail Mart catalog.
- * Guarantees 100% accurate visual representation matching product name and category.
- * Every single URL has been tested and verified to return HTTP 200 OK.
- */
 
 export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
-  // ==========================================
-  // APPAREL
-  // ==========================================
   "p-1001": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&auto=format&fit=crop&q=80",
   "APP-TSH-001": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&auto=format&fit=crop&q=80",
   "Cotton Crew T-Shirt": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&auto=format&fit=crop&q=80",
@@ -32,9 +24,6 @@ export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
   "APP-JKT-033": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&auto=format&fit=crop&q=80",
   "Water-Resistant Windbreaker Jacket": "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&auto=format&fit=crop&q=80",
 
-  // ==========================================
-  // HOME & KITCHEN
-  // ==========================================
   "p-1003": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80",
   "HOM-BTL-022": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80",
   "Stainless Steel Water Bottle 1L": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80",
@@ -59,9 +48,6 @@ export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
   "HOM-BLN-030": "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&auto=format&fit=crop&q=80",
   "Compact Personal Smoothie Blender 600W": "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&auto=format&fit=crop&q=80",
 
-  // ==========================================
-  // ELECTRONICS
-  // ==========================================
   "p-1004": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
   "ELE-EAR-009": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
   "Wireless Earbuds Pro": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
@@ -86,9 +72,6 @@ export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
   "ELE-CAM-008": "https://images.unsplash.com/photo-1588702547923-7093a6c3ba33?w=600&auto=format&fit=crop&q=80",
   "Full HD 1080p Streaming Webcam": "https://images.unsplash.com/photo-1588702547923-7093a6c3ba33?w=600&auto=format&fit=crop&q=80",
 
-  // ==========================================
-  // FOOTWEAR
-  // ==========================================
   "p-1006": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
   "FTW-RUN-031": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
   "Running Shoes - Trail": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
@@ -113,9 +96,6 @@ export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
   "FTW-SLD-010": "https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=600&auto=format&fit=crop&q=80",
   "Cushioned Athletic Sport Slides": "https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=600&auto=format&fit=crop&q=80",
 
-  // ==========================================
-  // SPORTS & FITNESS
-  // ==========================================
   "p-1008": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&auto=format&fit=crop&q=80",
   "SPT-YOG-007": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&auto=format&fit=crop&q=80",
   "Yoga Mat 6mm": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&auto=format&fit=crop&q=80",
@@ -140,9 +120,6 @@ export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
   "SPT-BAG-023": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80",
   "Waterproof Gym Duffel Bag with Shoe Pocket": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80",
 
-  // ==========================================
-  // ACCESSORIES
-  // ==========================================
   "p-1010": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=600&auto=format&fit=crop&q=80",
   "ACC-WAL-003": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=600&auto=format&fit=crop&q=80",
   "Leather Wallet - Bifold": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=600&auto=format&fit=crop&q=80",
@@ -168,10 +145,6 @@ export const PRODUCT_EXACT_IMAGES: Record<string, string> = {
   "Stainless Steel Chronograph Watch": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=600&auto=format&fit=crop&q=80",
 };
 
-/**
- * Returns the verified matching image URL for any product entity.
- * Uses exact photography by ID, SKU, or name.
- */
 export function getProductExactImage(product: {
   id?: string;
   sku?: string;

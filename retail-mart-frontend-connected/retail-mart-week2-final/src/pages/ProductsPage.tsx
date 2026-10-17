@@ -222,7 +222,6 @@ export default function ProductsPage() {
         action={<Button onClick={openAddForm}>+ Add Product</Button>}
       />
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminStatCard
           label="Total Products"

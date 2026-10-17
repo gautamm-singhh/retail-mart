@@ -10,8 +10,6 @@ export interface SummaryCard {
   hint: string;
 }
 
-// Derived from the other features' mock data rather than hardcoded twice,
-// so the dashboard numbers stay consistent with the tables underneath them.
 export const dashboardSummary: SummaryCard[] = [
   {
     label: "Active Users",

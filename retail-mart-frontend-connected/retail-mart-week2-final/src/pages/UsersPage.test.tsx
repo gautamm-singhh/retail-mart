@@ -64,7 +64,6 @@ describe("UsersPage", () => {
     renderUsersPage();
     await screen.findByText("Gautam Sharma");
 
-    // All distinct roles are rendered in the table badges
     const adminBadges = screen.getAllByText("Admin");
     const managerBadges = screen.getAllByText("Manager");
     const staffBadges = screen.getAllByText("Staff");

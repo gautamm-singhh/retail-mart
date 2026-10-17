@@ -12,5 +12,4 @@ export interface Product {
   imageUrl: string | null;
 }
 
-/** Fields collected by ProductForm when creating or editing a product. */
 export type ProductFormValues = Omit<Product, "id">;

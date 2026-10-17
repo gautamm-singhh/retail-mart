@@ -35,7 +35,6 @@ export default function ShopHomePage() {
     Promise.all([fetchProducts(), fetchCategories()])
       .then(([apiProducts, categoryData]) => {
         if (!cancelled) {
-          // Merge API products with full catalog dataset to guarantee minimum 6 items in every category
           const apiMap = new Map((apiProducts || []).map((p) => [p.id, p]));
           const combined = mockProducts.map((p) => {
             const live = apiMap.get(p.id);
@@ -107,7 +106,6 @@ export default function ShopHomePage() {
     }
     setSearchParams(next);
 
-    // Smooth scroll down to catalog if filtered from promo cards
     const catalogEl = document.getElementById("catalog-section");
     if (catalogEl) {
       catalogEl.scrollIntoView({ behavior: "smooth" });
@@ -138,7 +136,6 @@ export default function ShopHomePage() {
 
   return (
     <div>
-      {/* High-Impact Hero Banner — shown when not performing a narrow search */}
       {!query && (
         <>
           <StorefrontHero
@@ -148,14 +145,11 @@ export default function ShopHomePage() {
             }}
             onExploreDealsClick={() => handleSelectCategory("all")}
           />
-          {/* Quick-Access Promotional Category Cards */}
           <PromotionalCards onSelectCategory={handleSelectCategory} />
         </>
       )}
 
-      {/* Main 12-Column Storefront Layout */}
       <div id="catalog-section" className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
-        {/* Category Navigation Column — Sticky on Desktop */}
         <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:z-10">
           <CategorySidebar
             categories={categories}
@@ -165,9 +159,7 @@ export default function ShopHomePage() {
           />
         </div>
 
-        {/* Product Catalog Main Column */}
         <div className="lg:col-span-9">
-          {/* Section Header & Control Toolbar */}
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900 transition-colors">
             <div>
               <div className="flex items-center gap-2.5">
@@ -183,9 +175,7 @@ export default function ShopHomePage() {
               </p>
             </div>
 
-            {/* Sort & Filter Controls */}
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* Collection Quick Tabs (Visible on All Products) */}
               {categoryFilter === "all" && !query && (
                 <div className="flex items-center gap-1 rounded-xl bg-slate-100/90 p-1 dark:bg-slate-800/80">
                   <button
@@ -253,7 +243,6 @@ export default function ShopHomePage() {
             </div>
           </div>
 
-          {/* Active Search Notification */}
           {query && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/90 px-4 py-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
               <p>
@@ -269,7 +258,6 @@ export default function ShopHomePage() {
             </div>
           )}
 
-          {/* Product Grid / Empty State */}
           {filteredProducts.length === 0 ? (
             <EmptyState
               title="No products found"
@@ -298,7 +286,6 @@ export default function ShopHomePage() {
             </div>
           )}
 
-          {/* Recommended Collection Section (Guarantees Minimum 6 Items) */}
           {(categoryFilter !== "all" || query) && filteredProducts.length > 0 && recommendedProducts.length >= 6 && (
             <div className="mt-12 pt-8 border-t border-slate-200/80 dark:border-slate-800/80">
               <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

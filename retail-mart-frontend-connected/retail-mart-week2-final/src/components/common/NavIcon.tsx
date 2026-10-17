@@ -5,10 +5,6 @@ interface NavIconProps {
   className?: string;
 }
 
-/**
- * One small icon set for the sidebar, kept as inline SVG paths instead of
- * an icon library dependency - six icons don't justify an extra package.
- */
 export function NavIcon({ name, className }: NavIconProps) {
   const common = {
     viewBox: "0 0 24 24",

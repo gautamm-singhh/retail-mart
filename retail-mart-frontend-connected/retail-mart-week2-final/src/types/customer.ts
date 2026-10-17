@@ -1,11 +1,5 @@
 import type { Role } from "@/types/user";
 
-/**
- * Storefront-only types. `CustomerProfile` deliberately allows null
- * email/phone (phone-only OTP signups have no email; email/password
- * signups always have phone as optional) - this mirrors the backend's
- * User.to_dict() exactly for the /auth/me response.
- */
 export interface CustomerProfile {
   id: string;
   name: string;
@@ -28,10 +22,8 @@ export interface Address {
   isDefault: boolean;
 }
 
-/** Fields collected by AddressForm when adding or editing an address. */
 export type AddressFormValues = Omit<Address, "id">;
 
-/** One line in the shopping cart - kept minimal since the cart lives client-side (see CartContext). */
 export interface CartItem {
   productId: string;
   productName: string;

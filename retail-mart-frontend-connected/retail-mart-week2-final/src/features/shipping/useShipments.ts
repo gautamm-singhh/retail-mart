@@ -11,11 +11,6 @@ interface UseShipmentsResult {
   updateStatus: (id: string, status: string, location?: string, note?: string) => Promise<Shipment>;
 }
 
-/**
- * Async data-fetching hook backed by GET /shipments (see
- * services/api/shipping.ts). ShippingPage and ShipmentDetailsPage render
- * loading/error/empty states from this hook.
- */
 export function useShipments(): UseShipmentsResult {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -9,11 +9,6 @@ interface ManagementToolbarProps {
   action?: ReactNode;
 }
 
-/**
- * The search + filter + primary action row is identical in shape across
- * Products, Categories, Orders, Payments, and Shipping, so it is one
- * component instead of five copies that would drift apart over time.
- */
 export function ManagementToolbar({
   searchLabel,
   searchValue,

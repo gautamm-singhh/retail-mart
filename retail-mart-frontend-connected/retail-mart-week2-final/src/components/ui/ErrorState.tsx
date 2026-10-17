@@ -6,9 +6,6 @@ interface ErrorStateProps {
   onRetry?: () => void;
 }
 
-/**
- * Generic error state component displayed when an API or network operation fails.
- */
 export function ErrorState({
   title = "Something went wrong",
   description = "We couldn't load this data. Please try again.",

@@ -17,10 +17,6 @@ export const ToastContext = createContext<ToastContextValue | undefined>(undefin
 
 const AUTO_DISMISS_MS = 3500;
 
-/**
- * Lightweight, accessible toast notification system with smooth entrance
- * and clear visual feedback.
- */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 

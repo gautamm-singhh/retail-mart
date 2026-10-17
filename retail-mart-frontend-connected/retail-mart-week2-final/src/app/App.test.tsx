@@ -50,7 +50,6 @@ describe("Frontend Page & Component Rendering", () => {
 
     expect(screen.getByText("Ultra HD Smart Monitor")).toBeDefined();
     expect(screen.getByText("Electronics")).toBeDefined();
-    // Verify accessible heart button is rendered
     const heartBtn = screen.getByRole("button", { name: /wishlist/i });
     expect(heartBtn).toBeDefined();
   });

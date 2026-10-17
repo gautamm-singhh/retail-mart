@@ -13,9 +13,80 @@ ALLOWED_SENDERS = ("support", "orders", "marketing")
 @roles_required("Admin", "Manager", "Staff")
 def send_generic_email():
     """
-    Generic escape hatch: send any {to, subject, body} through the email pipeline.
-    Validates explicit sender against: 'support', 'orders', 'marketing' (defaults to 'support').
-    Does not allow arbitrary usernames from the client.
+    Send Custom Email
+    Send a custom email message using a designated sender identity (support, orders, or marketing). Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Communications
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the email details. to, subject, and body are required.
+        schema:
+          type: object
+          required:
+            - to
+            - subject
+            - body
+          properties:
+            to:
+              type: string
+              description: Recipient email address.
+              example: customer@example.com
+            subject:
+              type: string
+              description: Email subject line.
+              example: Important Update Regarding Your Account
+            body:
+              type: string
+              description: Plain text email body.
+              example: Hello, this is an official message from Retail Mart.
+            htmlBody:
+              type: string
+              description: Optional HTML formatted email content.
+              example: "<p>Hello, this is an official message from <strong>Retail Mart</strong>.</p>"
+            sender:
+              type: string
+              description: Outgoing sender identity to use (support, orders, or marketing).
+              example: support
+              enum: [support, orders, marketing]
+    responses:
+      200:
+        description: Request successful. Returns email delivery status and message ID.
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            sent:
+              type: boolean
+              example: true
+            sender:
+              type: string
+              example: support
+            messageId:
+              type: string
+              example: <abc123xyz@smtp.gmail.com>
+            stage:
+              type: string
+              example: sent
+            message:
+              type: string
+              example: Email delivered successfully
+      400:
+        description: Invalid or missing request data. to, subject, and body are required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     data = request.get_json(silent=True) or {}
     to = (data.get("to") or "").strip()
@@ -52,7 +123,50 @@ def send_generic_email():
 @communications_bp.post("/orders/<order_id>/confirmation")
 @roles_required("Admin", "Manager", "Staff")
 def send_order_confirmation(order_id):
-    """Re-sends (or sends) the order confirmation email for an order via the orders sender identity."""
+    """
+    Resend Order Confirmation
+    Resend an automated order confirmation email to the customer using its order ID. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Communications
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: order_id
+        type: string
+        required: true
+        description: Unique order ID.
+    responses:
+      200:
+        description: Request successful. Returns order confirmation email dispatch status.
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            sent:
+              type: boolean
+              example: true
+            messageId:
+              type: string
+              example: <ord123@smtp.gmail.com>
+      400:
+        description: Invalid or missing request data. Order has no recipient email address.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested order was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
@@ -86,6 +200,45 @@ def send_order_confirmation(order_id):
 @communications_bp.get("/smtp-status")
 @roles_required("Admin", "Manager", "Staff")
 def get_smtp_status():
-    """Checks and reports multi-sender SMTP server connection status without exposing secrets."""
+    """
+    Check SMTP Status
+    Check SMTP server connectivity and authentication status for configured sender accounts. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Communications
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: sender
+        type: string
+        required: false
+        description: Specific sender identity to test (support, orders, marketing).
+        enum: [support, orders, marketing]
+    responses:
+      200:
+        description: Request successful. Returns SMTP connection and authentication status.
+        schema:
+          type: object
+          properties:
+            host:
+              type: string
+              example: smtp.gmail.com
+            port:
+              type: integer
+              example: 587
+            connected:
+              type: boolean
+              example: true
+            authenticated:
+              type: boolean
+              example: true
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     sender_arg = request.args.get("sender")
     return jsonify(test_smtp_connection(sender=sender_arg))

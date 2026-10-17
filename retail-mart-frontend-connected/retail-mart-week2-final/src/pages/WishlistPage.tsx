@@ -38,13 +38,12 @@ export default function WishlistPage() {
     try {
       await removeItem(productId);
     } catch {
-      // Toast already shown in context
+      /* ignore */
     }
   }
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-200">
-      {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <Link to={ROUTES.shop} className="hover:text-emerald-600 transition-colors dark:hover:text-emerald-400">
           Storefront
@@ -53,7 +52,6 @@ export default function WishlistPage() {
         <span className="font-semibold text-slate-900 dark:text-white">My Wishlist</span>
       </nav>
 
-      {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 shadow-xs">
@@ -91,7 +89,6 @@ export default function WishlistPage() {
         </Button>
       </div>
 
-      {/* Content Area */}
       {isLoading ? (
         <LoadingState label="Loading your saved items from server..." rows={4} />
       ) : error ? (
@@ -132,7 +129,6 @@ export default function WishlistPage() {
                 key={item.id}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/40 hover:shadow-lg dark:border-slate-800/90 dark:bg-slate-900"
               >
-                {/* Product Image */}
                 <div className="relative aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-800/80">
                   <Link to={`${ROUTES.shopProduct}/${product.id}`}>
                     {imageUrl ? (
@@ -149,14 +145,12 @@ export default function WishlistPage() {
                     )}
                   </Link>
 
-                  {/* Stock Status Badge */}
                   {isOutOfStock && (
                     <span className="absolute left-2.5 top-2.5 rounded-md bg-rose-600/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs">
                       Out of Stock
                     </span>
                   )}
 
-                  {/* Remove Button */}
                   <button
                     type="button"
                     onClick={() => handleRemove(product.id)}
@@ -184,7 +178,6 @@ export default function WishlistPage() {
                   </button>
                 </div>
 
-                {/* Card Body */}
                 <div className="flex flex-1 flex-col p-4">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                     {product.category}
@@ -212,7 +205,6 @@ export default function WishlistPage() {
                     </span>
                   </div>
 
-                  {/* Add to Cart Button */}
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                     <Button
                       variant={addedIds.has(product.id) ? "secondary" : "primary"}

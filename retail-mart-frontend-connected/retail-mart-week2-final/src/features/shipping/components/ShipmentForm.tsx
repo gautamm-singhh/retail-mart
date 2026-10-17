@@ -38,7 +38,6 @@ export function ShipmentForm({ submitLabel, onSubmit, onCancel }: ShipmentFormPr
         }
       })
       .catch(() => {
-        // Best effort fallback to free-text
       });
   }, []);
 

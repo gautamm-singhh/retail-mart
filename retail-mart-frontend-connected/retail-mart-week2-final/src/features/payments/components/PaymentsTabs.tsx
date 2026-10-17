@@ -2,14 +2,6 @@ import { NavLink } from "react-router-dom";
 import { cn } from "@/utils/cn";
 import { ROUTES } from "@/constants/routes";
 
-/**
- * Payments and Refunds are separate routes rather than in-page state so the
- * split is real (shareable URL, browser back/forward, own empty state) and
- * not just a client-side toggle. NavLink renders real <a> elements, which
- * gives keyboard access and `aria-current="page"` on the active tab for
- * free - no separate ARIA tablist implementation needed for page-level
- * navigation like this.
- */
 export function PaymentsTabs() {
   const tabClass = ({ isActive }: { isActive: boolean }) =>
     cn(

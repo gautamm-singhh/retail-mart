@@ -15,6 +15,34 @@ campaigns_bp = Blueprint("campaigns", __name__)
 @campaigns_bp.get("")
 @roles_required("Admin", "Manager", "Staff")
 def list_campaigns():
+    """
+    List Marketing Campaigns
+    Get a list of marketing campaigns with their discount codes, dates, and statuses. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Campaigns
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: status
+        type: string
+        required: false
+        description: Filter campaigns by status (scheduled, active, completed, or cancelled).
+    responses:
+      200:
+        description: Request successful. Returns the list of marketing campaigns.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Campaign'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     status = request.args.get("status")
     query = Campaign.query
     if status:
@@ -26,6 +54,36 @@ def list_campaigns():
 @campaigns_bp.get("/<campaign_id>")
 @roles_required("Admin", "Manager", "Staff")
 def get_campaign(campaign_id):
+    """
+    Get Campaign Details
+    Get details of a specific marketing campaign using its campaign ID. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Campaigns
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: campaign_id
+        type: string
+        required: true
+        description: Unique campaign ID (e.g. CMP-1001).
+    responses:
+      200:
+        description: Request successful. Returns the campaign details.
+        schema:
+          $ref: '#/definitions/Campaign'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin, Manager, or Staff role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested campaign was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     campaign = Campaign.query.get(campaign_id)
     if not campaign:
         return jsonify({"error": "Campaign not found"}), 404
@@ -35,6 +93,80 @@ def get_campaign(campaign_id):
 @campaigns_bp.post("")
 @roles_required("Admin", "Manager")
 def create_campaign():
+    """
+    Create Marketing Campaign
+    Create a new marketing campaign with a discount code, discount value, and date range. Admin or Manager access required.
+    ---
+    tags:
+      - Campaigns
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the campaign details. name, startDate, and discountValue are required.
+        schema:
+          type: object
+          required:
+            - name
+            - startDate
+            - discountValue
+          properties:
+            name:
+              type: string
+              description: Marketing campaign name.
+              example: Diwali Mega Sale
+            code:
+              type: string
+              description: Promotional coupon code.
+              example: DIWALI26
+            description:
+              type: string
+              description: Overview of the promotion or terms.
+              example: Festive discounts on electronics and fashion.
+            discountType:
+              type: string
+              description: Discount calculation type (percentage or fixed).
+              example: percentage
+              enum: [percentage, fixed]
+            discountValue:
+              type: number
+              description: Discount percentage or fixed deduction amount.
+              example: 20.0
+            minPurchase:
+              type: number
+              description: Minimum order amount required to use the code.
+              example: 999.0
+            startDate:
+              type: string
+              description: Campaign start date in YYYY-MM-DD format.
+              example: 2026-10-15
+            endDate:
+              type: string
+              description: Optional campaign end date in YYYY-MM-DD format.
+              example: 2026-10-25
+            status:
+              type: string
+              description: Initial status of the campaign.
+              example: scheduled
+              enum: [scheduled, active, completed, cancelled]
+    responses:
+      201:
+        description: Campaign created successfully.
+        schema:
+          $ref: '#/definitions/Campaign'
+      400:
+        description: Invalid or missing request data. name, startDate, and discountValue are required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin or Manager role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
     discount_type = data.get("discountType", "percentage")
@@ -70,6 +202,81 @@ def create_campaign():
 @campaigns_bp.put("/<campaign_id>")
 @roles_required("Admin", "Manager")
 def update_campaign(campaign_id):
+    """
+    Update Marketing Campaign
+    Update details, discount terms, or status of an existing campaign. Admin or Manager access required.
+    ---
+    tags:
+      - Campaigns
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: campaign_id
+        type: string
+        required: true
+        description: Unique campaign ID.
+      - in: body
+        name: body
+        required: true
+        description: Enter one or more campaign fields to update.
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Updated campaign name.
+              example: Diwali Mega Sale 2026
+            description:
+              type: string
+              description: Updated promotional description.
+              example: Updated festive discounts.
+            discountType:
+              type: string
+              description: Updated discount calculation type.
+              example: percentage
+              enum: [percentage, fixed]
+            discountValue:
+              type: number
+              description: Updated discount percentage or fixed amount.
+              example: 25.0
+            minPurchase:
+              type: number
+              description: Updated minimum order amount required.
+              example: 1499.0
+            startDate:
+              type: string
+              description: Updated start date in YYYY-MM-DD format.
+              example: 2026-10-15
+            endDate:
+              type: string
+              description: Updated end date in YYYY-MM-DD format.
+              example: 2026-10-28
+            status:
+              type: string
+              description: Updated status.
+              example: active
+              enum: [scheduled, active, completed, cancelled]
+    responses:
+      200:
+        description: Campaign updated successfully.
+        schema:
+          $ref: '#/definitions/Campaign'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin or Manager role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested campaign was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     campaign = Campaign.query.get(campaign_id)
     if not campaign:
         return jsonify({"error": "Campaign not found"}), 404
@@ -104,6 +311,34 @@ def update_campaign(campaign_id):
 @campaigns_bp.delete("/<campaign_id>")
 @roles_required("Admin")
 def delete_campaign(campaign_id):
+    """
+    Delete Marketing Campaign
+    Delete a marketing campaign using its campaign ID. Admin access required.
+    ---
+    tags:
+      - Campaigns
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: campaign_id
+        type: string
+        required: true
+        description: Unique campaign ID to delete.
+    responses:
+      204:
+        description: Campaign deleted successfully.
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested campaign was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     campaign = Campaign.query.get(campaign_id)
     if not campaign:
         return jsonify({"error": "Campaign not found"}), 404
@@ -116,9 +351,54 @@ def delete_campaign(campaign_id):
 @roles_required("Admin", "Manager")
 def send_campaign(campaign_id):
     """
-    Emails every active user about this campaign.
-    Uses send_bulk_email() to reuse a single authenticated SMTP session,
-    preventing socket churn and avoiding Gmail rate-limits.
+    Send Campaign Email
+    Broadcast promotional emails for this campaign to all active registered users. Admin or Manager access required.
+    ---
+    tags:
+      - Campaigns
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: campaign_id
+        type: string
+        required: true
+        description: Unique campaign ID to send emails for.
+    responses:
+      200:
+        description: Request successful. Returns the email delivery report.
+        schema:
+          type: object
+          properties:
+            campaignId:
+              type: string
+              example: CMP-1001
+            recipients:
+              type: integer
+              example: 45
+            sent:
+              type: integer
+              example: 44
+            refused:
+              type: object
+            invalidRecipients:
+              type: array
+              items:
+                type: string
+      400:
+        description: Invalid or missing request data. No valid active user emails found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action. Admin or Manager role required.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested campaign was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     campaign = Campaign.query.get(campaign_id)
     if not campaign:

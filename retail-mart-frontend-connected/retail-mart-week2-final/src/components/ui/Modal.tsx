@@ -8,10 +8,6 @@ interface ModalProps {
   children: ReactNode;
 }
 
-/**
- * Accessible modal dialog with backdrop overlay, escape key dismissal,
- * keyboard trapping, smooth entrance transition, and dark mode support.
- */
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   const titleId = useId();
 
@@ -28,13 +24,11 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <button
         aria-label="Close dialog"
         className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity animate-in fade-in-0 duration-200"
         onClick={onClose}
       />
-      {/* Modal Dialog Body */}
       <div
         role="dialog"
         aria-modal="true"
@@ -48,7 +42,6 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-3 duration-200",
         ].join(" ")}
       >
-        {/* Header */}
         <div className="flex shrink-0 items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
           <h2 id={titleId} className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
             {title}
@@ -64,7 +57,6 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             </svg>
           </button>
         </div>
-        {/* Scrollable content */}
         <div className="overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>,

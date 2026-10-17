@@ -31,6 +31,10 @@ from app.utils.email import (
     campaign_email,
 )
 
+# Prevent pytest from collecting imported email utility functions as test cases
+test_smtp_connection.__test__ = False
+test_single_sender_smtp.__test__ = False
+
 
 class DummyUser:
     def __init__(self, name="Ananya Rao", email="ananya.rao@example.com"):

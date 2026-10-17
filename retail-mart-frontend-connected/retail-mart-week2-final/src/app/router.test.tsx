@@ -38,17 +38,14 @@ describe("Application Routing & Entry Point Tests", () => {
   it("1. Root route '/' redirects to Customer Login page (/shop/login)", async () => {
     const { router } = renderWithProviders(["/"]);
 
-    // URL should be /shop/login
     expect(router.state.location.pathname).toBe("/shop/login");
 
-    // Brand and customer login elements
     expect(screen.getByRole("heading", { name: /sign in to retail mart/i })).toBeInTheDocument();
     expect(screen.getByText(/shop the best deals, track your orders, and manage your account/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mobile otp/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /create an account/i })).toBeInTheDocument();
 
-    // Confirm NO seeded credentials box exists
     expect(screen.queryByText(/seeded customer account/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ananya\.rao@example\.com/i)).not.toBeInTheDocument();
   });
@@ -65,7 +62,6 @@ describe("Application Routing & Entry Point Tests", () => {
   it("3. Direct navigation to '/login' renders unified login page (stays at /login)", () => {
     const { router } = renderWithProviders(["/login"]);
 
-    // /login renders the simplified login page directly — no redirect
     expect(router.state.location.pathname).toBe("/login");
     expect(screen.getByRole("heading", { name: /sign in to retail mart/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /email & password/i })).toBeInTheDocument();

@@ -28,11 +28,6 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: "h-12 px-6 text-[0.9375rem] font-semibold rounded-xl gap-2",
 };
 
-/**
- * Standard button implementation with physical lift micro-interactions,
- * accessible keyboard focus states, and full design system tokens.
- * Variants: primary | secondary | ghost | outline | danger
- */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "primary", size = "md", className, type = "button", ...props }, ref) => {
     return (

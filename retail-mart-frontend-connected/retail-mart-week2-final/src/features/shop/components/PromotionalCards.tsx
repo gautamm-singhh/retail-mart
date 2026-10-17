@@ -65,13 +65,11 @@ const PROMO_ITEMS = [
   },
 ];
 
-// Duplicate items for seamless infinite loop
 const MARQUEE_ITEMS = [...PROMO_ITEMS, ...PROMO_ITEMS];
 
 export function PromotionalCards({ onSelectCategory }: PromotionalCardsProps) {
   return (
     <div className="promo-marquee-root mb-8">
-      {/* Fade masks on left & right edges */}
       <div className="promo-marquee-track-wrap">
         <div className="promo-marquee-track">
           {MARQUEE_ITEMS.map((item, idx) => (
@@ -81,7 +79,6 @@ export function PromotionalCards({ onSelectCategory }: PromotionalCardsProps) {
               onClick={() => onSelectCategory(item.category)}
               className="promo-marquee-card group"
             >
-              {/* Glow blob */}
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl opacity-20 transition-opacity duration-300 group-hover:opacity-40"

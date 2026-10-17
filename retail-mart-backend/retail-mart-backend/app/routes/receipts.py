@@ -13,6 +13,34 @@ receipts_bp = Blueprint("receipts", __name__)
 @receipts_bp.get("")
 @roles_required("Admin", "Manager", "Staff")
 def list_receipts():
+    """
+    List Receipts
+    Get the list of all issued payment receipts, with optional filtering by order ID. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Receipts
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: orderId
+        type: string
+        required: false
+        description: Filter receipts by order ID.
+    responses:
+      200:
+        description: Request successful. Returns the list of receipts.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/Receipt'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     order_id = request.args.get("orderId")
     query = Receipt.query.join(Payment)
     if order_id:
@@ -24,6 +52,36 @@ def list_receipts():
 @receipts_bp.get("/<receipt_id>")
 @roles_required("Admin", "Manager", "Staff")
 def get_receipt(receipt_id):
+    """
+    Get Receipt by ID
+    Get the details of a specific payment receipt using its receipt ID. Admin, Manager, or Staff access required.
+    ---
+    tags:
+      - Receipts
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: receipt_id
+        type: string
+        required: true
+        description: Unique receipt ID (e.g. RCT-1001).
+    responses:
+      200:
+        description: Request successful. Returns the requested receipt details.
+        schema:
+          $ref: '#/definitions/Receipt'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      404:
+        description: The requested resource was not found.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+    """
     receipt = Receipt.query.get(receipt_id)
     if not receipt:
         return jsonify({"error": "Receipt not found"}), 404
@@ -34,9 +92,46 @@ def get_receipt(receipt_id):
 @roles_required("Admin", "Manager")
 def create_receipt():
     """
-    Generates a receipt for a payment. Only valid once the payment's status
-    is "Paid" - mirrors real-world behaviour where a receipt proves a
-    completed payment, not a pending/failed one.
+    Create Payment Receipt
+    Generate an official receipt for a completed payment by sending the payment ID. Admin or Manager access required.
+    ---
+    tags:
+      - Receipts
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        description: Enter the payment ID for which to issue a receipt.
+        schema:
+          type: object
+          required:
+            - paymentId
+          properties:
+            paymentId:
+              type: string
+              description: Target payment ID.
+              example: PAY-1001
+    responses:
+      201:
+        description: Receipt created successfully.
+        schema:
+          $ref: '#/definitions/Receipt'
+      400:
+        description: Invalid or missing request data.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      401:
+        description: Authentication is required or the provided token is invalid.
+      403:
+        description: You do not have permission to perform this action.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
+      409:
+        description: Payment is not Paid or receipt already exists.
+        schema:
+          $ref: '#/definitions/ErrorResponse'
     """
     data = request.get_json(silent=True) or {}
     payment_id = data.get("paymentId")
