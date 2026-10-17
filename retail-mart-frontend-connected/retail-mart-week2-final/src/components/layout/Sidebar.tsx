@@ -4,6 +4,7 @@ import { NAV_ROUTES, ROUTES } from "@/constants/routes";
 import { NavIcon } from "@/components/common/NavIcon";
 import { Logo } from "@/components/common/Logo";
 import { useOrders } from "@/features/orders/useOrders";
+import { useAdminPrefetch } from "@/hooks/useAdminPrefetch";
 import { cn } from "@/utils/cn";
 
 interface SidebarProps {
@@ -16,6 +17,7 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { orders } = useOrders();
+  const { prefetchTarget } = useAdminPrefetch();
 
   const pendingOrdersCount = orders.filter(
     (o) => o.status === "Pending" || o.status === "Processing",
@@ -93,6 +95,8 @@ export function Sidebar({ onNavigate, isCollapsed = false }: SidebarProps) {
               <NavLink
                 to={route.path}
                 onClick={onNavigate}
+                onMouseEnter={() => prefetchTarget(route.path)}
+                onTouchStart={() => prefetchTarget(route.path)}
                 title={isCollapsed ? route.label : undefined}
                 className={({ isActive }) =>
                   cn(

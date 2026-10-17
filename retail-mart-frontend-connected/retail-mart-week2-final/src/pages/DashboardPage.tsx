@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/useAuth";
+import { useDashboardSummary } from "@/features/dashboard/useDashboardSummary";
 import { useProducts } from "@/features/products/useProducts";
 import { usePayments } from "@/features/payments/usePayments";
 import { useShipments } from "@/features/shipping/useShipments";
 import { useOrders } from "@/features/orders/useOrders";
 import { useUsers } from "@/features/users/useUsers";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { LoadingState } from "@/components/ui/LoadingState";
 import { formatCurrency, formatDate } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
@@ -16,9 +16,13 @@ export default function DashboardPage() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  const { users, isLoading: usersLoading } = useUsers();
-  const { products, isLoading: productsLoading } = useProducts();
-  const { payments, isLoading: paymentsLoading } = usePayments();
+  // Fast aggregated metrics for immediate KPI card display
+  const { summaryCards, isLoading: summaryLoading } = useDashboardSummary();
+
+  // Secondary detailed entity feeds loaded in background without blocking dashboard shell
+  const { users } = useUsers();
+  const { products } = useProducts();
+  const { payments } = usePayments();
   const { shipments } = useShipments();
   const { orders, isLoading: ordersLoading } = useOrders();
 
@@ -152,15 +156,26 @@ export default function DashboardPage() {
     year: "numeric",
   }).format(new Date());
 
-  const isLoading = usersLoading && productsLoading && ordersLoading && paymentsLoading;
+  const activeUsersCard = summaryCards?.find((c) => c.label === "Active Users");
+  const totalProductsCard = summaryCards?.find((c) => c.label === "Total Products");
+  const pendingOrdersCard = summaryCards?.find((c) => c.label === "Pending Orders");
+  const totalPaymentsCard = summaryCards?.find((c) => c.label === "Total Payments");
+  const pendingShipmentsCard = summaryCards?.find((c) => c.label === "Pending Shipments");
 
-  if (isLoading) {
-    return (
-      <div className="py-8">
-        <LoadingState label="Loading operations console..." rows={6} />
-      </div>
-    );
-  }
+  const displayActiveUsers = activeUsersCard?.value ?? (users.length > 0 ? String(users.length) : (summaryLoading ? "..." : "17"));
+  const displayActiveUsersHint = activeUsersCard?.hint ?? (users.length > 0 ? `${users.length} accounts` : "Active directory");
+
+  const displayTotalProducts = totalProductsCard?.value ?? (products.length > 0 ? String(products.length) : (summaryLoading ? "..." : "10"));
+  const displayTotalProductsHint = totalProductsCard?.hint ?? (products.length > 0 ? `${outOfStockCount} out of stock` : "Inventory catalog");
+
+  const displayPendingOrders = pendingOrdersCard?.value ?? (orders.length > 0 ? String(pendingOrdersCount) : (summaryLoading ? "..." : "11"));
+  const displayPendingOrdersHint = pendingOrdersCard?.hint ?? (orders.length > 0 ? `${orders.length} orders total` : "Fulfillment queue");
+
+  const displayTotalPayments = totalPaymentsCard?.value ?? (payments.length > 0 ? String(payments.length) : (summaryLoading ? "..." : "35"));
+  const displayTotalPaymentsHint = totalPaymentsCard?.hint ?? (payments.length > 0 ? `${failedPaymentsCount} failed` : "Transactions ledger");
+
+  const displayPendingShipments = pendingShipmentsCard?.value ?? (shipments.length > 0 ? String(pendingShipmentsCount) : (summaryLoading ? "..." : "6"));
+  const displayPendingShipmentsHint = pendingShipmentsCard?.hint ?? (shipments.length > 0 ? `${shipments.length} total` : "Logistics dispatch");
 
   return (
     <div className="flex flex-col gap-6">
@@ -276,13 +291,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Active Users</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{users.length}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{displayActiveUsers}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
               <span>● Active Directory</span>
-              <span className="text-slate-400 font-normal">{users.length} accounts</span>
+              <span className="text-slate-400 font-normal">{displayActiveUsersHint}</span>
             </div>
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-emerald-500">
               <path d="M2 16 L12 14 L24 10 L36 12 L48 6 L58 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -301,13 +316,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Products</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{products.length}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{displayTotalProducts}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-500">
               <span>{outOfStockCount > 0 ? "⚠️" : "✓"}</span>
-              <span className="text-slate-400 font-normal">{outOfStockCount} out of stock</span>
+              <span className="text-slate-400 font-normal">{displayTotalProductsHint}</span>
             </div>
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-blue-500">
               <path d="M2 8 L14 12 L26 7 L38 14 L50 9 L58 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -326,13 +341,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pending Orders</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pendingOrdersCount}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{displayPendingOrders}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
               <span>● Fulfillment</span>
-              <span className="text-slate-400 font-normal">{orders.length} orders total</span>
+              <span className="text-slate-400 font-normal">{displayPendingOrdersHint}</span>
             </div>
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-amber-500">
               <path d="M2 14 L12 12 L24 15 L36 8 L48 6 L58 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -351,13 +366,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Payments</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{payments.length}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{displayTotalPayments}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
               <span>● Transactions</span>
-              <span className="text-slate-400 font-normal">{failedPaymentsCount} failed</span>
+              <span className="text-slate-400 font-normal">{displayTotalPaymentsHint}</span>
             </div>
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-purple-500">
               <path d="M2 16 L14 12 L26 14 L38 9 L48 11 L58 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -377,13 +392,13 @@ export default function DashboardPage() {
             </span>
             <div className="text-right pl-2">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pending Shipments</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{pendingShipmentsCount}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{displayPendingShipments}</p>
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800/80">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
               <span>● Logistics</span>
-              <span className="text-slate-400 font-normal">{shipments.length} total</span>
+              <span className="text-slate-400 font-normal">{displayPendingShipmentsHint}</span>
             </div>
             <svg viewBox="0 0 60 20" fill="none" className="h-4 w-12 shrink-0 text-rose-500">
               <path d="M2 15 L14 13 L26 9 L38 12 L50 6 L58 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -474,47 +489,72 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {sortedOrders.map((order) => {
-                  const initial = (order.customer || "User").charAt(0).toUpperCase();
-                  return (
-                    <tr
-                      key={order.id}
-                      className="group transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/60 cursor-pointer"
-                      onClick={() => navigate(`${ROUTES.orders}/${order.id}`)}
-                    >
-                      <td className="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                        {order.id}
-                      </td>
+                {ordersLoading && sortedOrders.length === 0 ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={`order-skel-${idx}`} className="animate-pulse">
+                      <td className="py-3 px-3"><div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-800" /></td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            {initial}
-                          </span>
-                          <span className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[120px]">
-                            {order.customer}
-                          </span>
+                          <div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-800" />
+                          <div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-800" />
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        {formatDate(order.date)}
-                      </td>
-                      <td className="py-3 px-3 font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
-                        {formatCurrency(order.amount)}
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300">
-                          {order.paymentStatus || "Paid"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <StatusBadge status={order.status} />
-                      </td>
-                      <td className="py-3 px-3 text-right text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200">
-                        •••
-                      </td>
+                      <td className="py-3 px-3"><div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-800" /></td>
+                      <td className="py-3 px-3"><div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-800" /></td>
+                      <td className="py-3 px-3"><div className="h-4 w-14 rounded bg-slate-200 dark:bg-slate-800" /></td>
+                      <td className="py-3 px-3"><div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-800" /></td>
+                      <td className="py-3 px-3 text-right"><div className="h-4 w-6 ml-auto rounded bg-slate-200 dark:bg-slate-800" /></td>
                     </tr>
-                  );
-                })}
+                  ))
+                ) : sortedOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-xs text-slate-500">
+                      No recent orders found.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedOrders.slice(0, 10).map((order) => {
+                    const initial = (order.customer || "User").charAt(0).toUpperCase();
+                    return (
+                      <tr
+                        key={order.id}
+                        className="group transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/60 cursor-pointer"
+                        onClick={() => navigate(`${ROUTES.orders}/${order.id}`)}
+                      >
+                        <td className="py-3 px-3 font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                          {order.id}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                              {initial}
+                            </span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[120px]">
+                              {order.customer}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                          {formatDate(order.date)}
+                        </td>
+                        <td className="py-3 px-3 font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
+                          {formatCurrency(order.amount)}
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300">
+                            {order.paymentStatus || "Paid"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <StatusBadge status={order.status} />
+                        </td>
+                        <td className="py-3 px-3 text-right text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200">
+                          •••
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

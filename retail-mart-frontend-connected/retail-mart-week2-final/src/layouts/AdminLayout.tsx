@@ -5,9 +5,11 @@ import { Header } from "@/components/layout/Header";
 import { MobileNavDrawer } from "@/components/layout/MobileNavDrawer";
 import { PageFallback } from "@/components/common/PageFallback";
 import { useDisclosure } from "@/hooks/useDisclosure";
+import { useAdminPrefetch } from "@/hooks/useAdminPrefetch";
 import { cn } from "@/utils/cn";
 
 export default function AdminLayout() {
+  useAdminPrefetch();
   const drawer = useDisclosure();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {

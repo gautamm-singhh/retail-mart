@@ -77,6 +77,9 @@ def list_orders():
         query = query.filter(Order.status == status)
     if payment_status:
         query = query.filter(Order.payment_status == payment_status)
+    limit = request.args.get("limit", type=int)
+    if limit and limit > 0:
+        query = query.limit(limit)
     orders = query.order_by(Order.created_at.desc()).all()
     return jsonify([o.to_dict() for o in orders])
 

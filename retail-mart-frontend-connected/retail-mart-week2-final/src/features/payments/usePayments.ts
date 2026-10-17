@@ -37,7 +37,7 @@ function notifyListeners(payments: Payment[]) {
   });
 }
 
-async function fetchPaymentsDeduplicated(force = false): Promise<Payment[]> {
+export async function fetchPaymentsDeduplicated(force = false): Promise<Payment[]> {
   const isFresh = paymentsCache.data && Date.now() - paymentsCache.timestamp < STALE_TIME_MS;
   if (!force && isFresh) {
     return paymentsCache.data!;

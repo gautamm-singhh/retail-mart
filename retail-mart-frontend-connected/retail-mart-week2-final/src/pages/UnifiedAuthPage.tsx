@@ -372,11 +372,8 @@ export default function UnifiedAuthPage({
     return <Navigate to={getPostLoginRedirect(currentUser.role, requestedFrom)} replace />;
   }
 
-  const redirectDelay =
-    (typeof process !== "undefined" && process.env.NODE_ENV === "test") ||
-    (import.meta as unknown as { env?: { MODE?: string } })?.env?.MODE === "test"
-      ? 0
-      : 650;
+  // Immediate navigation on successful auth for maximum real-world responsiveness
+  const redirectDelay = 0;
 
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -401,7 +398,7 @@ export default function UnifiedAuthPage({
         return;
       }
       setBtnState("done");
-      setTimeout(() => redirectAfterAuth(user.role), redirectDelay);
+      redirectAfterAuth(user.role);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || "Invalid email or password.");
@@ -468,7 +465,7 @@ export default function UnifiedAuthPage({
       const normalizedPhone = normalizeIndianPhone(phone);
       await verifyOtp(normalizedPhone, code.trim(), nameForOtp.trim() || undefined);
       setBtnState("done");
-      setTimeout(() => redirectAfterAuth("Customer"), redirectDelay);
+      redirectAfterAuth("Customer");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || "That code is invalid or has expired. Please request a new one.");
@@ -518,7 +515,7 @@ export default function UnifiedAuthPage({
         phone: normalizedSignupPhone,
       });
       setBtnState("done");
-      setTimeout(() => redirectAfterAuth("Customer"), redirectDelay);
+      redirectAfterAuth("Customer");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || "Could not create account. Please check your details.");

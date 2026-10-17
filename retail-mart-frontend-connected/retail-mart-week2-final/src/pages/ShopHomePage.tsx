@@ -1,19 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { fetchProducts } from "@/services/api/products";
-import { fetchCategories } from "@/services/api/categories";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { fetchProducts, productsCache } from "@/services/api/products";
+import { fetchCategories, categoriesCache } from "@/services/api/categories";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProductCard } from "@/features/shop/components/ProductCard";
 import { CategorySidebar } from "@/features/shop/components/CategorySidebar";
 import { StorefrontHero } from "@/features/shop/components/StorefrontHero";
 import { PromotionalCards } from "@/features/shop/components/PromotionalCards";
-import { mockProducts } from "@/features/products/data/products";
 import type { Category, Product } from "@/types";
 
 type SortOption = "featured" | "price-asc" | "price-desc" | "name-asc";
 type CollectionTab = "all" | "featured" | "new-arrivals";
+
+function ProductCardSkeleton() {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800/70 dark:bg-slate-900 animate-pulse">
+      <div className="aspect-square w-full bg-slate-100 dark:bg-slate-800" />
+      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div className="space-y-2">
+          <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="h-4 w-3/4 rounded bg-slate-200 dark:bg-slate-700" />
+        </div>
+        <div className="pt-2 flex items-center justify-between">
+          <div className="h-5 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="h-8 w-24 rounded-xl bg-slate-200 dark:bg-slate-700" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ShopHomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,35 +38,37 @@ export default function ShopHomePage() {
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [collectionTab, setCollectionTab] = useState<CollectionTab>("all");
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(() => productsCache.data ?? []);
+  const [categories, setCategories] = useState<Category[]>(() =>
+    (categoriesCache.data ?? []).filter((c) => c.status === "active"),
+  );
+  const [isLoading, setIsLoading] = useState(() => !productsCache.data || productsCache.data.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+
+    if (!productsCache.data || productsCache.data.length === 0) {
+      setIsLoading(true);
+    }
     setError(null);
 
     Promise.all([fetchProducts(), fetchCategories()])
       .then(([apiProducts, categoryData]) => {
         if (!cancelled) {
-          const apiMap = new Map((apiProducts || []).map((p) => [p.id, p]));
-          const combined = mockProducts.map((p) => {
-            const live = apiMap.get(p.id);
-            return live ? { ...p, ...live, imageUrl: p.imageUrl || live.imageUrl } : p;
-          });
-          setProducts(combined);
-          setCategories(categoryData.filter((c) => c.status === "active"));
+          // Strictly preserve live inventory, verified pricing, HSN codes and GST rates
+          setProducts(apiProducts || []);
+          setCategories((categoryData || []).filter((c) => c.status === "active"));
+          setIsLoading(false);
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
-          setProducts(mockProducts);
+          if (!productsCache.data || productsCache.data.length === 0) {
+            setError(err instanceof Error ? err.message : "Couldn't load products. Please check your network.");
+          }
+          setIsLoading(false);
         }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
       });
 
     return () => {
@@ -114,22 +132,6 @@ export default function ShopHomePage() {
 
   function handleClearFilters() {
     setSearchParams(new URLSearchParams());
-  }
-
-  if (isLoading) {
-    return (
-      <div className="py-8">
-        <LoadingState label="Loading product catalog..." rows={6} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-8">
-        <ErrorState title="Couldn't load products" description={error} />
-      </div>
-    );
   }
 
   const isFiltered = query || categoryFilter !== "all";
@@ -258,7 +260,17 @@ export default function ShopHomePage() {
             </div>
           )}
 
-          {filteredProducts.length === 0 ? (
+          {isLoading && products.length === 0 ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <ProductCardSkeleton key={`prod-skel-${idx}`} />
+              ))}
+            </div>
+          ) : error && products.length === 0 ? (
+            <div className="py-6">
+              <ErrorState title="Couldn't load products" description={error} />
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <EmptyState
               title="No products found"
               description="No active items match your current filter or search criteria. Try selecting another category or clear your search."
