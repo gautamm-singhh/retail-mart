@@ -276,8 +276,11 @@ def create_app(config_name: str | None = None) -> Flask:
             return jsonify(report), 500
 
     # --- swagger documentation ------------------------------------------
-    from app.swagger import init_swagger
-    init_swagger(app)
+    try:
+        from app.swagger import init_swagger
+        init_swagger(app)
+    except Exception as exc:
+        logger.warning("Swagger documentation failed to initialise: %s", exc)
 
     # --- error handlers ---------------------------------------------------
     @app.errorhandler(404)

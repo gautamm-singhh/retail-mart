@@ -275,8 +275,8 @@ def configure_logging(app, logs_dir: str | None = None, force: bool = False) -> 
         error_handler.addFilter(sensitive_filter)
         logger.addHandler(error_handler)
 
-    except OSError as exc:
-        # Log directory creation failed (e.g. read-only filesystem in serverless).
+    except Exception as exc:
+        # Log directory creation or file handler setup failed (e.g. read-only filesystem in serverless).
         # Console logging still works; file logging is silently skipped.
         logger.warning("Could not create logs directory at %s: %s", logs_dir, exc)
 
