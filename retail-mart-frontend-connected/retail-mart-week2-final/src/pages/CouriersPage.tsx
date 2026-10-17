@@ -9,6 +9,9 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
+import { EditIconButton } from "@/components/ui/EditIconButton";
+import { ToggleStatusIconButton } from "@/components/ui/ToggleStatusIconButton";
 import { ManagementToolbar } from "@/components/common/ManagementToolbar";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AdminStatCard } from "@/components/common/AdminStatCard";
@@ -220,30 +223,24 @@ export default function CouriersPage() {
       header: "Actions",
       render: (c) => (
         <div className="flex justify-end gap-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
+          <ToggleStatusIconButton
+            isActive={c.isActive}
             onClick={() => handleToggle(c)}
-          >
-            {c.isActive ? "Deactivate" : "Activate"}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
+            aria-label={`${c.isActive ? "Deactivate" : "Activate"} ${c.name}`}
+          />
+          <EditIconButton
             onClick={() => {
               setEditingCourier(c);
               setIsModalOpen(true);
             }}
-          >
-            Edit
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
+            aria-label={`Edit ${c.name}`}
+            tooltip="Edit"
+          />
+          <DeleteIconButton
             onClick={() => setDeletingCourier(c)}
-          >
-            Delete
-          </Button>
+            aria-label={`Delete ${c.name}`}
+            tooltip="Delete"
+          />
         </div>
       ),
     },

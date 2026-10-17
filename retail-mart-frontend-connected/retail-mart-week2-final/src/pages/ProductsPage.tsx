@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Modal } from "@/components/ui/Modal";
+import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
+import { EditIconButton } from "@/components/ui/EditIconButton";
 import { ManagementToolbar } from "@/components/common/ManagementToolbar";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AdminStatCard } from "@/components/common/AdminStatCard";
@@ -197,17 +199,16 @@ export default function ProductsPage() {
       header: "Actions",
       render: (p) => (
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={() => openEditForm(p)}>
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+          <EditIconButton
+            onClick={() => openEditForm(p)}
+            aria-label={`Edit ${p.name}`}
+            tooltip="Edit"
+          />
+          <DeleteIconButton
             onClick={() => setDeletingProduct(p)}
-            className="text-rose-600 hover:text-rose-700 dark:text-rose-400"
-          >
-            Delete
-          </Button>
+            aria-label={`Delete ${p.name}`}
+            tooltip="Delete"
+          />
         </div>
       ),
     },

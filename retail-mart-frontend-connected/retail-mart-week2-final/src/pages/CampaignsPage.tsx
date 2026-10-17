@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Modal } from "@/components/ui/Modal";
+import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
+import { EditIconButton } from "@/components/ui/EditIconButton";
 import { ManagementToolbar } from "@/components/common/ManagementToolbar";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AdminStatCard } from "@/components/common/AdminStatCard";
@@ -144,9 +146,11 @@ export default function CampaignsPage() {
       header: "Actions",
       render: (c) => (
         <div className="flex flex-wrap items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={() => openEditForm(c)}>
-            Edit
-          </Button>
+          <EditIconButton
+            onClick={() => openEditForm(c)}
+            aria-label={`Edit ${c.name}`}
+            tooltip="Edit"
+          />
           <Button
             variant="ghost"
             size="sm"
@@ -155,14 +159,11 @@ export default function CampaignsPage() {
           >
             {sendingId === c.id ? "Sending..." : "Send Email"}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+          <DeleteIconButton
             onClick={() => setDeletingCampaign(c)}
-            className="text-rose-600 hover:text-rose-700 dark:text-rose-400"
-          >
-            Delete
-          </Button>
+            aria-label={`Delete ${c.name}`}
+            tooltip="Delete"
+          />
         </div>
       ),
     },

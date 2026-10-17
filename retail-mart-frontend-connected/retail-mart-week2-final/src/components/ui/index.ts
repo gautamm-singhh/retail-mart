@@ -12,3 +12,6 @@ export * from "./LoadingState";
 export * from "./ErrorState";
 export * from "./Table";
 export * from "./Modal";
+export * from "./DeleteIconButton";
+export * from "./EditIconButton";
+export * from "./ToggleStatusIconButton";

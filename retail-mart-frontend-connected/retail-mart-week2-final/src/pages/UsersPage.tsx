@@ -10,6 +10,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Modal } from "@/components/ui/Modal";
+import { DeleteIconButton } from "@/components/ui/DeleteIconButton";
+import { EditIconButton } from "@/components/ui/EditIconButton";
+import { ToggleStatusIconButton } from "@/components/ui/ToggleStatusIconButton";
 import { ManagementToolbar } from "@/components/common/ManagementToolbar";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AdminStatCard } from "@/components/common/AdminStatCard";
@@ -163,15 +166,21 @@ export default function UsersPage() {
         <div className="flex items-center gap-1.5">
           {isAdmin ? (
             <>
-              <Button variant="ghost" size="sm" onClick={() => openEditForm(u)}>
-                Edit
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(u)}>
-                {u.status === "active" ? "Deactivate" : "Activate"}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDeletingUser(u)} className="text-rose-600 hover:text-rose-700 dark:text-rose-400">
-                Delete
-              </Button>
+              <EditIconButton
+                onClick={() => openEditForm(u)}
+                aria-label={`Edit ${u.name}`}
+                tooltip="Edit"
+              />
+              <ToggleStatusIconButton
+                isActive={u.status === "active"}
+                onClick={() => handleToggleStatus(u)}
+                aria-label={`${u.status === "active" ? "Deactivate" : "Activate"} ${u.name}`}
+              />
+              <DeleteIconButton
+                onClick={() => setDeletingUser(u)}
+                aria-label={`Delete ${u.name}`}
+                tooltip="Delete"
+              />
             </>
           ) : (
             <Button variant="ghost" size="sm" onClick={() => navigate(`${ROUTES.users}/${u.id}`)}>
