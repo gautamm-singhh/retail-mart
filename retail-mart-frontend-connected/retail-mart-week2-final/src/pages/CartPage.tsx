@@ -8,6 +8,8 @@ import { ROUTES } from "@/constants/routes";
 export default function CartPage() {
   const { items, subtotal, updateQuantity, removeItem } = useCart();
   const navigate = useNavigate();
+  const standardDeliveryFee = 99;
+  const totalAmount = subtotal;
 
   if (items.length === 0) {
     return (
@@ -117,70 +119,171 @@ export default function CartPage() {
         </div>
 
         <div className="lg:col-span-4">
-          <div className="sticky top-20 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm dark:border-slate-800/70 dark:bg-slate-900 transition-colors">
-            <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-              Order Summary
-            </h2>
+          <div className="sticky top-20 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors">
+            {/* Summary Card Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-400">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Order Summary
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Transparent pricing breakdown
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                {items.length} {items.length === 1 ? "item" : "items"}
+              </span>
+            </div>
 
-            <div className="mt-5 space-y-3 text-sm">
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Subtotal ({items.length} {items.length === 1 ? "item" : "items"})</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Standard Express Delivery</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Free</span>
-              </div>
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Estimated Tax (Included)</span>
-                <span className="font-semibold text-slate-900 dark:text-slate-100">₹0.00</span>
+            {/* Pricing Breakdown Rows */}
+            <div className="mt-4 space-y-3 text-xs sm:text-sm">
+              {/* 1. Subtotal */}
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span>Items Subtotal ({items.length} {items.length === 1 ? "item" : "items"})</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {formatCurrency(subtotal)}
+                </span>
               </div>
 
-              <div className="mt-4 flex justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
-                <span className="text-base font-bold text-slate-900 dark:text-white">Order Total</span>
-                <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">{formatCurrency(subtotal)}</span>
+              {/* 2. Delivery Charges */}
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <span>Delivery Charges</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">
+                    (Standard Express)
+                  </span>
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-slate-400 line-through dark:text-slate-500">
+                    {formatCurrency(standardDeliveryFee)}
+                  </span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">FREE</span>
+                </div>
+              </div>
+
+              {/* 3. Discount */}
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span>Discount</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-200">
+                  ₹0
+                </span>
+              </div>
+
+              {/* 4. GST / Tax Line Item */}
+              <div className="rounded-xl bg-slate-50/80 p-3 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 space-y-1">
+                <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-slate-900 dark:text-slate-100">Estimated GST / Taxes</span>
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50">
+                      Included
+                    </span>
+                  </div>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    Included
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Taxes included where applicable
+                </p>
+              </div>
+
+              {/* Savings callout banner (Amazon / Flipkart style) */}
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-50/90 px-3 py-2 text-xs font-medium text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                <span className="text-sm">🎉</span>
+                <span>
+                  You save <strong>{formatCurrency(standardDeliveryFee)}</strong> on delivery for this order!
+                </span>
+              </div>
+
+              {/* 5. Total Amount (Prominent Highlight Box) */}
+              <div className="mt-3 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white shadow-md dark:from-slate-800 dark:to-slate-950 border border-slate-800 dark:border-slate-700">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                      Total Payable
+                    </span>
+                    <p className="text-[11px] text-slate-400 font-normal">
+                      Inclusive of all taxes where applicable
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                      {formatCurrency(totalAmount)}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-300">
+                  <span>Net Payable Amount:</span>
+                  <span className="font-bold text-emerald-400">{formatCurrency(totalAmount)}</span>
+                </div>
               </div>
             </div>
 
+            {/* CTA Button */}
             <Button
               variant="primary"
               size="md"
-              className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold"
+              className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold shadow-md hover:shadow-lg transition-all"
               onClick={() => navigate(ROUTES.checkout)}
             >
-              <span>Proceed to Checkout</span>
+              <span>{`Proceed to Checkout • ${formatCurrency(totalAmount)}`}</span>
               <svg
                 aria-hidden="true"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2.2"
+                strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="h-4 w-4"
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
               >
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>
             </Button>
 
-            <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5 text-emerald-500">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              <span>256-bit SSL Secure Checkout</span>
-            </div>
+            {/* Trust, Security & Reassurance Section */}
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                <svg className="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Secure Checkout</span>
+              </div>
 
-            <div className="mt-3 flex items-center justify-center gap-2">
-              {["Visa", "MC", "UPI", "Net"].map((method) => (
-                <span
-                  key={method}
-                  className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                >
-                  {method}
-                </span>
-              ))}
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/40">
+                  <span className="text-emerald-500">🔒</span>
+                  <span>Secure checkout</span>
+                </div>
+                <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/40">
+                  <span className="text-indigo-500">⚡</span>
+                  <span>Payments processed via Razorpay</span>
+                </div>
+              </div>
+
+              {/* Supported Payment Methods Badge Row */}
+              <div className="flex items-center justify-center gap-1.5 flex-wrap pt-0.5">
+                {["UPI", "Google Pay", "PhonePe", "Paytm", "Cards", "NetBanking"].map((method) => (
+                  <span
+                    key={method}
+                    className="rounded border border-slate-200/80 bg-slate-50/80 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400"
+                  >
+                    {method}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
