@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { orderRepository } from "@/features/orders/services/orderRepository";
+import { registerCacheClearer } from "@/services/api/cacheManager";
 import type { Order, OrderStatus } from "@/types";
 
 interface OrdersMemoryCache {
@@ -15,6 +16,13 @@ const ordersCache: OrdersMemoryCache = {
   inFlight: null,
   listeners: new Set(),
 };
+
+export function clearOrdersCache(): void {
+  ordersCache.data = null;
+  ordersCache.timestamp = 0;
+  ordersCache.inFlight = null;
+}
+registerCacheClearer(clearOrdersCache);
 
 /** Stale time: 60 seconds (data is considered fresh and returned instantly without refetch) */
 const STALE_TIME_MS = 60 * 1000;

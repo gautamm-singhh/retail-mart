@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models.user import User, Role, ROLE_NAMES, USER_STATUSES
@@ -34,7 +35,13 @@ def list_users():
           $ref: '#/definitions/ErrorResponse'
     """
     # User management is restricted to administrative and staff roles (excludes customers)
-    users = User.query.join(Role).filter(Role.role_name != "Customer").order_by(User.created_at).all()
+    users = (
+        User.query.join(Role)
+        .filter(Role.role_name != "Customer")
+        .options(joinedload(User.role))
+        .order_by(User.created_at)
+        .all()
+    )
     return jsonify([u.to_dict() for u in users])
 
 
@@ -71,7 +78,7 @@ def get_user(user_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    user = User.query.get(user_id)
+    user = User.query.options(joinedload(User.role)).filter_by(id=user_id).first()
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify(user.to_dict())

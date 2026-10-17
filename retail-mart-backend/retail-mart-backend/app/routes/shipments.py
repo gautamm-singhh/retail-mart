@@ -3,6 +3,7 @@ from datetime import date
 
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models.shipment import Shipment, ShipmentStatusEvent, SHIPMENT_STATUS_TRANSITIONS, SHIPMENT_STATUSES
@@ -51,7 +52,7 @@ def list_shipments():
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    query = Shipment.query
+    query = Shipment.query.options(selectinload(Shipment.tracking_history))
     status = request.args.get("status")
     order_id = request.args.get("orderId")
     if status:
@@ -95,7 +96,7 @@ def get_shipment(shipment_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    shipment = Shipment.query.get(shipment_id)
+    shipment = Shipment.query.options(selectinload(Shipment.tracking_history)).filter_by(id=shipment_id).first()
     if not shipment:
         return jsonify({"error": "Shipment not found"}), 404
     return jsonify(shipment.to_dict())

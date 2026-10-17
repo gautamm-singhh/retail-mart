@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { paymentRepository, isRefund } from "@/features/payments/services/paymentRepository";
+import { registerCacheClearer } from "@/services/api/cacheManager";
 import type { Payment } from "@/types";
 
 interface PaymentsMemoryCache {
@@ -15,6 +16,13 @@ const paymentsCache: PaymentsMemoryCache = {
   inFlight: null,
   listeners: new Set(),
 };
+
+export function clearPaymentsCache(): void {
+  paymentsCache.data = null;
+  paymentsCache.timestamp = 0;
+  paymentsCache.inFlight = null;
+}
+registerCacheClearer(clearPaymentsCache);
 
 /** Stale time: 60 seconds (data is considered fresh and returned instantly without refetch) */
 const STALE_TIME_MS = 60 * 1000;

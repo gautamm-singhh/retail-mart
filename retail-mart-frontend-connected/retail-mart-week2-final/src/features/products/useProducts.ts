@@ -1,61 +1,91 @@
 import { useCallback, useEffect, useState } from "react";
 import { productRepository } from "@/features/products/services/productRepository";
+import { productsCache } from "@/services/api/products";
 import type { Product, ProductFormValues } from "@/types";
 
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(() => productsCache.data ?? []);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !productsCache.data);
   const [error, setError] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+
+    const handleUpdate = (updatedList: Product[]) => {
+      if (!cancelled) {
+        setProducts(updatedList);
+        setIsLoading(false);
+      }
+    };
+
+    productsCache.listeners.add(handleUpdate);
+
+    const hasCachedData = Boolean(productsCache.data);
+    if (!hasCachedData) {
+      setIsLoading(true);
+    }
     setError(null);
 
     productRepository
-      .list()
+      .list(false)
       .then((data) => {
-        if (!cancelled) setProducts(data);
+        if (!cancelled) {
+          setProducts(data);
+        }
       })
       .catch(() => {
-        if (!cancelled) setError("We couldn't load products. Please try again.");
+        if (!cancelled && !productsCache.data) {
+          setError("We couldn't load products. Please try again.");
+        }
       })
       .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
+      productsCache.listeners.delete(handleUpdate);
     };
-  }, [reloadToken]);
+  }, []);
 
-  const refresh = useCallback(() => setReloadToken((t) => t + 1), []);
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await productRepository.list(true);
+      setProducts(data);
+    } catch {
+      if (!productsCache.data) {
+        setError("We couldn't load products. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const addProduct = useCallback(
     async (values: ProductFormValues) => {
       const created = await productRepository.create(values);
-      refresh();
       return created;
     },
-    [refresh],
+    [],
   );
 
   const editProduct = useCallback(
     async (id: string, values: ProductFormValues) => {
       const updated = await productRepository.update(id, values);
-      refresh();
       return updated;
     },
-    [refresh],
+    [],
   );
 
   const removeProduct = useCallback(
     async (id: string) => {
       await productRepository.remove(id);
-      refresh();
     },
-    [refresh],
+    [],
   );
 
   return { products, isLoading, error, refresh, addProduct, editProduct, removeProduct };

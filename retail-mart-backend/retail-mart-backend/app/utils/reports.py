@@ -6,6 +6,7 @@ Strictly aggregates data with zero exposure of customer PII (GDPR/Data Protectio
 
 from collections import OrderedDict, Counter
 from datetime import date
+from sqlalchemy.orm import selectinload, joinedload
 
 from app.extensions import db
 from app.models.order import Order, OrderItem
@@ -61,7 +62,7 @@ def generate_analytics_summary() -> dict:
     - topProducts (top products by units and revenue)
     - executiveTotals (high-level KPIs)
     """
-    all_orders = Order.query.all()
+    all_orders = Order.query.options(selectinload(Order.items)).all()
     active_orders = [o for o in all_orders if o.status != "Cancelled"]
 
     # High-level KPIs
@@ -81,6 +82,13 @@ def generate_analytics_summary() -> dict:
         for st, count in status_counts.most_common()
     ]
 
+    # Pre-fetch all products with their categories once to avoid N+1 query loop
+    products = Product.query.options(joinedload(Product.category_ref)).all()
+    product_category_cache: dict[str, str] = {
+        p.name.strip().lower(): (p.category_ref.name if p.category_ref else "General")
+        for p in products
+    }
+
     # Category Breakdown & Top Products
     category_map: dict[str, dict] = {}
     product_map: dict[str, dict] = {}
@@ -93,15 +101,9 @@ def generate_analytics_summary() -> dict:
             prod_stat["unitsSold"] += item.quantity
             prod_stat["totalRevenue"] += float(item.price) * item.quantity
 
-            # Resolve Category
-            product = Product.query.filter(
-                db.func.lower(Product.name) == item.product_name.strip().lower()
-            ).first()
-            category_name = (
-                product.category_ref.name
-                if product and product.category_ref
-                else "General"
-            )
+            # Resolve Category using in-memory pre-fetched lookup
+            category_name = product_category_cache.get(p_key.lower(), "General")
+
             cat_stat = category_map.setdefault(
                 category_name,
                 {"category": category_name, "orderCount": 0, "unitsSold": 0, "totalSpent": 0.0},

@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify
+from sqlalchemy import case, func
 
+from app.extensions import db
 from app.models.user import User
 from app.models.catalog import Product
 from app.models.order import Order
@@ -45,37 +47,66 @@ def summary():
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    users = User.query.all()
-    products = Product.query.all()
-    orders = Order.query.all()
-    payments = Payment.query.all()
-    shipments = Shipment.query.all()
+    user_counts = db.session.query(
+        func.count(User.id),
+        func.sum(case((User.status == "active", 1), else_=0)),
+    ).first()
+    total_users = (user_counts[0] if user_counts else 0) or 0
+    active_users = int((user_counts[1] if user_counts else 0) or 0)
+
+    product_counts = db.session.query(
+        func.count(Product.id),
+        func.sum(case((Product.status == "out-of-stock", 1), else_=0)),
+    ).first()
+    total_products = (product_counts[0] if product_counts else 0) or 0
+    out_of_stock_products = int((product_counts[1] if product_counts else 0) or 0)
+
+    order_counts = db.session.query(
+        func.count(Order.id),
+        func.sum(case((Order.status.in_(("Pending", "Processing")), 1), else_=0)),
+    ).first()
+    total_orders = (order_counts[0] if order_counts else 0) or 0
+    pending_orders = int((order_counts[1] if order_counts else 0) or 0)
+
+    payment_counts = db.session.query(
+        func.sum(case((Payment.status == "Paid", 1), else_=0)),
+        func.sum(case((Payment.status == "Failed", 1), else_=0)),
+    ).first()
+    paid_payments = int((payment_counts[0] if payment_counts else 0) or 0)
+    failed_payments = int((payment_counts[1] if payment_counts else 0) or 0)
+
+    shipment_counts = db.session.query(
+        func.count(Shipment.id),
+        func.sum(case((Shipment.status != "Delivered", 1), else_=0)),
+    ).first()
+    total_shipments = (shipment_counts[0] if shipment_counts else 0) or 0
+    pending_shipments = int((shipment_counts[1] if shipment_counts else 0) or 0)
 
     cards = [
         {
             "label": "Active Users",
-            "value": str(len([u for u in users if u.status == "active"])),
-            "hint": f"{len(users)} total accounts",
+            "value": str(active_users),
+            "hint": f"{total_users} total accounts",
         },
         {
             "label": "Total Products",
-            "value": str(len(products)),
-            "hint": f"{len([p for p in products if p.status == 'out-of-stock'])} out of stock",
+            "value": str(total_products),
+            "hint": f"{out_of_stock_products} out of stock",
         },
         {
             "label": "Pending Orders",
-            "value": str(len([o for o in orders if o.status in ('Pending', 'Processing')])),
-            "hint": f"{len(orders)} orders total",
+            "value": str(pending_orders),
+            "hint": f"{total_orders} orders total",
         },
         {
             "label": "Total Payments",
-            "value": str(len([p for p in payments if p.status == 'Paid'])),
-            "hint": f"{len([p for p in payments if p.status == 'Failed'])} failed",
+            "value": str(paid_payments),
+            "hint": f"{failed_payments} failed",
         },
         {
             "label": "Pending Shipments",
-            "value": str(len([s for s in shipments if s.status != 'Delivered'])),
-            "hint": f"{len(shipments)} shipments total",
+            "value": str(pending_shipments),
+            "hint": f"{total_shipments} shipments total",
         },
     ]
     return jsonify(cards)

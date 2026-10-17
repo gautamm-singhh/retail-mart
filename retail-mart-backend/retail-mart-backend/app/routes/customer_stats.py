@@ -11,6 +11,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, jsonify
 from flask_jwt_extended import get_jwt_identity
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.extensions import db
 from app.models.order import Order, OrderItem
@@ -85,8 +86,12 @@ def customer_summary():
     user_id = get_jwt_identity()
     thirty_days_ago = date.today() - timedelta(days=30)
 
-    # All orders for this customer
-    all_orders = Order.query.filter_by(user_id=user_id).all()
+    # All orders for this customer (eager load items to prevent N+1 queries)
+    all_orders = (
+        Order.query.options(selectinload(Order.items))
+        .filter_by(user_id=user_id)
+        .all()
+    )
 
     total_orders = len(all_orders)
     last_order_date = None
@@ -126,17 +131,18 @@ def customer_summary():
     last30_spent = sum(float(o.amount) for o in recent_orders)
 
     # Category breakdown — join OrderItem -> Product -> Category (best-effort)
-    # Products deleted after order placement show as "Unknown".
+    # Pre-fetch products once with category_ref to avoid nested SQL queries per item
+    all_catalog_products = Product.query.options(joinedload(Product.category_ref)).all()
+    product_category_by_lower_name = {
+        p.name.strip().lower(): (p.category_ref.name if p.category_ref else "Unknown")
+        for p in all_catalog_products
+    }
+
     category_map: dict[str, dict] = {}
     for order in active_orders:
         for item in order.items:
-            product = Product.query.filter(
-                db.func.lower(Product.name) == item.product_name.strip().lower()
-            ).first()
-            category = (
-                product.category_ref.name
-                if product and product.category_ref
-                else "Unknown"
+            category = product_category_by_lower_name.get(
+                item.product_name.strip().lower(), "Unknown"
             )
             if category not in category_map:
                 category_map[category] = {"category": category, "orderCount": 0, "totalSpent": 0.0}

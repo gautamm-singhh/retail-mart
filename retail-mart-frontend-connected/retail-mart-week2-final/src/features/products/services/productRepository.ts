@@ -8,7 +8,7 @@ import {
 import type { Product, ProductFormValues } from "@/types";
 
 export const productRepository = {
-  list: (): Promise<Product[]> => fetchProducts(),
+  list: (force = false): Promise<Product[]> => fetchProducts(force),
   getById: (id: string): Promise<Product> => fetchProduct(id),
   create: (values: ProductFormValues): Promise<Product> => createProduct(values),
   update: (id: string, values: ProductFormValues): Promise<Product> => updateProduct(id, values),

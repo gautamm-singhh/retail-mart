@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask import Blueprint, request, jsonify
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models.catalog import Category, CATEGORY_STATUSES
@@ -31,7 +32,7 @@ def list_categories():
             $ref: '#/definitions/Category'
     """
     # Public/read for any logged-out storefront use later; write ops are protected below.
-    categories = Category.query.order_by(Category.created_at).all()
+    categories = Category.query.options(selectinload(Category.products)).order_by(Category.created_at).all()
     return jsonify([c.to_dict() for c in categories])
 
 
@@ -59,7 +60,7 @@ def get_category(category_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    category = Category.query.get(category_id)
+    category = Category.query.options(selectinload(Category.products)).filter_by(id=category_id).first()
     if not category:
         return jsonify({"error": "Category not found"}), 404
     return jsonify(category.to_dict())

@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models.catalog import Product, Category, PRODUCT_STATUSES
@@ -40,7 +41,7 @@ def list_products():
           items:
             $ref: '#/definitions/Product'
     """
-    query = Product.query
+    query = Product.query.options(joinedload(Product.category_ref))
     category = request.args.get("category")
     status = request.args.get("status")
     search = request.args.get("search")
@@ -81,7 +82,7 @@ def get_product(product_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    product = Product.query.get(product_id)
+    product = Product.query.options(joinedload(Product.category_ref)).filter_by(id=product_id).first()
     if not product:
         return jsonify({"error": "Product not found"}), 404
     return jsonify(product.to_dict())

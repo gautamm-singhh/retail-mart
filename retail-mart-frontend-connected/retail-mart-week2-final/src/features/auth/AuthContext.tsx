@@ -1,7 +1,8 @@
-import { createContext, ReactNode, useCallback, useEffect, useState } from "react";
+import { createContext, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { getAuthToken, setAuthToken } from "@/features/auth/authStorage";
 import { request, ApiError } from "@/services/api/client";
 import { signup as signupRequest, requestOtp as requestOtpApi, verifyOtp as verifyOtpApi } from "@/services/api/auth";
+import { clearAllEntityCaches } from "@/services/api/cacheManager";
 import type { Role } from "@/types";
 
 export interface CurrentUser {
@@ -39,10 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getAuthToken());
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(() => Boolean(getAuthToken()));
+  const authenticatedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!token) {
+      authenticatedTokenRef.current = null;
       setCurrentUser(null);
+      setIsLoadingUser(false);
+      return;
+    }
+
+    // If this token was already validated / established during login/signup/OTP in this session,
+    // skip the redundant roundtrip to /auth/me so dashboard opens immediately.
+    if (authenticatedTokenRef.current === token && currentUser) {
       setIsLoadingUser(false);
       return;
     }
@@ -52,10 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     request<CurrentUser>("/auth/me")
       .then((user) => {
-        if (!cancelled) setCurrentUser(user);
+        if (!cancelled) {
+          authenticatedTokenRef.current = token;
+          setCurrentUser(user);
+        }
       })
       .catch(() => {
         if (!cancelled) {
+          authenticatedTokenRef.current = null;
+          clearAllEntityCaches();
           setAuthToken(null);
           setToken(null);
           setCurrentUser(null);
@@ -68,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, currentUser]);
 
   const login = useCallback(
     async (
@@ -98,9 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           );
         }
 
+        // Clean user-specific entity caches when switching accounts or logging in
+        clearAllEntityCaches();
+        authenticatedTokenRef.current = data.accessToken;
         setAuthToken(data.accessToken);
         setToken(data.accessToken);
         setCurrentUser(data.user);
+        setIsLoadingUser(false);
         return data.user;
       } catch (err) {
         if (err instanceof ApiError) {
@@ -116,17 +135,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    clearAllEntityCaches();
+    authenticatedTokenRef.current = null;
     setAuthToken(null);
     setToken(null);
     setCurrentUser(null);
+    setIsLoadingUser(false);
   }, []);
 
   const signup = useCallback(
     async (values: { name: string; email: string; password: string; phone?: string }) => {
       const data = await signupRequest(values);
+      clearAllEntityCaches();
+      authenticatedTokenRef.current = data.accessToken;
       setAuthToken(data.accessToken);
       setToken(data.accessToken);
       setCurrentUser(data.user);
+      setIsLoadingUser(false);
     },
     [],
   );
@@ -135,9 +160,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyOtp = useCallback(async (phone: string, code: string, name?: string) => {
     const data = await verifyOtpApi(phone, code, name);
+    clearAllEntityCaches();
+    authenticatedTokenRef.current = data.accessToken;
     setAuthToken(data.accessToken);
     setToken(data.accessToken);
     setCurrentUser(data.user);
+    setIsLoadingUser(false);
     return { isNewUser: data.isNewUser };
   }, []);
 

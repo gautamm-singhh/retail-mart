@@ -2,5 +2,5 @@ import { fetchCategories } from "@/services/api/categories";
 import type { Category } from "@/types";
 
 export const categoryRepository = {
-  list: (): Promise<Category[]> => fetchCategories(),
+  list: (force = false): Promise<Category[]> => fetchCategories(force),
 };
