@@ -58,12 +58,22 @@ export default function PaymentsPage() {
     }
   }
 
-  const totalPayments = payments.length;
-  const paidPayments = payments.filter((p) => p.status === "Paid").length;
-  const pendingPayments = payments.filter((p) => p.status === "Pending").length;
-  const totalAmountCollected = payments
-    .filter((p) => p.status === "Paid")
-    .reduce((sum, p) => sum + p.amount, 0);
+  const isInitialLoading = isLoading && payments.length === 0;
+
+  const totalPayments = isInitialLoading ? "—" : payments.length;
+  const paidPayments = isInitialLoading ? "—" : payments.filter((p) => p.status === "Paid").length;
+  const pendingPayments = isInitialLoading ? "—" : payments.filter((p) => p.status === "Pending").length;
+  const settlementRate =
+    isInitialLoading || typeof totalPayments !== "number" || totalPayments === 0
+      ? null
+      : Math.round(((paidPayments as number) / totalPayments) * 100);
+  const totalAmountCollected = isInitialLoading
+    ? "—"
+    : formatCurrency(
+        payments
+          .filter((p) => p.status === "Paid")
+          .reduce((sum, p) => sum + p.amount, 0),
+      );
 
   const columns: TableColumn<Payment>[] = [
     {
@@ -158,20 +168,20 @@ export default function PaymentsPage() {
         <AdminStatCard
           label="Settled & Paid"
           value={paidPayments}
-          subtext={`${Math.round((paidPayments / (totalPayments || 1)) * 100)}% settlement rate`}
+          subtext={settlementRate !== null ? `${settlementRate}% settlement rate` : "Calculating..."}
           accentColor="teal"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <AdminStatCard
           label="Pending Verification"
           value={pendingPayments}
-          subtext={pendingPayments > 0 ? "Awaiting clearance" : "All cleared"}
-          accentColor={pendingPayments > 0 ? "amber" : "emerald"}
+          subtext={typeof pendingPayments === "number" ? (pendingPayments > 0 ? "Awaiting clearance" : "All cleared") : "Checking status..."}
+          accentColor={typeof pendingPayments === "number" && pendingPayments > 0 ? "amber" : "emerald"}
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <AdminStatCard
           label="Net Collected"
-          value={formatCurrency(totalAmountCollected)}
+          value={totalAmountCollected}
           subtext="Cleared funds"
           accentColor="purple"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}

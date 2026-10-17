@@ -3,6 +3,7 @@ from datetime import date
 
 from flask import Blueprint, request, jsonify, send_file, current_app
 from flask_jwt_extended import get_jwt_identity, get_jwt
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models.payment import Payment, PaymentStatusEvent, Receipt, PAYMENT_STATUSES, PAYMENT_METHODS
@@ -115,7 +116,7 @@ def list_payments():
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    query = Payment.query
+    query = Payment.query.options(selectinload(Payment.history))
     status = request.args.get("status")
     order_id = request.args.get("orderId")
     if status:
@@ -159,7 +160,7 @@ def get_payment(payment_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    payment = Payment.query.get(payment_id)
+    payment = Payment.query.options(selectinload(Payment.history)).filter_by(id=payment_id).first()
     if not payment:
         return jsonify({"error": "Payment not found"}), 404
     if get_jwt().get("role") == "Customer" and not _is_payment_owner(payment):

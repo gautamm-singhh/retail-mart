@@ -57,12 +57,22 @@ export default function OrdersPage() {
     }
   }
 
-  const totalOrders = orders.length;
-  const pendingOrders = orders.filter((o) => o.status === "Pending" || o.status === "Processing").length;
-  const deliveredOrders = orders.filter((o) => o.status === "Delivered").length;
-  const totalOrderRevenue = orders
-    .filter((o) => o.status !== "Cancelled")
-    .reduce((sum, o) => sum + o.amount, 0);
+  const isInitialLoading = isLoading && orders.length === 0;
+
+  const totalOrders = isInitialLoading ? "—" : orders.length;
+  const pendingOrders = isInitialLoading
+    ? "—"
+    : orders.filter((o) => o.status === "Pending" || o.status === "Processing").length;
+  const deliveredOrders = isInitialLoading
+    ? "—"
+    : orders.filter((o) => o.status === "Delivered").length;
+  const totalOrderRevenue = isInitialLoading
+    ? "—"
+    : formatCurrency(
+        orders
+          .filter((o) => o.status !== "Cancelled")
+          .reduce((sum, o) => sum + o.amount, 0),
+      );
 
   const columns: TableColumn<Order>[] = [
     {
@@ -143,7 +153,7 @@ export default function OrdersPage() {
           label="Pending Fulfillment"
           value={pendingOrders}
           subtext="Requires processing"
-          accentColor={pendingOrders > 0 ? "amber" : "emerald"}
+          accentColor={typeof pendingOrders === "number" && pendingOrders > 0 ? "amber" : "emerald"}
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
         <AdminStatCard
@@ -155,7 +165,7 @@ export default function OrdersPage() {
         />
         <AdminStatCard
           label="Gross Revenue"
-          value={formatCurrency(totalOrderRevenue)}
+          value={totalOrderRevenue}
           subtext="Valid completed orders"
           accentColor="purple"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}

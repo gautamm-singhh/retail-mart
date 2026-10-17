@@ -4,9 +4,12 @@ from datetime import datetime, date
 from flask import Blueprint, request, jsonify, send_file, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
+from sqlalchemy.orm import selectinload, configure_mappers
+
 from app.extensions import db
 from app.models.order import Order, OrderItem, OrderStatusEvent, ORDER_STATUS_TRANSITIONS, ORDER_STATUSES, ORDER_PAYMENT_STATUSES
 from app.models.payment import Payment, PaymentStatusEvent
+from app.models.shipment import Shipment
 from app.utils.decorators import roles_required
 from app.utils.ids import next_sequential_id, random_suffix
 from app.utils.pdf import build_invoice_pdf
@@ -14,6 +17,20 @@ from app.utils.email import send_email, order_confirmation_email, ensure_deliver
 
 orders_bp = Blueprint("orders", __name__)
 logger = logging.getLogger(__name__)
+
+
+def _order_eager_options():
+    """
+    Eagerly loads items, status_history, payments, and shipments in 5 batch queries
+    instead of 1 + (N * 4) sequential queries, eliminating N+1 query latency over remote DB.
+    """
+    configure_mappers()
+    return (
+        selectinload(Order.items),
+        selectinload(Order.status_history),
+        selectinload(Order.payments),
+        selectinload(Order.shipments),
+    )
 
 
 @orders_bp.get("")
@@ -52,7 +69,7 @@ def list_orders():
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    query = Order.query
+    query = Order.query.options(*_order_eager_options())
     status = request.args.get("status")
     payment_status = request.args.get("paymentStatus")
     if status:
@@ -89,7 +106,10 @@ def list_my_orders():
           $ref: '#/definitions/ErrorResponse'
     """
     orders = (
-        Order.query.filter_by(user_id=get_jwt_identity()).order_by(Order.created_at.desc()).all()
+        Order.query.options(*_order_eager_options())
+        .filter_by(user_id=get_jwt_identity())
+        .order_by(Order.created_at.desc())
+        .all()
     )
     return jsonify([o.to_dict() for o in orders])
 
@@ -127,7 +147,7 @@ def get_order(order_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    order = Order.query.get(order_id)
+    order = Order.query.options(*_order_eager_options()).filter_by(id=order_id).first()
     if not order:
         return jsonify({"error": "Order not found"}), 404
     return jsonify(order.to_dict())
