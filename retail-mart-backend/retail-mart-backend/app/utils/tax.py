@@ -97,6 +97,39 @@ STATUTORY_PRODUCT_TAX_REGISTRY: Dict[str, Dict[str, Any]] = {
         "category": "Accessories",
         "description": "Leather Wallet - Bifold (Personal leather travel / pocket wallets)",
     },
+    # Additional 26 Demonstration Catalog Products
+    # Apparel
+    "APP-HOD-021": {"hsn": "6101", "gst_rate": Decimal("5.00"), "category": "Apparel", "description": "Classic Fleece Pullover Hoodie (<= Rs. 2,500)"},
+    "APP-CHN-008": {"hsn": "6203", "gst_rate": Decimal("5.00"), "category": "Apparel", "description": "Slim Fit Stretch Chino Trousers (<= Rs. 2,500)"},
+    "APP-SHT-019": {"hsn": "6205", "gst_rate": Decimal("5.00"), "category": "Apparel", "description": "Oxford Cotton Button-Down Shirt (<= Rs. 2,500)"},
+    "APP-JKT-033": {"hsn": "6201", "gst_rate": Decimal("5.00"), "category": "Apparel", "description": "Water-Resistant Windbreaker Jacket (<= Rs. 2,500)"},
+    # Footwear
+    "FTW-SNK-015": {"hsn": "6404", "gst_rate": Decimal("5.00"), "category": "Footwear", "description": "Classic Canvas Low-Top Sneakers (<= Rs. 2,500)"},
+    "FTW-TRN-042": {"hsn": "6404", "gst_rate": Decimal("5.00"), "category": "Footwear", "description": "Breathable Mesh Knit Trainers (<= Rs. 2,500)"},
+    "FTW-OXF-003": {"hsn": "6403", "gst_rate": Decimal("18.00"), "category": "Footwear", "description": "Leather Formal Oxford Shoes (> Rs. 2,500)"},
+    "FTW-LOA-028": {"hsn": "6403", "gst_rate": Decimal("5.00"), "category": "Footwear", "description": "Casual Slip-On Leather Loafers (<= Rs. 2,500)"},
+    "FTW-SLD-010": {"hsn": "6402", "gst_rate": Decimal("5.00"), "category": "Footwear", "description": "Cushioned Athletic Sport Slides (<= Rs. 2,500)"},
+    # Electronics
+    "ELE-HDP-025": {"hsn": "8518", "gst_rate": Decimal("18.00"), "category": "Electronics", "description": "Over-Ear ANC Wireless Headphones"},
+    "ELE-WTC-017": {"hsn": "8517", "gst_rate": Decimal("18.00"), "category": "Electronics", "description": "Smart Fitness Watch with Heart Rate"},
+    "ELE-PWR-004": {"hsn": "8507", "gst_rate": Decimal("18.00"), "category": "Electronics", "description": "Magnetic Wireless Power Bank 10000mAh"},
+    "ELE-CAM-008": {"hsn": "8525", "gst_rate": Decimal("18.00"), "category": "Electronics", "description": "Full HD 1080p Streaming Webcam"},
+    # Home & Kitchen
+    "HOM-KNF-012": {"hsn": "8211", "gst_rate": Decimal("12.00"), "category": "Home & Kitchen", "description": "Stainless Steel Chef's Knife 8\""},
+    "HOM-BRD-007": {"hsn": "4419", "gst_rate": Decimal("12.00"), "category": "Home & Kitchen", "description": "Natural Bamboo Cutting Board Set"},
+    "HOM-BLN-030": {"hsn": "8509", "gst_rate": Decimal("18.00"), "category": "Home & Kitchen", "description": "Compact Personal Smoothie Blender 600W"},
+    # Sports & Fitness
+    "SPT-DMB-014": {"hsn": "9506", "gst_rate": Decimal("18.00"), "category": "Sports & Fitness", "description": "Rubber Hex Dumbbell Set 5kg (Pair)"},
+    "SPT-RES-020": {"hsn": "9506", "gst_rate": Decimal("18.00"), "category": "Sports & Fitness", "description": "Heavy Resistance Loop Bands (5-Pack)"},
+    "SPT-ROL-009": {"hsn": "9506", "gst_rate": Decimal("18.00"), "category": "Sports & Fitness", "description": "High-Density Foam Roller 45cm"},
+    "SPT-ROP-011": {"hsn": "9506", "gst_rate": Decimal("18.00"), "category": "Sports & Fitness", "description": "Speed Skipping Jump Rope"},
+    "SPT-BAG-023": {"hsn": "4202", "gst_rate": Decimal("18.00"), "category": "Sports & Fitness", "description": "Waterproof Gym Duffel Bag with Shoe Pocket"},
+    # Accessories
+    "ACC-SUN-018": {"hsn": "9004", "gst_rate": Decimal("18.00"), "category": "Accessories", "description": "Polarized Aviator Sunglasses"},
+    "ACC-BLT-005": {"hsn": "4203", "gst_rate": Decimal("18.00"), "category": "Accessories", "description": "Classic Genuine Leather Dress Belt"},
+    "ACC-CRD-012": {"hsn": "4202", "gst_rate": Decimal("18.00"), "category": "Accessories", "description": "Minimalist Slim RFID Card Holder"},
+    "ACC-BCK-031": {"hsn": "4202", "gst_rate": Decimal("18.00"), "category": "Accessories", "description": "Canvas Everyday Commuter Backpack"},
+    "ACC-WTC-009": {"hsn": "9102", "gst_rate": Decimal("18.00"), "category": "Accessories", "description": "Stainless Steel Chronograph Watch"},
 }
 
 # Secondary mapping by product name for cases where order items store product names
@@ -112,6 +145,32 @@ PRODUCT_NAME_TO_SKU: Dict[str, str] = {
     "yoga mat 6mm": "SPT-YOG-007",
     "bluetooth speaker mini": "ELE-SPK-012",
     "leather wallet - bifold": "ACC-WAL-003",
+    "classic fleece pullover hoodie": "APP-HOD-021",
+    "slim fit stretch chino trousers": "APP-CHN-008",
+    "oxford cotton button-down shirt": "APP-SHT-019",
+    "water-resistant windbreaker jacket": "APP-JKT-033",
+    "classic canvas low-top sneakers": "FTW-SNK-015",
+    "breathable mesh knit trainers": "FTW-TRN-042",
+    "leather formal oxford shoes": "FTW-OXF-003",
+    "casual slip-on leather loafers": "FTW-LOA-028",
+    "cushioned athletic sport slides": "FTW-SLD-010",
+    "over-ear anc wireless headphones": "ELE-HDP-025",
+    "smart fitness watch with heart rate": "ELE-WTC-017",
+    "magnetic wireless power bank 10000mah": "ELE-PWR-004",
+    "full hd 1080p streaming webcam": "ELE-CAM-008",
+    "stainless steel chef's knife 8\"": "HOM-KNF-012",
+    "natural bamboo cutting board set": "HOM-BRD-007",
+    "compact personal smoothie blender 600w": "HOM-BLN-030",
+    "rubber hex dumbbell set 5kg (pair)": "SPT-DMB-014",
+    "heavy resistance loop bands (5-pack)": "SPT-RES-020",
+    "high-density foam roller 45cm": "SPT-ROL-009",
+    "speed skipping jump rope": "SPT-ROP-011",
+    "waterproof gym duffel bag with shoe pocket": "SPT-BAG-023",
+    "polarized aviator sunglasses": "ACC-SUN-018",
+    "classic genuine leather dress belt": "ACC-BLT-005",
+    "minimalist slim rfid card holder": "ACC-CRD-012",
+    "canvas everyday commuter backpack": "ACC-BCK-031",
+    "stainless steel chronograph watch": "ACC-WTC-009",
 }
 
 # -----------------------------------------------------------------------------

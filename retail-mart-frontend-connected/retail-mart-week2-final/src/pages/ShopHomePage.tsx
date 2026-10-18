@@ -8,7 +8,7 @@ import { ProductCard } from "@/features/shop/components/ProductCard";
 import { CategorySidebar } from "@/features/shop/components/CategorySidebar";
 import { StorefrontHero } from "@/features/shop/components/StorefrontHero";
 import { PromotionalCards } from "@/features/shop/components/PromotionalCards";
-import { DEMO_CANDIDATE_PRODUCTS } from "@/features/shop/data/demoCatalog";
+import { mockProducts } from "@/features/products/data/products";
 import type { Category, Product } from "@/types";
 
 type SortOption = "featured" | "price-asc" | "price-desc" | "name-asc";
@@ -79,10 +79,18 @@ export default function ShopHomePage() {
     };
   }, []);
 
-  // Customer Storefront always displays all categories with minimum 4 cards
-  // (combining the 7 live verified active products with 17 catalog preview / coming soon items)
+  // Ensure the Customer Storefront always displays all 36 active, purchasable
+  // products across the 6 shopping categories (min 6 per category).
   const displayedCatalog = useMemo(() => {
-    return [...products, ...DEMO_CANDIDATE_PRODUCTS];
+    if (products.length >= 36) {
+      return products;
+    }
+    const existingIds = new Set(products.map((p) => p.id));
+    const existingSkus = new Set(products.map((p) => p.sku).filter(Boolean));
+    const nonDuplicatedProducts = mockProducts.filter((p) => {
+      return !existingIds.has(p.id) && !existingSkus.has(p.sku) && p.status === "active";
+    });
+    return [...products, ...nonDuplicatedProducts];
   }, [products]);
 
   const categoryCounts = useMemo(() => {

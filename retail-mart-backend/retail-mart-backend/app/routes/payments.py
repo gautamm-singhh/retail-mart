@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import date
 
 from flask import Blueprint, request, jsonify, send_file, current_app
@@ -7,15 +8,17 @@ from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models.payment import Payment, PaymentStatusEvent, Receipt, PAYMENT_STATUSES, PAYMENT_METHODS
-from app.models.order import Order
+from app.models.order import Order, OrderStatusEvent
 from app.utils.decorators import roles_required
 from app.utils.ids import random_suffix
 from app.utils.pdf import build_receipt_pdf
 from app.utils.razorpay_client import get_razorpay_client, is_razorpay_live
 from app.utils.email import send_email, receipt_email, ensure_delivery_result
+from app.utils.inventory import deduct_order_stock, InsufficientStockError
 
 payments_bp = Blueprint("payments", __name__)
 logger = logging.getLogger(__name__)
+_payment_process_lock = threading.Lock()
 
 
 def _get_or_create_receipt(payment: Payment) -> Receipt:
@@ -297,7 +300,7 @@ def update_payment_status(payment_id):
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
-    payment = Payment.query.get(payment_id)
+    payment = Payment.query.filter_by(id=payment_id).with_for_update().first()
     if not payment:
         return jsonify({"error": "Payment not found"}), 404
 
@@ -308,6 +311,25 @@ def update_payment_status(payment_id):
 
     was_paid_already = payment.status == "Paid"
     old_status = payment.status
+
+    if new_status == "Paid" and not was_paid_already and payment.order:
+        try:
+            deduct_order_stock(payment.order)
+        except InsufficientStockError as e:
+            payment.status = "Failed"
+            payment.history.append(PaymentStatusEvent(status="Failed", date=date.today()))
+            payment.order.payment_status = "Failed"
+            payment.order.status = "Cancelled"
+            payment.order.status_history.append(
+                OrderStatusEvent(status="Cancelled", date=date.today(), note=f"Mark-paid aborted due to stock conflict: {str(e)}")
+            )
+            db.session.commit()
+            logger.error("Manual payment mark-paid reconciled as Failed due to stock exhaustion: %s", str(e))
+            return jsonify({
+                "error": str(e),
+                "reconciliation": "Payment marked Failed and order Cancelled due to inventory exhaustion."
+            }), 409
+
     payment.status = new_status
     payment.history.append(PaymentStatusEvent(status=new_status, date=date.today()))
 
@@ -530,7 +552,7 @@ def verify_razorpay_payment():
     """
     data = request.get_json(silent=True) or {}
     payment_id = data.get("paymentId")
-    payment = Payment.query.get(payment_id) if payment_id else None
+    payment = Payment.query.filter_by(id=payment_id).with_for_update().first() if payment_id else None
     if not payment:
         return jsonify({"error": "A valid paymentId is required"}), 400
     if get_jwt().get("role") == "Customer" and not _is_payment_owner(payment):
@@ -552,16 +574,55 @@ def verify_razorpay_payment():
         logger.warning("Razorpay signature verification failed payment_id=%s", payment_id)
         return jsonify({"error": "Payment signature verification failed"}), 400
 
-    payment.status = "Paid"
-    payment.method = "RazorPay"
-    payment.history.append(PaymentStatusEvent(status="Paid", date=date.today()))
-    if payment.order:
-        payment.order.payment_status = "Paid"
-    db.session.commit()
+    with _payment_process_lock:
+        # Invalidate SQLAlchemy identity map to force fresh database read across concurrent threads
+        db.session.expire_all()
+        payment = Payment.query.filter_by(id=payment_id).with_for_update().first()
+        if not payment:
+            return jsonify({"error": "A valid paymentId is required"}), 400
 
-    logger.info("Razorpay payment verified and marked Paid payment_id=%s order_id=%s",
-                payment_id, payment.order_id)
+        was_paid_already = payment.status == "Paid"
 
-    _email_receipt(payment)  # best-effort, see _email_receipt()
+        # Idempotent: Only deduct stock, record history, and trigger receipt if not already Paid
+        if not was_paid_already:
+            try:
+                deduct_order_stock(payment.order)
+            except InsufficientStockError as e:
+                # Money was captured via Razorpay; record payment as Paid (captured).
+                # Cancel the order and flag for refund reconciliation so accounting is truthful.
+                payment.status = "Paid"
+                payment.method = "RazorPay"
+                payment.history.append(PaymentStatusEvent(status="Paid", date=date.today()))
+                payment.order.payment_status = "Paid"
+                payment.order.status = "Cancelled"
+                payment.order.status_history.append(
+                    OrderStatusEvent(
+                        status="Cancelled",
+                        date=date.today(),
+                        note=f"Payment captured (RazorPay ref {data.get('razorpayPaymentId')}), but order fulfillment failed due to stock exhaustion: {str(e)}. Flagged for refund."
+                    )
+                )
+                db.session.commit()
+                logger.error("Razorpay payment verified & captured, but stock fulfillment failed: %s. Order cancelled for refund.", str(e))
+                return jsonify({
+                    "error": str(e),
+                    "paymentStatus": "Paid",
+                    "orderStatus": "Cancelled",
+                    "reconciliation": "Payment captured successfully, but inventory fulfillment failed. Order cancelled and queued for refund reconciliation."
+                }), 409
+
+            payment.status = "Paid"
+            payment.method = "RazorPay"
+            payment.history.append(PaymentStatusEvent(status="Paid", date=date.today()))
+            if payment.order:
+                payment.order.payment_status = "Paid"
+            db.session.commit()
+
+            logger.info("Razorpay payment verified and marked Paid payment_id=%s order_id=%s",
+                        payment_id, payment.order_id)
+
+            _email_receipt(payment)  # best-effort, see _email_receipt()
+        else:
+            logger.info("Razorpay payment callback idempotent skip: already Paid payment_id=%s", payment_id)
 
     return jsonify(payment.to_dict())

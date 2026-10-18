@@ -73,18 +73,18 @@ describe("Customer Storefront Product Count & Catalog Preview Verification", () 
     vi.clearAllMocks();
   });
 
-  it("1. Normal Guest visitor sees 24 cards on /shop without needing to log in", async () => {
+  it("1. Normal Guest visitor sees 36 cards on /shop without needing to log in", async () => {
     renderShopHomePage("/shop", null);
 
-    // Should visibly render all 24 cards (7 live + 17 preview)
+    // Should visibly render cards across all categories
     const cards = await screen.findAllByRole("link", { name: /cotton crew t-shirt|running shoes|fleece pullover hoodie/i });
     expect(cards.length).toBeGreaterThan(0);
 
-    // Verify badge displays 24 items
-    expect(screen.getByText("All (24)")).toBeInTheDocument();
+    // Verify badge displays 36 items
+    expect(screen.getByText("All (36)")).toBeInTheDocument();
   });
 
-  it("2. Normal Customer account sees 24 cards on /shop", async () => {
+  it("2. Normal Customer account sees 36 cards on /shop", async () => {
     const customerUser: User = {
       id: "u-cust",
       name: "Normal Customer",
@@ -95,21 +95,21 @@ describe("Customer Storefront Product Count & Catalog Preview Verification", () 
     };
     renderShopHomePage("/shop", customerUser);
 
-    expect(await screen.findByText("All (24)")).toBeInTheDocument();
+    expect(await screen.findByText("All (36)")).toBeInTheDocument();
     // Live product is present
     expect(screen.getByText("Cotton Crew T-Shirt")).toBeInTheDocument();
-    // Preview product is visibly present
+    // Second product is visibly present
     expect(screen.getByText("Classic Fleece Pullover Hoodie")).toBeInTheDocument();
   });
 
-  it("3. Every category displays at least 4 visible product cards in the normal customer storefront", async () => {
+  it("3. Every category displays at least 6 visible product cards in the normal customer storefront", async () => {
     const categoriesToTest = [
-      { name: "Apparel", minCount: 4 },
-      { name: "Footwear", minCount: 4 },
-      { name: "Electronics", minCount: 4 },
-      { name: "Home & Kitchen", minCount: 4 },
-      { name: "Sports & Fitness", minCount: 4 },
-      { name: "Accessories", minCount: 4 },
+      { name: "Apparel", minCount: 6 },
+      { name: "Footwear", minCount: 6 },
+      { name: "Electronics", minCount: 6 },
+      { name: "Home & Kitchen", minCount: 6 },
+      { name: "Sports & Fitness", minCount: 6 },
+      { name: "Accessories", minCount: 6 },
     ];
 
     for (const cat of categoriesToTest) {
@@ -119,8 +119,8 @@ describe("Customer Storefront Product Count & Catalog Preview Verification", () 
       const heading = await screen.findByRole("heading", { name: cat.name, level: 2 });
       expect(heading).toBeInTheDocument();
 
-      // Check category count badge indicates 4 items
-      const badges = screen.getAllByText(/4 items/i);
+      // Check category count badge indicates 6 items
+      const badges = screen.getAllByText(/6 items/i);
       expect(badges.length).toBeGreaterThan(0);
 
       unmount();

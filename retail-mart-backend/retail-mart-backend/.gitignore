@@ -25,3 +25,6 @@ logs/
 backups/
 *.sql
 *.dump
+sync_aiven_*.py
+*.pem
+*.crt
