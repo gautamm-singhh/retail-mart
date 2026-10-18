@@ -668,6 +668,7 @@
 .promo-marquee-root {
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 /* Left & right fade masks */
@@ -677,85 +678,128 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 80px;
+  width: 36px;
   z-index: 10;
   pointer-events: none;
 }
 
+@media (min-width: 640px) {
+  .promo-marquee-root::before,
+  .promo-marquee-root::after {
+    width: 64px;
+  }
+}
+
 .promo-marquee-root::before {
   left: 0;
-  background: linear-gradient(to right, var(--paper) 0%, transparent 100%);
+  background: linear-gradient(to right, #F2F5F4 0%, transparent 100%);
 }
 
 .promo-marquee-root::after {
   right: 0;
-  background: linear-gradient(to left, var(--paper) 0%, transparent 100%);
+  background: linear-gradient(to left, #F2F5F4 0%, transparent 100%);
+}
+
+.dark .promo-marquee-root::before,
+[data-theme="dark"] .promo-marquee-root::before {
+  background: linear-gradient(to right, #020617 0%, transparent 100%);
+}
+
+.dark .promo-marquee-root::after,
+[data-theme="dark"] .promo-marquee-root::after {
+  background: linear-gradient(to left, #020617 0%, transparent 100%);
 }
 
 .promo-marquee-track-wrap {
   overflow: hidden;
+  width: 100%;
 }
 
 @keyframes marqueeScroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
 }
 
 .promo-marquee-track {
   display: flex;
-  gap: 16px;
   width: max-content;
-  animation: marqueeScroll 30s linear infinite;
-  padding: 8px 0 12px;
+  padding: 6px 0 14px;
 }
 
-/* Pause on hover */
-.promo-marquee-track-wrap:hover .promo-marquee-track {
+.promo-marquee-group {
+  display: flex;
+  gap: 16px;
+  padding-right: 16px;
+  flex-shrink: 0;
+  animation: marqueeScroll 26s linear infinite;
+  will-change: transform;
+}
+
+@media (min-width: 640px) {
+  .promo-marquee-group {
+    gap: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* Pause on hover or keyboard focus */
+.promo-marquee-track-wrap:hover .promo-marquee-group,
+.promo-marquee-track-wrap:focus-within .promo-marquee-group {
   animation-play-state: paused;
 }
 
 .promo-marquee-card {
   position: relative;
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
+  flex-direction: column;
+  justify-content: space-between;
   overflow: hidden;
-  width: 300px;
+  width: 295px;
   flex-shrink: 0;
-  border-radius: 18px;
-  border: 1.5px solid rgba(0, 0, 0, 0.07);
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
   background: #fff;
-  padding: 18px;
+  padding: 16px 18px;
   text-align: left;
-  box-shadow: 0 2px 12px -4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px 0 rgba(16, 42, 65, 0.05);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.2s;
   cursor: pointer;
 }
 
+@media (min-width: 640px) {
+  .promo-marquee-card {
+    width: 325px;
+    border-radius: 18px;
+  }
+}
+
 .promo-marquee-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.14);
-  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px -4px rgba(16, 42, 65, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .promo-marquee-card:active {
-  transform: translateY(-1px) scale(0.99);
+  transform: translateY(0);
 }
 
-.dark .promo-marquee-card {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(255, 255, 255, 0.08);
+.dark .promo-marquee-card,
+[data-theme="dark"] .promo-marquee-card {
+  background: #0f172a;
+  border-color: rgba(30, 41, 59, 0.9);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 }
 
-.dark .promo-marquee-card:hover {
+.dark .promo-marquee-card:hover,
+[data-theme="dark"] .promo-marquee-card:hover {
   border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .promo-marquee-track {
+  .promo-marquee-group {
     animation: none !important;
   }
 }

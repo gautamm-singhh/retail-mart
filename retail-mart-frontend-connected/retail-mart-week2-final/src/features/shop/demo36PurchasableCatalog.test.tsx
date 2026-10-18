@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AuthContext, AuthContextValue } from "@/features/auth/AuthContext";
 import { CartProvider } from "@/features/cart/CartContext";
@@ -146,24 +146,36 @@ describe("Retail Mart 36-Product Mentor Demonstration Catalog Tests", () => {
     unmountFootwear();
   });
 
-  it("5. Promotional cards section displays exactly 4 equal-width responsive cards", async () => {
+  it("5. Promotional cards section displays continuous marquee animation with 4 promotional categories", async () => {
     renderShopPage("/shop", null);
     await screen.findByText("All (36)");
 
     const promoSection = screen.getByTestId("promotional-cards-section");
     expect(promoSection).toBeInTheDocument();
+    expect(promoSection.className).toContain("promo-marquee-root");
 
-    const promoGrid = promoSection.firstElementChild as HTMLElement;
-    expect(promoGrid.className).toContain("lg:grid-cols-4");
-    expect(promoGrid.className).toContain("sm:grid-cols-2");
-    expect(promoGrid.className).toContain("grid-cols-1");
+    const track = screen.getByTestId("promo-marquee-track");
+    expect(track).toBeInTheDocument();
+    expect(track.className).toContain("promo-marquee-track");
 
-    // Exactly 4 promotional cards
-    const promoCards = promoGrid.querySelectorAll("button");
-    expect(promoCards).toHaveLength(4);
-    promoCards.forEach((card) => {
-      expect(card.className).toContain("min-w-0");
-    });
+    const group1 = screen.getByTestId("promo-marquee-group-1");
+    expect(group1).toBeInTheDocument();
+    expect(group1.className).toContain("promo-marquee-group");
+
+    // Exactly 4 promotional cards in group 1
+    const promoCardsGroup1 = group1.querySelectorAll("button");
+    expect(promoCardsGroup1).toHaveLength(4);
+
+    // Verify all 4 category cards are present with proper titles
+    expect(within(group1).getByText("Premium Casual & Denim")).toBeInTheDocument();
+    expect(within(group1).getByText("Trail & Lifestyle Footwear")).toBeInTheDocument();
+    expect(within(group1).getByText("High-Fidelity Audio & Gear")).toBeInTheDocument();
+    expect(within(group1).getByText("Artisan Kitchen & Dining")).toBeInTheDocument();
+
+    // Verify duplicate group 2 exists for seamless infinite loop
+    const group2 = screen.getByTestId("promo-marquee-group-2");
+    expect(group2).toBeInTheDocument();
+    expect(group2.className).toContain("promo-marquee-group");
   });
 
   it("6. Categories sidebar on desktop has sticky positioning with top-24 and internal scroll max-height", async () => {
