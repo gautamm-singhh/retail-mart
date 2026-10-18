@@ -1,5 +1,4 @@
 import { request } from "@/services/api/client";
-import { registerCacheClearer } from "@/services/api/cacheManager";
 import type { Product, ProductFormValues } from "@/types";
 
 interface ProductsMemoryCache {
@@ -33,7 +32,8 @@ export function clearProductsCache(): void {
   productsCache.timestamp = 0;
   productsCache.inFlight = null;
 }
-registerCacheClearer(clearProductsCache);
+// Note: We do NOT register clearProductsCache with user-session registerCacheClearer
+// so that public catalog items remain available immediately when switching or logging in.
 
 export function fetchProducts(force = false): Promise<Product[]> {
   const isFresh = productsCache.data && Date.now() - productsCache.timestamp < STALE_TIME_MS;

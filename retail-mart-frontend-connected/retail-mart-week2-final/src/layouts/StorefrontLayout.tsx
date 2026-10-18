@@ -16,7 +16,8 @@ export default function StorefrontLayout() {
   const { isAuthenticated, currentUser } = useAuth();
   const { itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
-  const { stats } = useCustomerStats();
+  const isCustomer = isAuthenticated && (currentUser?.role === "Customer" || currentUser?.role?.toLowerCase() === "customer");
+  const { stats } = useCustomerStats(isCustomer);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();

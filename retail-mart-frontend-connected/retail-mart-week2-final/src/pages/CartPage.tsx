@@ -6,6 +6,7 @@ import { formatCurrency, formatTaxAmount } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 import { calculateOrderTaxBreakdown } from "@/utils/taxCalculation";
 import { PRODUCT_TAX_REGISTRY } from "@/constants/taxConfig";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 
 export default function CartPage() {
   const { items, subtotal, updateQuantity, removeItem } = useCart();
@@ -63,8 +64,17 @@ export default function CartPage() {
               className="group flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs transition-all duration-200 hover:border-emerald-400/40 hover:shadow-sm dark:border-slate-800/70 dark:bg-slate-900"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
-              <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 text-2xl font-black text-emerald-600 dark:from-slate-800 dark:to-slate-800 dark:text-emerald-400 shadow-xs">
-                {item.productName.charAt(0).toUpperCase()}
+              <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 shadow-xs overflow-hidden">
+                <img
+                  src={getProductExactImage({ id: item.productId, name: item.productName })}
+                  alt={item.productName}
+                  loading="lazy"
+                  className="h-full w-full object-contain p-1.5 transition-transform duration-200 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = NEUTRAL_PRODUCT_FALLBACK;
+                  }}
+                />
               </div>
 
               <div className="min-w-0 flex-1">

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { ProductCard } from "@/features/shop/components/ProductCard";
-import { getProductExactImage } from "@/features/shop/utils/productImages";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 import { mockProducts } from "@/features/products/data/products";
 import { useCart } from "@/features/cart/useCart";
 import { useWishlist } from "@/features/wishlist/useWishlist";
@@ -123,17 +123,17 @@ export default function ShopProductDetailPage() {
 
       <div className="grid grid-cols-1 gap-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8 md:grid-cols-12 lg:gap-12 dark:border-slate-800/90 dark:bg-slate-900 transition-colors">
         <div className="md:col-span-6 lg:col-span-6">
-          <div className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-100 bg-slate-100 dark:border-slate-800 dark:bg-slate-800/80 shadow-xs">
+          <div className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xs flex items-center justify-center p-6">
             {getProductExactImage(product) && !imgError ? (
               <img
                 src={getProductExactImage(product)}
                 alt={product.name}
                 onError={() => setImgError(true)}
-                className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-105"
+                className="max-h-full max-w-full object-contain object-center transition-transform duration-500 ease-out group-hover:scale-105"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-7xl font-black text-emerald-600 dark:bg-slate-800 dark:text-emerald-400">
-                {product.name.charAt(0).toUpperCase()}
+              <div className="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-slate-800 p-8">
+                <img src={NEUTRAL_PRODUCT_FALLBACK} alt="Placeholder" className="h-24 w-24 opacity-30" />
               </div>
             )}
 

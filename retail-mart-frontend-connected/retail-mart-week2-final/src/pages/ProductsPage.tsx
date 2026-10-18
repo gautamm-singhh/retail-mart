@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/useToast";
 import type { Product, ProductFormValues } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 
 const STATUS_OPTIONS = [
   { label: "All statuses", value: "all" },
@@ -129,14 +130,14 @@ export default function ProductsPage() {
           onClick={() => navigate(`${ROUTES.products}/${p.id}`)}
           className="flex items-center gap-3 text-left font-medium text-slate-900 hover:text-emerald-600 hover:underline dark:text-slate-100 dark:hover:text-emerald-400 transition-colors"
         >
-          {p.imageUrl ? (
+          {getProductExactImage(p) ? (
             <img
-              src={p.imageUrl}
+              src={getProductExactImage(p)}
               alt=""
-              className="h-10 w-10 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shadow-xs"
+              className="h-10 w-10 shrink-0 rounded-xl object-contain p-0.5 bg-slate-50 dark:bg-slate-800 ring-1 ring-slate-200 dark:ring-slate-700 shadow-xs"
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80";
+                e.currentTarget.src = NEUTRAL_PRODUCT_FALLBACK;
               }}
             />
           ) : (

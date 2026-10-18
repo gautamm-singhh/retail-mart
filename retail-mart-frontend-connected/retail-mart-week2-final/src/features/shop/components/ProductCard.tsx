@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/useToast";
 import type { Product } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
-import { getProductExactImage } from "@/features/shop/utils/productImages";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 
 interface ProductCardProps {
   product: Product;
@@ -62,13 +62,13 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
           <img
             src={displayImageUrl}
             alt={product.name}
-            loading="lazy"
+            loading={animDelay < 250 ? "eager" : "lazy"}
             onError={() => setImgError(true)}
-            className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+            className="h-full w-full object-contain p-2.5 object-center transition-transform duration-500 ease-out group-hover:scale-[1.06]"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 text-5xl font-black text-emerald-600/50 dark:from-slate-800 dark:to-slate-800 dark:text-emerald-400/40">
-            {product.name.charAt(0).toUpperCase()}
+          <div className="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-slate-800 p-6">
+            <img src={NEUTRAL_PRODUCT_FALLBACK} alt="Product image placeholder" className="h-16 w-16 opacity-30" />
           </div>
         )}
 

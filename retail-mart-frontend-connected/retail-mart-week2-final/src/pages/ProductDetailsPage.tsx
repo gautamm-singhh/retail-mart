@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/useToast";
 import type { ProductFormValues } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 
 export default function ProductDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -106,14 +107,14 @@ export default function ProductDetailsPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-6 lg:col-span-2">
           <div className="flex flex-col gap-6 sm:flex-row">
-            {product.imageUrl ? (
+            {getProductExactImage(product) ? (
               <img
-                src={product.imageUrl}
+                src={getProductExactImage(product)}
                 alt={product.name}
-                className="h-48 w-48 shrink-0 rounded-2xl border border-slate-200 object-cover shadow-sm dark:border-slate-800 ring-1 ring-slate-100 dark:ring-slate-700"
+                className="h-48 w-48 shrink-0 rounded-2xl border border-slate-200 object-contain p-2 bg-slate-50 dark:bg-slate-800 shadow-sm dark:border-slate-800 ring-1 ring-slate-100 dark:ring-slate-700"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80";
+                  e.currentTarget.src = NEUTRAL_PRODUCT_FALLBACK;
                 }}
               />
             ) : (

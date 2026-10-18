@@ -16,6 +16,7 @@ import { formatCurrency, formatTaxAmount } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
 import { calculateOrderTaxBreakdown } from "@/utils/taxCalculation";
 import { SELLER_TAX_PROFILE, PRODUCT_TAX_REGISTRY } from "@/constants/taxConfig";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 
 export default function CheckoutPage() {
   const { items, clear } = useCart();
@@ -282,21 +283,35 @@ export default function CheckoutPage() {
             </div>
 
             <ul className="divide-y divide-slate-100 dark:divide-slate-800/80">
-              {items.map((item, index) => (
-                <li key={item.productId} className="flex items-center justify-between py-3 text-xs sm:text-sm">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <span className="font-semibold text-slate-900 dark:text-white">{item.productName}</span>
-                      <div className="flex items-center gap-2 mt-0.5 text-slate-500 dark:text-slate-400 text-xs">
-                        <span>Qty: <strong>{item.quantity}</strong></span>
-                        <span>•</span>
-                        <span>{formatCurrency(item.price)} each</span>
+              {items.map((item, index) => {
+                const itemImg = getProductExactImage({ id: item.productId, name: item.productName });
+                return (
+                  <li key={item.productId} className="flex items-center justify-between py-3 text-xs sm:text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {index + 1}
+                      </span>
+                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800 flex items-center justify-center">
+                        <img
+                          src={itemImg}
+                          alt={item.productName}
+                          loading="lazy"
+                          className="h-full w-full object-contain p-0.5"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = NEUTRAL_PRODUCT_FALLBACK;
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-900 dark:text-white">{item.productName}</span>
+                        <div className="flex items-center gap-2 mt-0.5 text-slate-500 dark:text-slate-400 text-xs">
+                          <span>Qty: <strong>{item.quantity}</strong></span>
+                          <span>•</span>
+                          <span>{formatCurrency(item.price)} each</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
                   <div className="text-right">
                     <span className="font-extrabold text-slate-900 dark:text-white">
                       {formatCurrency(item.price * item.quantity)}
@@ -308,8 +323,9 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                 </li>
-              ))}
-            </ul>
+              );
+            })}
+          </ul>
           </section>
         </div>
 

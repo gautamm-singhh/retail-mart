@@ -8,12 +8,17 @@ interface UseCustomerStatsResult {
   error: string | null;
 }
 
-export function useCustomerStats(): UseCustomerStatsResult {
+export function useCustomerStats(enabled: boolean = true): UseCustomerStatsResult {
   const [stats, setStats] = useState<CustomerStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setIsLoading(true);
     setError(null);
@@ -32,7 +37,7 @@ export function useCustomerStats(): UseCustomerStatsResult {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   return { stats, isLoading, error };
 }

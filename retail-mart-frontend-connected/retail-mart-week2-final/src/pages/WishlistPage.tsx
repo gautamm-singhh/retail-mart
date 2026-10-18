@@ -5,7 +5,7 @@ import { useCart } from "@/features/cart/useCart";
 import { useToast } from "@/hooks/useToast";
 import { formatCurrency } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
-import { getProductExactImage } from "@/features/shop/utils/productImages";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -136,11 +136,15 @@ export default function WishlistPage() {
                         src={imageUrl}
                         alt={product.name}
                         loading="lazy"
-                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = NEUTRAL_PRODUCT_FALLBACK;
+                        }}
+                        className="h-full w-full object-contain p-2.5 object-center transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-4xl font-extrabold text-emerald-700 dark:bg-slate-800 dark:text-emerald-400">
-                        {product.name.charAt(0).toUpperCase()}
+                      <div className="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-slate-800 p-6">
+                        <img src={NEUTRAL_PRODUCT_FALLBACK} alt="Placeholder" className="h-16 w-16 opacity-30" />
                       </div>
                     )}
                   </Link>

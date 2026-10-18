@@ -86,13 +86,13 @@ def seed():
         ("p-1010", "Leather Wallet - Bifold", "ACC-WAL-003", "Accessories", "Genuine leather bifold wallet with 6 card slots.", 999, 61, "active"),
     ]
     product_images = {
-        "APP-TSH-001": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80",
-        "APP-JNS-014": "https://images.unsplash.com/photo-1542272604-780c96856592?w=600&auto=format&fit=crop&q=80",
+        "APP-TSH-001": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&auto=format&fit=crop&q=80",
+        "APP-JNS-014": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&auto=format&fit=crop&q=80",
         "HOM-BTL-022": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop&q=80",
         "ELE-EAR-009": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop&q=80",
-        "HOM-PAN-005": "https://images.unsplash.com/photo-1584990347449-399580436b76?w=600&auto=format&fit=crop&q=80",
+        "HOM-PAN-005": "https://images.unsplash.com/photo-1621494547944-5ddbc84514b2?w=600&auto=format&fit=crop&q=80",
         "FTW-RUN-031": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
-        "HOM-MUG-018": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80",
+        "HOM-MUG-018": "https://images.unsplash.com/photo-1616241673111-508b4662c707?w=600&auto=format&fit=crop&q=80",
         "SPT-YOG-007": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&auto=format&fit=crop&q=80",
         "ELE-SPK-012": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&auto=format&fit=crop&q=80",
         "ACC-WAL-003": "https://images.unsplash.com/photo-1627123424574-724758594e93?w=600&auto=format&fit=crop&q=80",

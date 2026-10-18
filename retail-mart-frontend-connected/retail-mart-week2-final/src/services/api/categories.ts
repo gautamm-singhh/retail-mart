@@ -1,5 +1,4 @@
 import { request } from "@/services/api/client";
-import { registerCacheClearer } from "@/services/api/cacheManager";
 import type { Category } from "@/types";
 
 interface CategoriesMemoryCache {
@@ -33,7 +32,8 @@ export function clearCategoriesCache(): void {
   categoriesCache.timestamp = 0;
   categoriesCache.inFlight = null;
 }
-registerCacheClearer(clearCategoriesCache);
+// Note: We do NOT register clearCategoriesCache with user-session registerCacheClearer
+// so that public catalog categories remain available immediately when switching or logging in.
 
 export function fetchCategories(force = false): Promise<Category[]> {
   const isFresh = categoriesCache.data && Date.now() - categoriesCache.timestamp < STALE_TIME_MS;

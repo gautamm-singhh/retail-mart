@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/useToast";
 import type { Order } from "@/types";
 import { formatCurrency, formatDate } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
+import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -163,18 +164,35 @@ export default function MyOrdersPage() {
               </div>
             </div>
 
-            <ul className="px-4 sm:px-5 py-3 space-y-1.5 divide-y divide-slate-100/70 dark:divide-slate-800/60">
-              {order.items.map((item, i) => (
-                <li key={i} className="flex justify-between py-1.5 first:pt-0 text-xs sm:text-sm">
-                  <span className="text-slate-700 dark:text-slate-300">
-                    {item.productName}
-                    <span className="ml-1 font-normal text-slate-400 dark:text-slate-500">× {item.quantity}</span>
-                  </span>
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
-                </li>
-              ))}
+            <ul className="px-4 sm:px-5 py-3 space-y-2 divide-y divide-slate-100/70 dark:divide-slate-800/60">
+              {order.items.map((item, i) => {
+                const itemImg = getProductExactImage({ name: item.productName });
+                return (
+                  <li key={i} className="flex items-center justify-between py-2 first:pt-0 text-xs sm:text-sm">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800 flex items-center justify-center">
+                        <img
+                          src={itemImg}
+                          alt={item.productName}
+                          loading="lazy"
+                          className="h-full w-full object-contain p-0.5"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = NEUTRAL_PRODUCT_FALLBACK;
+                          }}
+                        />
+                      </div>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">
+                        {item.productName}
+                        <span className="ml-1 font-normal text-slate-400 dark:text-slate-500">× {item.quantity}</span>
+                      </span>
+                    </div>
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      {formatCurrency(item.price * item.quantity)}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
 
             {order.shipment ? (
