@@ -8,6 +8,8 @@ import { ProductCard } from "@/features/shop/components/ProductCard";
 import { CategorySidebar } from "@/features/shop/components/CategorySidebar";
 import { StorefrontHero } from "@/features/shop/components/StorefrontHero";
 import { PromotionalCards } from "@/features/shop/components/PromotionalCards";
+import { DEMO_CANDIDATE_PRODUCTS } from "@/features/shop/data/demoCatalog";
+import { useAuth } from "@/features/auth/useAuth";
 import type { Category, Product } from "@/types";
 
 type SortOption = "featured" | "price-asc" | "price-desc" | "name-asc";
@@ -35,6 +37,19 @@ export default function ShopHomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const categoryFilter = searchParams.get("category") ?? "all";
+  const { currentUser, isAuthenticated } = useAuth();
+
+  // Demo Catalog Mode is strictly restricted to authenticated users with authorized backend roles (Admin, Manager, Staff)
+  const isAuthorizedForDemo = useMemo(() => {
+    if (!isAuthenticated || !currentUser) return false;
+    const role = currentUser.role?.toLowerCase();
+    return role === "admin" || role === "manager" || role === "staff";
+  }, [currentUser, isAuthenticated]);
+
+  const rawDemoRequested = searchParams.get("mode") === "demo" || searchParams.get("catalog") === "demo";
+  // Enforce restriction: public visitors and regular customers cannot activate demo mode even with ?mode=demo
+  const isDemoMode = rawDemoRequested && isAuthorizedForDemo;
+
   const [sortBy, setSortBy] = useState<SortOption>("featured");
   const [collectionTab, setCollectionTab] = useState<CollectionTab>("all");
 
@@ -57,7 +72,9 @@ export default function ShopHomePage() {
       .then(([apiProducts, categoryData]) => {
         if (!cancelled) {
           // Strictly preserve live inventory, verified pricing, HSN codes and GST rates
-          setProducts(apiProducts || []);
+          // Only display active, verified products in customer storefront; draft and inactive records are excluded
+          const activeCatalog = (apiProducts || []).filter((p) => p.status === "active");
+          setProducts(activeCatalog);
           setCategories((categoryData || []).filter((c) => c.status === "active"));
           setIsLoading(false);
         }
@@ -76,8 +93,16 @@ export default function ShopHomePage() {
     };
   }, []);
 
+  // When Demo Mode is active, candidate products are loaded strictly for layout presentation
+  const displayedCatalog = useMemo(() => {
+    if (!isDemoMode) {
+      return products;
+    }
+    return [...products, ...DEMO_CANDIDATE_PRODUCTS];
+  }, [products, isDemoMode]);
+
   const filteredProducts = useMemo(() => {
-    let list = products.filter((product) => {
+    let list = displayedCatalog.filter((product) => {
       const matchesQuery =
         !query ||
         product.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -91,9 +116,9 @@ export default function ShopHomePage() {
 
     if (categoryFilter === "all" && !query) {
       if (collectionTab === "featured") {
-        list = list.slice(0, 6);
+        list = list.slice(0, 8);
       } else if (collectionTab === "new-arrivals") {
-        list = [...list].reverse().slice(0, 6);
+        list = [...list].reverse().slice(0, 8);
       }
     }
 
@@ -107,13 +132,24 @@ export default function ShopHomePage() {
       return [...list].sort((a, b) => a.name.localeCompare(b.name));
     }
     return list;
-  }, [products, query, categoryFilter, collectionTab, sortBy]);
+  }, [displayedCatalog, query, categoryFilter, collectionTab, sortBy]);
 
   const recommendedProducts = useMemo(() => {
     const currentIds = new Set(filteredProducts.map((p) => p.id));
-    const others = products.filter((p) => !currentIds.has(p.id));
-    return others.slice(0, 6);
-  }, [products, filteredProducts]);
+    const others = displayedCatalog.filter((p) => !currentIds.has(p.id));
+    return others.slice(0, 8);
+  }, [displayedCatalog, filteredProducts]);
+
+  function handleToggleDemoMode() {
+    const next = new URLSearchParams(searchParams);
+    if (isDemoMode) {
+      next.delete("mode");
+      next.delete("catalog");
+    } else {
+      next.set("mode", "demo");
+    }
+    setSearchParams(next);
+  }
 
   function handleSelectCategory(category: string) {
     const next = new URLSearchParams(searchParams);
@@ -157,7 +193,7 @@ export default function ShopHomePage() {
             categories={categories}
             activeCategory={categoryFilter}
             onSelectCategory={handleSelectCategory}
-            totalProductsCount={products.length}
+            totalProductsCount={displayedCatalog.length}
           />
         </div>
 
@@ -170,14 +206,33 @@ export default function ShopHomePage() {
                 </h2>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
                   {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
+                  {isDemoMode && " (Demo Included)"}
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Verified genuine products with express doorstep fulfillment
+                {isDemoMode
+                  ? "Client Presentation Mode: Showing live inventory + draft catalog proposals"
+                  : "Verified genuine products with express doorstep fulfillment"}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
+              {isAuthorizedForDemo && (
+                <button
+                  type="button"
+                  onClick={handleToggleDemoMode}
+                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+                    isDemoMode
+                      ? "border-amber-400 bg-amber-50 text-amber-900 shadow-xs dark:border-amber-600 dark:bg-amber-950/60 dark:text-amber-200"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-amber-400 hover:bg-amber-50/50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-amber-600"
+                  }`}
+                  title="Toggle Demo Presentation Catalog mode with 17 proposal items"
+                >
+                  <span className={`h-2 w-2 rounded-full ${isDemoMode ? "bg-amber-500 animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`} />
+                  <span>{isDemoMode ? "Demo Mode: Active" : "Demo Catalog Mode"}</span>
+                </button>
+              )}
+
               {categoryFilter === "all" && !query && (
                 <div className="flex items-center gap-1 rounded-xl bg-slate-100/90 p-1 dark:bg-slate-800/80">
                   <button
@@ -189,7 +244,7 @@ export default function ShopHomePage() {
                         : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
-                    All ({products.length})
+                    All ({displayedCatalog.length})
                   </button>
                   <button
                     type="button"
@@ -200,7 +255,7 @@ export default function ShopHomePage() {
                         : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
-                    Featured (6)
+                    Featured (8)
                   </button>
                   <button
                     type="button"
@@ -211,7 +266,7 @@ export default function ShopHomePage() {
                         : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
-                    New Arrivals (6)
+                    New Arrivals (8)
                   </button>
                 </div>
               )}
@@ -245,6 +300,38 @@ export default function ShopHomePage() {
             </div>
           </div>
 
+          {isDemoMode && (
+            <div className="mb-6 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-amber-50/90 to-yellow-50/60 p-4 shadow-sm dark:border-amber-800/80 dark:from-amber-950/60 dark:via-amber-950/40 dark:to-yellow-950/30">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-black text-xs shadow-xs">
+                    DEMO
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-extrabold tracking-tight text-amber-950 dark:text-amber-100">
+                        Demo Presentation Catalog (Client Review Mode)
+                      </h3>
+                      <span className="rounded-full bg-amber-200/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:bg-amber-900/90 dark:text-amber-200">
+                        Non-Purchasable Preview
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/80">
+                      Displaying 17 candidate items (&ge; 4 items/category) alongside 7 live products. Prices are indicative. Add-to-cart, orders, and real inventory are strictly disabled.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleDemoMode}
+                  className="shrink-0 rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-900 shadow-xs hover:bg-amber-50 active:scale-95 transition-all dark:border-amber-700 dark:bg-slate-900 dark:text-amber-200 dark:hover:bg-slate-800"
+                >
+                  Exit to Live Storefront
+                </button>
+              </div>
+            </div>
+          )}
+
           {query && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/90 px-4 py-2 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
               <p>
@@ -261,8 +348,8 @@ export default function ShopHomePage() {
           )}
 
           {isLoading && products.length === 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, idx) => (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, idx) => (
                 <ProductCardSkeleton key={`prod-skel-${idx}`} />
               ))}
             </div>
@@ -285,7 +372,7 @@ export default function ShopHomePage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredProducts.map((product, idx) => (
                 <div
                   key={product.id}
@@ -298,7 +385,7 @@ export default function ShopHomePage() {
             </div>
           )}
 
-          {(categoryFilter !== "all" || query) && filteredProducts.length > 0 && recommendedProducts.length >= 6 && (
+          {(categoryFilter !== "all" || query) && filteredProducts.length > 0 && recommendedProducts.length >= 4 && (
             <div className="mt-12 pt-8 border-t border-slate-200/80 dark:border-slate-800/80">
               <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -323,7 +410,7 @@ export default function ShopHomePage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {recommendedProducts.map((product, idx) => (
                   <div
                     key={product.id}

@@ -79,6 +79,7 @@ export default function CheckoutPage() {
         customerEmail: currentUser.email ?? "",
         destinationState: effectiveSelectedAddress?.state,
         items: items.map((item) => ({
+          productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
           price: item.price,

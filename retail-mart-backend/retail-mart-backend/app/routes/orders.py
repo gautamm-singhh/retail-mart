@@ -246,10 +246,91 @@ def create_order():
     if not items:
         return jsonify({"error": "at least one item is required"}), 400
 
+    from app.models.catalog import Product
     from app.utils.tax import calculate_order_tax_breakdown
-    # Server-side authoritative tax & total validation
+
+    # Independent server-side validation against real MySQL product catalog
+    validated_order_items = []
+    for item in items:
+        if not isinstance(item, dict):
+            return jsonify({"error": "Each item must be an object with product details"}), 400
+
+        product_id = (item.get("productId") or item.get("id") or "").strip()
+        product_name = (item.get("productName") or item.get("name") or "").strip()
+        is_demo = bool(item.get("isDemo", False))
+
+        # 1. Independent rejection of demo products and demo product IDs
+        if is_demo or product_id.startswith("demo-"):
+            logger.warning("Order creation rejected: demo item detected id=%s name=%s", product_id, product_name)
+            return jsonify({"error": f"Demo product '{product_name or product_id}' cannot be purchased or ordered."}), 400
+
+        # 2. Lookup product in live MySQL database with row-level lock
+        prod_query = None
+        if product_id:
+            prod_query = Product.query.filter_by(id=product_id)
+        elif product_name:
+            prod_query = Product.query.filter_by(name=product_name)
+
+        if prod_query is not None:
+            if db.engine.name != "sqlite":
+                prod_query = prod_query.with_for_update()
+            product = prod_query.first()
+        else:
+            product = None
+
+        if not product:
+            logger.warning("Order creation rejected: product not found in inventory id=%s name=%s", product_id, product_name)
+            return jsonify({"error": f"Product '{product_id or product_name}' not found in live inventory."}), 400
+
+        if product.id.startswith("demo-"):
+            return jsonify({"error": f"Demo product '{product.name}' is not real inventory."}), 400
+
+        # 3. Check product status (reject draft / inactive / unapproved products)
+        if product.status != "active":
+            logger.warning("Order creation rejected: inactive product id=%s status=%s", product.id, product.status)
+            return jsonify({"error": f"Product '{product.name}' is not currently available for purchase (status: {product.status})."}), 400
+
+        # 4. Validate quantity (must be positive integer)
+        raw_quantity = item.get("quantity")
+        try:
+            quantity = int(raw_quantity)
+            if quantity <= 0:
+                raise ValueError()
+        except (TypeError, ValueError):
+            return jsonify({"error": f"Invalid quantity for '{product.name}'. Quantity must be a positive integer."}), 400
+
+        # 5. Check real inventory stock (reject zero-stock and insufficient stock)
+        if product.stock <= 0:
+            logger.warning("Order creation rejected: zero stock for product id=%s", product.id)
+            return jsonify({"error": f"Product '{product.name}' is out of stock (available: 0)."}), 400
+        if quantity > product.stock:
+            logger.warning("Order creation rejected: requested quantity %d exceeds stock %d for product id=%s",
+                           quantity, product.stock, product.id)
+            return jsonify({"error": f"Requested quantity {quantity} for '{product.name}' exceeds available stock ({product.stock})."}), 400
+
+        # 6. Reject price tampering / manipulation
+        expected_price = Decimal(str(product.price))
+        if "price" in item and item["price"] is not None:
+            try:
+                submitted_price = Decimal(str(item["price"]))
+                if abs(submitted_price - expected_price) > Decimal("0.01"):
+                    logger.warning("Order creation rejected: price tampering detected for product id=%s submitted=%.2f expected=%.2f",
+                                   product.id, submitted_price, expected_price)
+                    return jsonify({"error": f"Price mismatch for '{product.name}'. Expected ₹{expected_price:.2f}, got ₹{submitted_price:.2f}."}), 400
+            except (TypeError, ValueError):
+                return jsonify({"error": f"Invalid price format for '{product.name}'."}), 400
+
+        validated_order_items.append({
+            "productId": product.id,
+            "productName": product.name,
+            "sku": product.sku,
+            "quantity": quantity,
+            "price": float(expected_price),
+        })
+
+    # Server-side authoritative tax & total validation using validated catalog items
     tax_breakdown = calculate_order_tax_breakdown(
-        items=items,
+        items=validated_order_items,
         destination_state=data.get("destinationState") or "",
     )
     amount = tax_breakdown["total_payable"]
@@ -273,7 +354,7 @@ def create_order():
     except Exception:
         pass
 
-    for i in items:
+    for i in validated_order_items:
         order.items.append(OrderItem(product_name=i["productName"], quantity=i["quantity"], price=i["price"]))
     order.status_history.append(OrderStatusEvent(status="Pending", date=date.today()))
 

@@ -24,9 +24,17 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
   const isWishlisted = checkWishlisted(product.id);
   const isWishlistPending = pendingProductIds.has(product.id);
 
+  const isDemo = Boolean((product as any).isDemo);
+  const isOutOfStock = !isDemo && product.stock <= 0;
+  const isLowStock = !isDemo && product.stock > 0 && product.stock <= 5;
+
   async function handleToggleWishlist(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (isDemo) {
+      showToast("Demo preview item — sample listing only.");
+      return;
+    }
     if (isWishlistPending) return;
     try {
       await toggleWishlist(product);
@@ -38,15 +46,16 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (isDemo) {
+      showToast("Demo preview item cannot be added to cart.");
+      return;
+    }
     if (product.stock <= 0) return;
     addItem(product);
     showToast(`Added ${product.name} to cart.`);
     setCartPop(true);
     setTimeout(() => setCartPop(false), 600);
   }
-
-  const isOutOfStock = product.stock <= 0;
-  const isLowStock = product.stock > 0 && product.stock <= 5;
 
   return (
     <div
@@ -110,16 +119,19 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
           </svg>
         </button>
 
-        {isOutOfStock && (
+        {isDemo ? (
+          <div className="absolute left-2.5 top-2.5 z-10 rounded-lg bg-amber-500/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-sm">
+            Demo Preview
+          </div>
+        ) : isOutOfStock ? (
           <div className="absolute left-2.5 top-2.5 z-10 rounded-lg bg-rose-600/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-sm">
             Out of Stock
           </div>
-        )}
-        {isLowStock && (
+        ) : isLowStock ? (
           <div className="absolute left-2.5 top-2.5 z-10 rounded-lg bg-amber-500/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-sm">
             Only {product.stock} Left
           </div>
-        )}
+        ) : null}
       </Link>
 
       <div className="flex flex-1 flex-col p-4">
@@ -129,7 +141,7 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
 
         <Link
           to={`${ROUTES.shopProduct}/${product.id}`}
-          className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-slate-900 transition-colors duration-150 hover:text-emerald-600 dark:text-slate-100 dark:hover:text-emerald-400"
+          className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-slate-900 transition-colors duration-150 hover:text-emerald-600 dark:text-slate-100 dark:hover:text-emerald-400"
         >
           {product.name}
         </Link>
@@ -140,40 +152,48 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
               {formatCurrency(product.price)}
             </p>
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              Incl. taxes
+              {isDemo ? "Indicative Price" : "Incl. taxes"}
             </span>
           </div>
 
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={isOutOfStock}
+            disabled={isOutOfStock || isDemo}
             className={[
               "group/btn flex w-full items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-semibold",
               "transition-all duration-200 ease-out",
               cartPop ? "scale-95 bg-emerald-500 text-white shadow-none" : "",
-              isOutOfStock
-                ? "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600"
-                : !cartPop
-                  ? "bg-emerald-600 text-white shadow-xs hover:-translate-y-px hover:bg-emerald-700 hover:shadow-sm active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500"
-                  : "",
+              isDemo
+                ? "cursor-not-allowed border border-amber-200/90 bg-amber-50/90 text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-200"
+                : isOutOfStock
+                  ? "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600"
+                  : !cartPop
+                    ? "bg-emerald-600 text-white shadow-xs hover:-translate-y-px hover:bg-emerald-700 hover:shadow-sm active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                    : "",
             ].join(" ")}
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`h-3.5 w-3.5 transition-transform duration-200 ${cartPop ? "scale-125" : "group-hover/btn:scale-110"}`}
-            >
-              <circle cx="9" cy="20" r="1.4" />
-              <circle cx="18" cy="20" r="1.4" />
-              <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8a2 2 0 0 0 2-1.6L21 8H6" />
-            </svg>
-            <span>{cartPop ? "Added!" : isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+            {isDemo ? (
+              <span className="tracking-wide">Demo Preview Only</span>
+            ) : (
+              <>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-3.5 w-3.5 transition-transform duration-200 ${cartPop ? "scale-125" : "group-hover/btn:scale-110"}`}
+                >
+                  <circle cx="9" cy="20" r="1.4" />
+                  <circle cx="18" cy="20" r="1.4" />
+                  <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8a2 2 0 0 0 2-1.6L21 8H6" />
+                </svg>
+                <span>{cartPop ? "Added!" : isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
+              </>
+            )}
           </button>
         </div>
       </div>

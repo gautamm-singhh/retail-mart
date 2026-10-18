@@ -10,6 +10,7 @@ export function fetchOrder(id: string): Promise<Order> {
 }
 
 export interface CreateOrderItem {
+  productId?: string;
   productName: string;
   quantity: number;
   price: number;

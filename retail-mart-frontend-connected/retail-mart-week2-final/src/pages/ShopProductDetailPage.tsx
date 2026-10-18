@@ -7,8 +7,10 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { ProductCard } from "@/features/shop/components/ProductCard";
 import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
 import { mockProducts } from "@/features/products/data/products";
+import { DEMO_CANDIDATE_PRODUCTS } from "@/features/shop/data/demoCatalog";
 import { useCart } from "@/features/cart/useCart";
 import { useWishlist } from "@/features/wishlist/useWishlist";
+import { useAuth } from "@/features/auth/useAuth";
 import { useToast } from "@/hooks/useToast";
 import type { Product } from "@/types";
 import { formatCurrency } from "@/utils/format";
@@ -20,6 +22,13 @@ export default function ShopProductDetailPage() {
   const { addItem } = useCart();
   const { isWishlisted: checkWishlisted, toggleWishlist, pendingProductIds } = useWishlist();
   const { showToast } = useToast();
+  const { currentUser, isAuthenticated } = useAuth();
+
+  const isAuthorizedForDemo = Boolean(
+    isAuthenticated &&
+      currentUser &&
+      ["admin", "manager", "staff"].includes(currentUser.role?.toLowerCase() || ""),
+  );
 
   const [product, setProduct] = useState<Product | null>(null);
   const [recommended, setRecommended] = useState<Product[]>([]);
@@ -28,6 +37,7 @@ export default function ShopProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [imgError, setImgError] = useState(false);
 
+  const isDemo = Boolean((product as any)?.isDemo || id?.startsWith("demo-"));
   const isWishlisted = product ? checkWishlisted(product.id) : false;
   const isWishlistPending = product ? pendingProductIds.has(product.id) : false;
 
@@ -36,6 +46,22 @@ export default function ShopProductDetailPage() {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+
+    // Demo product URLs strictly require authorized admin/staff identity
+    if (id.startsWith("demo-")) {
+      if (!isAuthorizedForDemo) {
+        setError("We couldn't find this product.");
+        setIsLoading(false);
+        return;
+      }
+      const demoFound = DEMO_CANDIDATE_PRODUCTS.find((p) => p.id === id);
+      if (demoFound) {
+        setProduct(demoFound);
+        setRecommended(DEMO_CANDIDATE_PRODUCTS.filter((p) => p.id !== id).slice(0, 4));
+        setIsLoading(false);
+        return;
+      }
+    }
 
     const singlePromise = fetchProduct(id).catch(() => mockProducts.find((p) => p.id === id) || null);
     const allPromise = fetchProducts().catch(() => mockProducts);
@@ -80,13 +106,19 @@ export default function ShopProductDetailPage() {
   }
 
   function handleAddToCart() {
-    if (!product) return;
+    if (!product || isDemo) {
+      if (isDemo) showToast("Demo preview item cannot be added to cart.");
+      return;
+    }
     addItem(product, quantity);
     showToast(`Added ${quantity} × ${product.name} to cart.`);
   }
 
   function handleBuyNow() {
-    if (!product) return;
+    if (!product || isDemo) {
+      if (isDemo) showToast("Demo preview item cannot be purchased.");
+      return;
+    }
     addItem(product, quantity);
     navigate(ROUTES.cart);
   }
@@ -178,12 +210,28 @@ export default function ShopProductDetailPage() {
               </h1>
             </div>
 
+            {isDemo && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 shadow-xs dark:border-amber-800/80 dark:bg-amber-950/40">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase text-white">
+                    DEMO
+                  </span>
+                  <h3 className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                    Client Presentation Candidate (Non-Purchasable)
+                  </h3>
+                </div>
+                <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/80">
+                  This product is part of the draft catalog candidate expansion. Proposed price is indicative. Real inventory, cart, and purchasing are strictly disabled.
+                </p>
+              </div>
+            )}
+
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-extrabold text-slate-950 dark:text-white">
                 {formatCurrency(product.price)}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                Inclusive of all taxes
+                {isDemo ? "Indicative Price (Pending Client Confirmation)" : "Inclusive of all taxes"}
               </span>
             </div>
 
@@ -192,7 +240,12 @@ export default function ShopProductDetailPage() {
             </p>
 
             <div className="pt-2">
-              {product.stock > 0 ? (
+              {isDemo ? (
+                <span className="inline-flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  Pending Client Physical Inventory Count (0 verified)
+                </span>
+              ) : product.stock > 0 ? (
                 <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   In Stock ({product.stock} available for express dispatch)
@@ -205,7 +258,7 @@ export default function ShopProductDetailPage() {
               )}
             </div>
 
-            {product.stock > 0 && (
+            {!isDemo && product.stock > 0 && (
               <div className="flex items-center gap-3 pt-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Quantity
@@ -239,52 +292,58 @@ export default function ShopProductDetailPage() {
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 pt-4">
-              <Button
-                variant="secondary"
-                size="md"
-                onClick={handleAddToCart}
-                disabled={product.stock <= 0}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl px-6"
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
+            {isDemo ? (
+              <div className="mt-4 rounded-xl border border-amber-300/80 bg-amber-50/90 p-3.5 text-center text-xs font-bold text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">
+                Demo Listing &mdash; Cannot Be Added to Cart or Purchased
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-wrap items-center gap-3 pt-4">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleAddToCart}
+                  disabled={product.stock <= 0}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl px-6"
                 >
-                  <circle cx="9" cy="20" r="1.4" />
-                  <circle cx="18" cy="20" r="1.4" />
-                  <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8a2 2 0 0 0 2-1.6L21 8H6" />
-                </svg>
-                <span>Add to Cart</span>
-              </Button>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4"
+                  >
+                    <circle cx="9" cy="20" r="1.4" />
+                    <circle cx="18" cy="20" r="1.4" />
+                    <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8a2 2 0 0 0 2-1.6L21 8H6" />
+                  </svg>
+                  <span>Add to Cart</span>
+                </Button>
 
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleBuyNow}
-                disabled={product.stock <= 0}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl px-7"
-              >
-                <span>Buy Now</span>
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleBuyNow}
+                  disabled={product.stock <= 0}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl px-7"
                 >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Button>
-            </div>
+                  <span>Buy Now</span>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 to-white p-4 dark:border-slate-800 dark:from-slate-800/50 dark:to-slate-900/50">

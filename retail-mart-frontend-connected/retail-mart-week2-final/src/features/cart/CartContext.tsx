@@ -37,6 +37,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = useCallback((product: Product, quantity = 1) => {
+    // Strictly prevent demo, unapproved, or non-purchasable products from ever entering the cart
+    if ((product as any)?.isDemo || product.id?.startsWith("demo-")) {
+      return;
+    }
     setItems((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
