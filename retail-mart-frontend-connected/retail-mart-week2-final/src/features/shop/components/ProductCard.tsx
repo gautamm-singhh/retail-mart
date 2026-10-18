@@ -24,15 +24,15 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
   const isWishlisted = checkWishlisted(product.id);
   const isWishlistPending = pendingProductIds.has(product.id);
 
-  const isDemo = Boolean((product as any).isDemo);
-  const isOutOfStock = !isDemo && product.stock <= 0;
-  const isLowStock = !isDemo && product.stock > 0 && product.stock <= 5;
+  const isPreview = Boolean((product as any).isDemo || product.id?.startsWith("demo-"));
+  const isOutOfStock = !isPreview && product.stock <= 0;
+  const isLowStock = !isPreview && product.stock > 0 && product.stock <= 5;
 
   async function handleToggleWishlist(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (isDemo) {
-      showToast("Demo preview item — sample listing only.");
+    if (isPreview) {
+      showToast("This product is a catalog preview and will be available once inventory arrives.");
       return;
     }
     if (isWishlistPending) return;
@@ -46,8 +46,8 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (isDemo) {
-      showToast("Demo preview item cannot be added to cart.");
+    if (isPreview) {
+      showToast("This product is a catalog preview and cannot be added to cart.");
       return;
     }
     if (product.stock <= 0) return;
@@ -119,9 +119,9 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
           </svg>
         </button>
 
-        {isDemo ? (
+        {isPreview ? (
           <div className="absolute left-2.5 top-2.5 z-10 rounded-lg bg-amber-500/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-sm">
-            Demo Preview
+            Catalog Preview
           </div>
         ) : isOutOfStock ? (
           <div className="absolute left-2.5 top-2.5 z-10 rounded-lg bg-rose-600/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-sm">
@@ -151,20 +151,20 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
             <p className="text-base font-extrabold tracking-tight text-slate-950 dark:text-white">
               {formatCurrency(product.price)}
             </p>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              {isDemo ? "Indicative Price" : "Incl. taxes"}
+            <span className={`text-[10px] ${isPreview ? "font-medium text-amber-700 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}`}>
+              {isPreview ? "Indicative • Coming Soon" : "Incl. taxes"}
             </span>
           </div>
 
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={isOutOfStock || isDemo}
+            disabled={isOutOfStock || isPreview}
             className={[
               "group/btn flex w-full items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-semibold",
               "transition-all duration-200 ease-out",
               cartPop ? "scale-95 bg-emerald-500 text-white shadow-none" : "",
-              isDemo
+              isPreview
                 ? "cursor-not-allowed border border-amber-200/90 bg-amber-50/90 text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-200"
                 : isOutOfStock
                   ? "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600"
@@ -173,8 +173,8 @@ export function ProductCard({ product, animDelay = 0 }: ProductCardProps) {
                     : "",
             ].join(" ")}
           >
-            {isDemo ? (
-              <span className="tracking-wide">Demo Preview Only</span>
+            {isPreview ? (
+              <span className="tracking-wide">Coming Soon • Preview Only</span>
             ) : (
               <>
                 <svg

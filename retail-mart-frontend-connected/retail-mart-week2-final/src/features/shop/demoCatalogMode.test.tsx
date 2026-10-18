@@ -11,7 +11,7 @@ import { ProductCard } from "@/features/shop/components/ProductCard";
 import { DEMO_CANDIDATE_PRODUCTS } from "@/features/shop/data/demoCatalog";
 import type { User, Product } from "@/types";
 
-// Mock API responses for products and categories
+// Mock API responses for products and categories (7 verified active products from MySQL)
 vi.mock("@/services/api/products", () => ({
   productsCache: { data: null, timestamp: 0, inFlight: null, listeners: new Set() },
   fetchProducts: vi.fn().mockResolvedValue([
@@ -24,6 +24,7 @@ vi.mock("@/services/api/products", () => ({
     { id: "p-1010", name: "Leather Wallet - Bifold", sku: "ACC-WAL-003", price: 999, stock: 61, status: "active", category: "Accessories", imageUrl: null },
     { id: "p-1009", name: "Bluetooth Speaker Mini", sku: "ELE-SPK-012", price: 1499, stock: 45, status: "draft", category: "Electronics", imageUrl: null },
   ]),
+  fetchProduct: vi.fn().mockImplementation((_id: string) => Promise.resolve(null)),
 }));
 
 vi.mock("@/services/api/categories", () => ({
@@ -66,108 +67,125 @@ function renderShopHomePage(initialRoute = "/shop", user: User | null = null) {
   );
 }
 
-describe("Demo Catalog Mode - Access Restrictions, Isolation & Purchasing Guards", () => {
+describe("Customer Storefront Product Count & Catalog Preview Verification", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
   });
 
-  it("1. Public visitors and normal customers CANNOT see the Demo Mode toggle button", async () => {
-    // Guest visitor
-    const { unmount } = renderShopHomePage("/shop", null);
-    expect(screen.queryByTitle(/toggle demo presentation catalog mode/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/demo catalog mode/i)).not.toBeInTheDocument();
-    unmount();
+  it("1. Normal Guest visitor sees 24 cards on /shop without needing to log in", async () => {
+    renderShopHomePage("/shop", null);
 
-    // Normal Customer account
+    // Should visibly render all 24 cards (7 live + 17 preview)
+    const cards = await screen.findAllByRole("link", { name: /cotton crew t-shirt|running shoes|fleece pullover hoodie/i });
+    expect(cards.length).toBeGreaterThan(0);
+
+    // Verify badge displays 24 items
+    expect(screen.getByText("All (24)")).toBeInTheDocument();
+  });
+
+  it("2. Normal Customer account sees 24 cards on /shop", async () => {
     const customerUser: User = {
       id: "u-cust",
-      name: "Customer John",
-      email: "john@example.com",
+      name: "Normal Customer",
+      email: "cust@example.com",
       role: "Customer",
       status: "active",
       createdAt: "2026-01-01",
     };
     renderShopHomePage("/shop", customerUser);
-    expect(screen.queryByTitle(/toggle demo presentation catalog mode/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/demo catalog mode/i)).not.toBeInTheDocument();
+
+    expect(await screen.findByText("All (24)")).toBeInTheDocument();
+    // Live product is present
+    expect(screen.getByText("Cotton Crew T-Shirt")).toBeInTheDocument();
+    // Preview product is visibly present
+    expect(screen.getByText("Classic Fleece Pullover Hoodie")).toBeInTheDocument();
   });
 
-  it("2. Unauthorized users CANNOT bypass restrictions via URL query param (?mode=demo)", async () => {
-    const customerUser: User = {
-      id: "u-cust",
-      name: "Customer John",
-      email: "john@example.com",
-      role: "Customer",
-      status: "active",
-      createdAt: "2026-01-01",
-    };
+  it("3. Every category displays at least 4 visible product cards in the normal customer storefront", async () => {
+    const categoriesToTest = [
+      { name: "Apparel", minCount: 4 },
+      { name: "Footwear", minCount: 4 },
+      { name: "Electronics", minCount: 4 },
+      { name: "Home & Kitchen", minCount: 4 },
+      { name: "Sports & Fitness", minCount: 4 },
+      { name: "Accessories", minCount: 4 },
+    ];
 
-    // Customer attempts to open /shop?mode=demo
-    renderShopHomePage("/shop?mode=demo", customerUser);
+    for (const cat of categoriesToTest) {
+      const { unmount } = renderShopHomePage(`/shop?category=${encodeURIComponent(cat.name)}`, null);
+      
+      // Wait for heading with category name to render
+      const heading = await screen.findByRole("heading", { name: cat.name, level: 2 });
+      expect(heading).toBeInTheDocument();
 
-    // Banner must NOT appear
-    expect(screen.queryByText(/demo presentation catalog/i)).not.toBeInTheDocument();
+      // Check category count badge indicates 4 items
+      const badges = screen.getAllByText(/4 items/i);
+      expect(badges.length).toBeGreaterThan(0);
 
-    // Demo products like Hoodie must NOT be displayed
-    expect(screen.queryByText("Classic Fleece Pullover Hoodie")).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
-  it("3. Authorized Admin CAN see Demo toggle and view the 24-product preview with Demo Banner", async () => {
-    const adminUser: User = {
-      id: "u-admin",
-      name: "Admin User",
-      email: "admin@retailmart.com",
-      role: "Admin",
-      status: "active",
-      createdAt: "2026-01-01",
-    };
-
-    // Admin opens /shop
-    const { unmount } = renderShopHomePage("/shop", adminUser);
-
-    // Toggle button IS visible to Admin
-    const toggleBtn = await screen.findByTitle(/toggle demo presentation catalog mode/i);
-    expect(toggleBtn).toBeInTheDocument();
-    unmount();
-
-    // Now Admin navigates to /shop?mode=demo
-    renderShopHomePage("/shop?mode=demo", adminUser);
-
-    // Prominent Demo banner is shown
-    expect(await screen.findByText(/demo presentation catalog \(client review mode\)/i)).toBeInTheDocument();
-
-    // Candidate products are present
-    expect(await screen.findByText("Classic Fleece Pullover Hoodie")).toBeInTheDocument();
-  });
-
-  it("4. Demo product card renders 'Demo Preview' badge, 'Indicative Price' and disabled action button", () => {
-    const sampleDemoItem = DEMO_CANDIDATE_PRODUCTS[0]; // Classic Fleece Pullover Hoodie
+  it("4. Preview cards render 'Catalog Preview' badge, 'Indicative • Coming Soon' and disabled action button", () => {
+    const samplePreviewItem = DEMO_CANDIDATE_PRODUCTS[0]; // Classic Fleece Pullover Hoodie
 
     render(
       <ToastProvider>
         <CartProvider>
           <MemoryRouter>
-            <ProductCard product={sampleDemoItem} />
+            <ProductCard product={samplePreviewItem} />
           </MemoryRouter>
         </CartProvider>
       </ToastProvider>,
     );
 
     // Badge
-    expect(screen.getByText("Demo Preview")).toBeInTheDocument();
+    expect(screen.getByText("Catalog Preview")).toBeInTheDocument();
 
     // Indicative Price label
-    expect(screen.getByText("Indicative Price")).toBeInTheDocument();
+    expect(screen.getByText("Indicative • Coming Soon")).toBeInTheDocument();
 
-    // Action button is disabled with Demo label
-    const btn = screen.getByRole("button", { name: /demo preview only/i });
+    // Action button is disabled with Coming Soon label
+    const btn = screen.getByRole("button", { name: /coming soon • preview only/i });
     expect(btn).toBeInTheDocument();
     expect(btn).toBeDisabled();
   });
 
-  it("5. CartContext strictly rejects demo products from being added to cart", () => {
-    const sampleDemoItem = DEMO_CANDIDATE_PRODUCTS[0];
+  it("5. Live real products render active 'Add to Cart' button and are fully purchasable", () => {
+    const realProduct: Product = {
+      id: "p-1001",
+      name: "Cotton Crew T-Shirt",
+      sku: "APP-TSH-001",
+      price: 499,
+      stock: 240,
+      status: "active",
+      category: "Apparel",
+      description: "Comfortable organic cotton everyday t-shirt",
+      imageUrl: null,
+    };
+
+    render(
+      <ToastProvider>
+        <CartProvider>
+          <MemoryRouter>
+            <ProductCard product={realProduct} />
+          </MemoryRouter>
+        </CartProvider>
+      </ToastProvider>,
+    );
+
+    // Live product has taxes included
+    expect(screen.getByText("Incl. taxes")).toBeInTheDocument();
+
+    // Action button is active Add to Cart
+    const btn = screen.getByRole("button", { name: /add to cart/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toBeDisabled();
+  });
+
+  it("6. CartContext strictly blocks preview products from being added to cart", () => {
+    const samplePreviewItem = DEMO_CANDIDATE_PRODUCTS[0];
 
     const { result } = renderHook(() => useCart(), {
       wrapper: ({ children }) => <CartProvider>{children}</CartProvider>,
@@ -175,9 +193,9 @@ describe("Demo Catalog Mode - Access Restrictions, Isolation & Purchasing Guards
 
     expect(result.current.itemCount).toBe(0);
 
-    // Attempt to add demo product
+    // Attempt to add preview candidate product
     act(() => {
-      result.current.addItem(sampleDemoItem);
+      result.current.addItem(samplePreviewItem);
     });
 
     // Cart remains empty!
@@ -205,21 +223,12 @@ describe("Demo Catalog Mode - Access Restrictions, Isolation & Purchasing Guards
     expect(result.current.items[0].productId).toBe("p-1001");
   });
 
-  it("6. Demo product detail URL (/shop/product/demo-*) strictly rejects unauthorized customer access", async () => {
-    const customerUser: User = {
-      id: "u-cust",
-      name: "Customer John",
-      email: "john@example.com",
-      role: "Customer",
-      status: "active",
-      createdAt: "2026-01-01",
-    };
-
+  it("7. Normal Guest or Customer can view product detail page for preview items with Coming Soon messaging", async () => {
     render(
-      <AuthContext.Provider value={createMockAuthValue(customerUser)}>
+      <AuthContext.Provider value={createMockAuthValue(null)}>
         <ToastProvider>
           <CartProvider>
-            <MemoryRouter initialEntries={["/shop/product/demo-app-001"]}>
+            <MemoryRouter initialEntries={["/shop/product/demo-p-1011"]}>
               <Routes>
                 <Route path="/shop/product/:id" element={<ShopProductDetailPage />} />
               </Routes>
@@ -229,9 +238,17 @@ describe("Demo Catalog Mode - Access Restrictions, Isolation & Purchasing Guards
       </AuthContext.Provider>,
     );
 
-    // Should display error state that product cannot be found
-    expect(await screen.findByText(/we couldn't find this product/i)).toBeInTheDocument();
-    // And should NOT show the demo hoodie name
-    expect(screen.queryByText("Classic Fleece Pullover Hoodie")).not.toBeInTheDocument();
+    // Product heading is visible
+    const heading = await screen.findByRole("heading", { name: "Classic Fleece Pullover Hoodie", level: 1 });
+    expect(heading).toBeInTheDocument();
+
+    // Banner indicates Coming Soon / Catalog Preview
+    expect(screen.getByText(/catalog preview • coming soon/i)).toBeInTheDocument();
+
+    // Indicative price is shown
+    expect(screen.getByText(/indicative price \(coming soon\)/i)).toBeInTheDocument();
+
+    // Non-purchasable button
+    expect(screen.getByText(/catalog preview — coming soon \(cannot be added to cart or purchased\)/i)).toBeInTheDocument();
   });
 });

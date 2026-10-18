@@ -5,6 +5,7 @@ interface CategorySidebarProps {
   activeCategory: string;
   onSelectCategory: (category: string) => void;
   totalProductsCount?: number;
+  categoryCounts?: Record<string, number>;
 }
 
 function getCategoryIcon(categoryName: string) {
@@ -77,6 +78,7 @@ export function CategorySidebar({
   activeCategory,
   onSelectCategory,
   totalProductsCount,
+  categoryCounts,
 }: CategorySidebarProps) {
   const isAll = activeCategory === "all";
 
@@ -115,6 +117,7 @@ export function CategorySidebar({
 
           {categories.map((c) => {
             const active = activeCategory === c.name;
+            const count = categoryCounts?.[c.name] ?? c.productCount;
             return (
               <button
                 key={c.id}
@@ -127,7 +130,12 @@ export function CategorySidebar({
                 }`}
               >
                 {getCategoryIcon(c.name)}
-                {c.name}
+                <span>{c.name}</span>
+                {typeof count === "number" && count > 0 && (
+                  <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>
+                    {count}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -175,13 +183,25 @@ export function CategorySidebar({
                 </span>
                 <span>All Products</span>
               </div>
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`h-3.5 w-3.5 transition-transform duration-150 ${isAll ? "text-emerald-600 translate-x-0.5 dark:text-emerald-400" : "text-slate-300 group-hover:translate-x-1 dark:text-slate-600"}`}>
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <div className="flex items-center gap-2">
+                {typeof totalProductsCount === "number" && (
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                    isAll
+                      ? "bg-emerald-600/15 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-300"
+                      : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                  }`}>
+                    {totalProductsCount}
+                  </span>
+                )}
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`h-3.5 w-3.5 transition-transform duration-150 ${isAll ? "text-emerald-600 translate-x-0.5 dark:text-emerald-400" : "text-slate-300 group-hover:translate-x-1 dark:text-slate-600"}`}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
             </button>
 
             {categories.map((c) => {
               const active = activeCategory === c.name;
+              const count = categoryCounts?.[c.name] ?? c.productCount;
               return (
                 <button
                   key={c.id}
@@ -199,9 +219,20 @@ export function CategorySidebar({
                     </span>
                     <span>{c.name}</span>
                   </div>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`h-3.5 w-3.5 transition-transform duration-150 ${active ? "text-emerald-600 translate-x-0.5 dark:text-emerald-400" : "text-slate-300 group-hover:translate-x-1 dark:text-slate-600"}`}>
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <div className="flex items-center gap-2">
+                    {typeof count === "number" && count > 0 && (
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                        active
+                          ? "bg-emerald-600/15 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-300"
+                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`h-3.5 w-3.5 transition-transform duration-150 ${active ? "text-emerald-600 translate-x-0.5 dark:text-emerald-400" : "text-slate-300 group-hover:translate-x-1 dark:text-slate-600"}`}>
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </div>
                 </button>
               );
             })}

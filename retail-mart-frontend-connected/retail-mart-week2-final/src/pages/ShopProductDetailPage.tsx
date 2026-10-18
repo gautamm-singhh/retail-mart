@@ -10,7 +10,6 @@ import { mockProducts } from "@/features/products/data/products";
 import { DEMO_CANDIDATE_PRODUCTS } from "@/features/shop/data/demoCatalog";
 import { useCart } from "@/features/cart/useCart";
 import { useWishlist } from "@/features/wishlist/useWishlist";
-import { useAuth } from "@/features/auth/useAuth";
 import { useToast } from "@/hooks/useToast";
 import type { Product } from "@/types";
 import { formatCurrency } from "@/utils/format";
@@ -22,14 +21,6 @@ export default function ShopProductDetailPage() {
   const { addItem } = useCart();
   const { isWishlisted: checkWishlisted, toggleWishlist, pendingProductIds } = useWishlist();
   const { showToast } = useToast();
-  const { currentUser, isAuthenticated } = useAuth();
-
-  const isAuthorizedForDemo = Boolean(
-    isAuthenticated &&
-      currentUser &&
-      ["admin", "manager", "staff"].includes(currentUser.role?.toLowerCase() || ""),
-  );
-
   const [product, setProduct] = useState<Product | null>(null);
   const [recommended, setRecommended] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,13 +38,8 @@ export default function ShopProductDetailPage() {
     setIsLoading(true);
     setError(null);
 
-    // Demo product URLs strictly require authorized admin/staff identity
+    // Preview catalog candidate items are accessible to all visitors (Guests, Customers, Admins)
     if (id.startsWith("demo-")) {
-      if (!isAuthorizedForDemo) {
-        setError("We couldn't find this product.");
-        setIsLoading(false);
-        return;
-      }
       const demoFound = DEMO_CANDIDATE_PRODUCTS.find((p) => p.id === id);
       if (demoFound) {
         setProduct(demoFound);
@@ -107,7 +93,7 @@ export default function ShopProductDetailPage() {
 
   function handleAddToCart() {
     if (!product || isDemo) {
-      if (isDemo) showToast("Demo preview item cannot be added to cart.");
+      if (isDemo) showToast("This product is a catalog preview and cannot be added to cart.");
       return;
     }
     addItem(product, quantity);
@@ -116,7 +102,7 @@ export default function ShopProductDetailPage() {
 
   function handleBuyNow() {
     if (!product || isDemo) {
-      if (isDemo) showToast("Demo preview item cannot be purchased.");
+      if (isDemo) showToast("This product is a catalog preview and cannot be purchased.");
       return;
     }
     addItem(product, quantity);
@@ -214,14 +200,14 @@ export default function ShopProductDetailPage() {
               <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-4 shadow-xs dark:border-amber-800/80 dark:bg-amber-950/40">
                 <div className="flex items-center gap-2">
                   <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-black uppercase text-white">
-                    DEMO
+                    PREVIEW
                   </span>
                   <h3 className="text-sm font-bold text-amber-950 dark:text-amber-100">
-                    Client Presentation Candidate (Non-Purchasable)
+                    Catalog Preview &bull; Coming Soon
                   </h3>
                 </div>
                 <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/80">
-                  This product is part of the draft catalog candidate expansion. Proposed price is indicative. Real inventory, cart, and purchasing are strictly disabled.
+                  This product is part of our upcoming catalog. Proposed price is indicative. Real inventory and purchasing will be available soon once stock arrives.
                 </p>
               </div>
             )}
@@ -231,7 +217,7 @@ export default function ShopProductDetailPage() {
                 {formatCurrency(product.price)}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                {isDemo ? "Indicative Price (Pending Client Confirmation)" : "Inclusive of all taxes"}
+                {isDemo ? "Indicative Price (Coming Soon)" : "Inclusive of all taxes"}
               </span>
             </div>
 
@@ -243,7 +229,7 @@ export default function ShopProductDetailPage() {
               {isDemo ? (
                 <span className="inline-flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-300">
                   <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  Pending Client Physical Inventory Count (0 verified)
+                  Upcoming Catalog Item &bull; Coming Soon (0 currently in stock)
                 </span>
               ) : product.stock > 0 ? (
                 <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -294,7 +280,7 @@ export default function ShopProductDetailPage() {
 
             {isDemo ? (
               <div className="mt-4 rounded-xl border border-amber-300/80 bg-amber-50/90 p-3.5 text-center text-xs font-bold text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">
-                Demo Listing &mdash; Cannot Be Added to Cart or Purchased
+                Catalog Preview &mdash; Coming Soon (Cannot Be Added to Cart or Purchased)
               </div>
             ) : (
               <div className="mt-4 flex flex-wrap items-center gap-3 pt-4">
