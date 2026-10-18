@@ -30,7 +30,7 @@ export default function StorefrontLayout() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F2F5F4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-[#F2F5F4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xs dark:border-slate-800/90 dark:bg-slate-900/95 dark:shadow-sm transition-all duration-200">
         <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex shrink-0 items-center">
@@ -236,7 +236,7 @@ export default function StorefrontLayout() {
         <AppreciationMarquee stats={stats} customerName={currentUser.name} />
       )}
 
-      <main key={location.pathname} className="flex-1 mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-page-entrance">
+      <main key={location.pathname} className="flex-1 mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Suspense fallback={<PageFallback />}>
           <Outlet />
         </Suspense>

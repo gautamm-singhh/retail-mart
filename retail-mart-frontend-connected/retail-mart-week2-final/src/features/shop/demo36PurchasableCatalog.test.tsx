@@ -165,4 +165,26 @@ describe("Retail Mart 36-Product Mentor Demonstration Catalog Tests", () => {
       expect(card.className).toContain("min-w-0");
     });
   });
+
+  it("6. Categories sidebar on desktop has sticky positioning with top-24 and internal scroll max-height", async () => {
+    renderShopPage("/shop?category=Apparel", null);
+    await screen.findByRole("heading", { name: "Apparel", level: 2 });
+
+    const catalogSection = document.getElementById("catalog-section");
+    expect(catalogSection).toBeInTheDocument();
+
+    const stickyWrapper = screen.getByTestId("sidebar-sticky-wrapper");
+    expect(stickyWrapper).toBeInTheDocument();
+    expect(stickyWrapper.className).toContain("lg:sticky");
+    expect(stickyWrapper.className).toContain("lg:top-24");
+    expect(stickyWrapper.className).toContain("lg:z-20");
+
+    const sidebar = document.querySelector("aside");
+    expect(sidebar).toBeInTheDocument();
+
+    // Verify desktop container has max-height and internal overflow scroll
+    const asideCard = sidebar?.querySelector("div");
+    expect(asideCard?.className).toContain("overflow-y-auto");
+    expect(asideCard?.className).toContain("max-h-[calc(100vh-7.5rem)]");
+  });
 });

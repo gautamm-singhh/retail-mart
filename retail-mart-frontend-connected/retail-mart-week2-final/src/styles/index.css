@@ -32,6 +32,7 @@
 
   html {
     @apply antialiased;
+    overflow-x: clip;
   }
 
   body {

@@ -156,7 +156,7 @@ export function CategorySidebar({
       </div>
 
       <aside className="hidden lg:block w-full">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors duration-200 max-h-[calc(100vh-6.5rem)] overflow-y-auto custom-scrollbar">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800/90 dark:bg-slate-900 transition-colors duration-200 max-h-[calc(100vh-7.5rem)] overflow-y-auto custom-scrollbar">
           <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800/80">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">

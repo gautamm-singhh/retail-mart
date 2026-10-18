@@ -79,6 +79,19 @@ export default function ShopHomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const scrollTarget = searchParams.get("scrollTo");
+    if (scrollTarget) {
+      const y = parseInt(scrollTarget, 10);
+      if (!isNaN(y)) {
+        const timer = setTimeout(() => {
+          window.scrollTo({ top: y, behavior: "instant" });
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [searchParams]);
+
   // Ensure the Customer Storefront always displays all 36 active, purchasable
   // products across the 6 shopping categories (min 6 per category).
   const displayedCatalog = useMemo(() => {
@@ -198,15 +211,17 @@ export default function ShopHomePage() {
         </>
       )}
 
-      <div id="catalog-section" className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
-        <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:z-10">
-          <CategorySidebar
-            categories={categories}
-            activeCategory={categoryFilter}
-            onSelectCategory={handleSelectCategory}
-            totalProductsCount={displayedCatalog.length}
-            categoryCounts={categoryCounts}
-          />
+      <div id="catalog-section" className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <div className="lg:col-span-3">
+          <div className="lg:sticky lg:top-24 lg:z-20" data-testid="sidebar-sticky-wrapper">
+            <CategorySidebar
+              categories={categories}
+              activeCategory={categoryFilter}
+              onSelectCategory={handleSelectCategory}
+              totalProductsCount={displayedCatalog.length}
+              categoryCounts={categoryCounts}
+            />
+          </div>
         </div>
 
         <div className="lg:col-span-9 min-w-0">
