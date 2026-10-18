@@ -116,4 +116,53 @@ describe("Retail Mart 36-Product Mentor Demonstration Catalog Tests", () => {
     const addToCartButtons = screen.getAllByRole("button", { name: /add to cart/i });
     expect(addToCartButtons.length).toBeGreaterThanOrEqual(6);
   });
+
+  it("4. Category selection via URL query parameter switches grid to 3 columns (3x2 layout) vs 4 columns for All Products", async () => {
+    // 1. All Products (/shop) -> 4 columns on large desktop
+    const { unmount: unmountAll } = renderShopPage("/shop", null);
+    await screen.findByText("All (36)");
+    const allGrid = screen.getByTestId("products-grid");
+    expect(allGrid.className).toContain("xl:grid-cols-4");
+    expect(allGrid.className).toContain("sm:grid-cols-2");
+    expect(allGrid.className).toContain("grid-cols-1");
+    unmountAll();
+
+    // 2. Apparel category (?category=Apparel) -> 3 columns on desktop (3x2 layout)
+    const { unmount: unmountApparel } = renderShopPage("/shop?category=Apparel", null);
+    await screen.findByRole("heading", { name: "Apparel", level: 2 });
+    const apparelGrid = screen.getByTestId("products-grid");
+    expect(apparelGrid.className).toContain("lg:grid-cols-3");
+    expect(apparelGrid.className).not.toContain("xl:grid-cols-4");
+    expect(apparelGrid.className).toContain("sm:grid-cols-2");
+    expect(apparelGrid.className).toContain("grid-cols-1");
+    unmountApparel();
+
+    // 3. Footwear category (?category=Footwear) -> 3 columns on desktop (3x2 layout)
+    const { unmount: unmountFootwear } = renderShopPage("/shop?category=Footwear", null);
+    await screen.findByRole("heading", { name: "Footwear", level: 2 });
+    const footwearGrid = screen.getByTestId("products-grid");
+    expect(footwearGrid.className).toContain("lg:grid-cols-3");
+    expect(footwearGrid.className).not.toContain("xl:grid-cols-4");
+    unmountFootwear();
+  });
+
+  it("5. Promotional cards section displays exactly 4 equal-width responsive cards", async () => {
+    renderShopPage("/shop", null);
+    await screen.findByText("All (36)");
+
+    const promoSection = screen.getByTestId("promotional-cards-section");
+    expect(promoSection).toBeInTheDocument();
+
+    const promoGrid = promoSection.firstElementChild as HTMLElement;
+    expect(promoGrid.className).toContain("lg:grid-cols-4");
+    expect(promoGrid.className).toContain("sm:grid-cols-2");
+    expect(promoGrid.className).toContain("grid-cols-1");
+
+    // Exactly 4 promotional cards
+    const promoCards = promoGrid.querySelectorAll("button");
+    expect(promoCards).toHaveLength(4);
+    promoCards.forEach((card) => {
+      expect(card.className).toContain("min-w-0");
+    });
+  });
 });

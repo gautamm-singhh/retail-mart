@@ -80,7 +80,20 @@ export function CategorySidebar({
   totalProductsCount,
   categoryCounts,
 }: CategorySidebarProps) {
-  const isAll = activeCategory === "all";
+  const isAll = !activeCategory || activeCategory === "all" || activeCategory.toLowerCase() === "all";
+
+  function checkIsActive(categoryName: string) {
+    if (isAll) return false;
+    const activeLower = activeCategory.toLowerCase().trim();
+    const catLower = categoryName.toLowerCase().trim();
+    return (
+      activeLower === catLower ||
+      (activeLower === "kitchen" && catLower.includes("kitchen")) ||
+      (activeLower === "home" && catLower.includes("home")) ||
+      (activeLower === "sports" && catLower.includes("sport")) ||
+      (activeLower === "fitness" && catLower.includes("fitness"))
+    );
+  }
 
   return (
     <div className="w-full">
@@ -116,7 +129,7 @@ export function CategorySidebar({
           </button>
 
           {categories.map((c) => {
-            const active = activeCategory === c.name;
+            const active = checkIsActive(c.name);
             const count = categoryCounts?.[c.name] ?? c.productCount;
             return (
               <button
@@ -200,7 +213,7 @@ export function CategorySidebar({
             </button>
 
             {categories.map((c) => {
-              const active = activeCategory === c.name;
+              const active = checkIsActive(c.name);
               const count = categoryCounts?.[c.name] ?? c.productCount;
               return (
                 <button

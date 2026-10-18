@@ -82,15 +82,18 @@ export default function ShopHomePage() {
   // Ensure the Customer Storefront always displays all 36 active, purchasable
   // products across the 6 shopping categories (min 6 per category).
   const displayedCatalog = useMemo(() => {
-    if (products.length >= 36) {
-      return products;
+    const rawList = products.length >= 36 ? products : [...products, ...mockProducts.filter((p) => p.status === "active")];
+    const seenIds = new Set<string>();
+    const seenSkus = new Set<string>();
+    const deduped: Product[] = [];
+    for (const p of rawList) {
+      if (p.id && !seenIds.has(p.id) && (!p.sku || !seenSkus.has(p.sku))) {
+        seenIds.add(p.id);
+        if (p.sku) seenSkus.add(p.sku);
+        deduped.push(p);
+      }
     }
-    const existingIds = new Set(products.map((p) => p.id));
-    const existingSkus = new Set(products.map((p) => p.sku).filter(Boolean));
-    const nonDuplicatedProducts = mockProducts.filter((p) => {
-      return !existingIds.has(p.id) && !existingSkus.has(p.sku) && p.status === "active";
-    });
-    return [...products, ...nonDuplicatedProducts];
+    return deduped;
   }, [products]);
 
   const categoryCounts = useMemo(() => {
@@ -104,15 +107,24 @@ export default function ShopHomePage() {
   }, [displayedCatalog]);
 
   const filteredProducts = useMemo(() => {
+    const catLower = (categoryFilter || "").toLowerCase().trim();
     let list = displayedCatalog.filter((product) => {
+      const prodNameLower = (product.name || "").toLowerCase();
+      const prodCatLower = (product.category || "").toLowerCase();
       const matchesQuery =
         !query ||
-        product.name.toLowerCase().includes(query.toLowerCase()) ||
-        product.category.toLowerCase().includes(query.toLowerCase());
+        prodNameLower.includes(query.toLowerCase()) ||
+        prodCatLower.includes(query.toLowerCase());
+
       const matchesCategory =
-        categoryFilter === "all" ||
-        product.category.toLowerCase() === categoryFilter.toLowerCase() ||
-        (categoryFilter.toLowerCase() === "kitchen" && product.category.toLowerCase().includes("kitchen"));
+        catLower === "all" ||
+        catLower === "" ||
+        prodCatLower === catLower ||
+        (catLower === "kitchen" && prodCatLower.includes("kitchen")) ||
+        (catLower === "home" && prodCatLower.includes("home")) ||
+        (catLower === "sports" && prodCatLower.includes("sport")) ||
+        (catLower === "fitness" && prodCatLower.includes("fitness"));
+
       return matchesQuery && matchesCategory;
     });
 
@@ -161,10 +173,18 @@ export default function ShopHomePage() {
     setSearchParams(new URLSearchParams());
   }
 
-  const isFiltered = query || categoryFilter !== "all";
+  const isFiltered = Boolean(query || (categoryFilter && categoryFilter.toLowerCase() !== "all"));
+  const isSpecificCategory = Boolean(categoryFilter && categoryFilter.toLowerCase() !== "all");
+
+  // Grid layout adapts dynamically:
+  // When a specific category is chosen (6 items): 3 equal columns on desktop (3x2 layout), 2 on tablet, 1 on mobile.
+  // For All Products: 4 columns on large desktop, 3 on medium desktop, 2 on tablet, 1 on mobile.
+  const productGridClass = isSpecificCategory
+    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6"
+    : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 lg:gap-6";
 
   return (
-    <div>
+    <div className="w-full">
       {!query && (
         <>
           <StorefrontHero
@@ -189,7 +209,7 @@ export default function ShopHomePage() {
           />
         </div>
 
-        <div className="lg:col-span-9">
+        <div className="lg:col-span-9 min-w-0">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800/70 dark:bg-slate-900 transition-colors">
             <div>
               <div className="flex items-center gap-2.5">
@@ -290,12 +310,12 @@ export default function ShopHomePage() {
           )}
 
           {isLoading && products.length === 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, idx) => (
+            <div className={productGridClass} data-testid="products-grid-skeleton">
+              {Array.from({ length: isSpecificCategory ? 6 : 8 }).map((_, idx) => (
                 <ProductCardSkeleton key={`prod-skel-${idx}`} />
               ))}
             </div>
-          ) : error && products.length === 0 ? (
+          ) : error && displayedCatalog.length === 0 ? (
             <div className="py-6">
               <ErrorState title="Couldn't load products" description={error} />
             </div>
@@ -314,11 +334,11 @@ export default function ShopHomePage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className={productGridClass} data-testid="products-grid">
               {filteredProducts.map((product, idx) => (
                 <div
                   key={product.id}
-                  className="opacity-0 animate-[fadeSlideUp_0.45s_ease-out_forwards]"
+                  className="opacity-0 animate-[fadeSlideUp_0.45s_ease-out_forwards] h-full flex flex-col min-w-0"
                   style={{ animationDelay: `${(idx % 6) * 60}ms` }}
                 >
                   <ProductCard product={product} />
@@ -336,7 +356,7 @@ export default function ShopHomePage() {
                       Recommended From Our Catalog
                     </h3>
                     <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300">
-                      {recommendedProducts.length} items
+                      {Math.min(6, recommendedProducts.length)} items
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -352,11 +372,11 @@ export default function ShopHomePage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {recommendedProducts.map((product, idx) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
+                {recommendedProducts.slice(0, 6).map((product, idx) => (
                   <div
                     key={product.id}
-                    className="opacity-0 animate-[fadeSlideUp_0.45s_ease-out_forwards]"
+                    className="opacity-0 animate-[fadeSlideUp_0.45s_ease-out_forwards] h-full flex flex-col min-w-0"
                     style={{ animationDelay: `${(idx % 6) * 60}ms` }}
                   >
                     <ProductCard product={product} />
