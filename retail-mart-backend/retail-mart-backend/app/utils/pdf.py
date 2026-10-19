@@ -152,11 +152,15 @@ def build_invoice_pdf(order) -> BytesIO:
         dest_state = user.addresses[0].state
 
     # Historical Invoice Protection: Check for immutable order-time tax snapshot first
+    from app.models.order import has_tax_snapshot_column
     tax_snapshot = None
-    try:
-        tax_snapshot = getattr(order, "tax_snapshot", None)
-    except Exception:
-        tax_snapshot = None
+    if "tax_snapshot" in getattr(order, "__dict__", {}):
+        tax_snapshot = order.__dict__["tax_snapshot"]
+    elif has_tax_snapshot_column():
+        try:
+            tax_snapshot = getattr(order, "tax_snapshot", None)
+        except Exception:
+            tax_snapshot = None
 
     is_snapshot_preserved = bool(tax_snapshot and isinstance(tax_snapshot, dict))
     if is_snapshot_preserved:

@@ -16,6 +16,23 @@ ORDER_STATUS_TRANSITIONS = {
 }
 
 
+_HAS_TAX_SNAPSHOT = None
+
+
+def has_tax_snapshot_column() -> bool:
+    global _HAS_TAX_SNAPSHOT
+    if _HAS_TAX_SNAPSHOT is not None:
+        return _HAS_TAX_SNAPSHOT
+    try:
+        from sqlalchemy import inspect
+        insp = inspect(db.engine)
+        cols = {c["name"] for c in insp.get_columns("orders")}
+        _HAS_TAX_SNAPSHOT = "tax_snapshot" in cols
+    except Exception:
+        return False
+    return _HAS_TAX_SNAPSHOT
+
+
 class Order(db.Model):
     """ERD: ORDERS"""
 
@@ -60,10 +77,13 @@ class Order(db.Model):
             }
 
         tax_snap = None
-        try:
-            tax_snap = self.tax_snapshot
-        except Exception:
-            tax_snap = None
+        if "tax_snapshot" in self.__dict__:
+            tax_snap = self.__dict__["tax_snapshot"]
+        elif has_tax_snapshot_column():
+            try:
+                tax_snap = self.tax_snapshot
+            except Exception:
+                tax_snap = None
 
         return {
             "id": self.id,

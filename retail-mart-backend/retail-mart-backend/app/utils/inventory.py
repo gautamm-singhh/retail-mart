@@ -15,7 +15,7 @@ from typing import List, Dict, Any
 
 from app.extensions import db
 from app.models.catalog import Product
-from app.models.order import Order
+from app.models.order import Order, has_tax_snapshot_column
 from app.utils.tax import PRODUCT_NAME_TO_SKU
 
 logger = logging.getLogger("retail_mart.inventory")
@@ -39,8 +39,17 @@ def deduct_order_stock(order: Order) -> List[Dict[str, Any]]:
 
     # Map tax snapshot productId if available for exact primary-key resolution
     product_id_by_name = {}
-    if getattr(order, "tax_snapshot", None) and isinstance(order.tax_snapshot, dict):
-        snap_items = order.tax_snapshot.get("items") or []
+    snap = None
+    if "tax_snapshot" in getattr(order, "__dict__", {}):
+        snap = order.__dict__["tax_snapshot"]
+    elif has_tax_snapshot_column():
+        try:
+            snap = getattr(order, "tax_snapshot", None)
+        except Exception:
+            snap = None
+
+    if snap and isinstance(snap, dict):
+        snap_items = snap.get("items") or []
         for s_item in snap_items:
             p_name = s_item.get("productName") or s_item.get("product_name")
             p_id = s_item.get("productId") or s_item.get("product_id")

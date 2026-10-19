@@ -8,7 +8,15 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_j
 from sqlalchemy.orm import selectinload, configure_mappers
 
 from app.extensions import db
-from app.models.order import Order, OrderItem, OrderStatusEvent, ORDER_STATUS_TRANSITIONS, ORDER_STATUSES, ORDER_PAYMENT_STATUSES
+from app.models.order import (
+    Order,
+    OrderItem,
+    OrderStatusEvent,
+    ORDER_STATUS_TRANSITIONS,
+    ORDER_STATUSES,
+    ORDER_PAYMENT_STATUSES,
+    has_tax_snapshot_column,
+)
 from app.models.payment import Payment, PaymentStatusEvent
 from app.models.shipment import Shipment
 from app.utils.decorators import roles_required
@@ -346,13 +354,11 @@ def create_order():
         status="Pending",
     )
     # Store immutable order-time tax snapshot if column exists in database
-    try:
-        from sqlalchemy import inspect
-        insp = inspect(db.engine)
-        if "tax_snapshot" in {c["name"] for c in insp.get_columns("orders")}:
+    if has_tax_snapshot_column():
+        try:
             order.tax_snapshot = tax_breakdown
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     for i in validated_order_items:
         order.items.append(OrderItem(product_name=i["productName"], quantity=i["quantity"], price=i["price"]))
