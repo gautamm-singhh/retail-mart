@@ -16,4 +16,9 @@ export interface Payment {
   status: PaymentStatus;
   date: string;
   history: PaymentStatusEvent[];
+  receipt?: {
+    id?: string;
+    receiptNo: string;
+    issuedAt?: string;
+  } | null;
 }

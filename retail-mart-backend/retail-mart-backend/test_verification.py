@@ -25,6 +25,12 @@ def make_req(path, method="GET", body=None, token=None):
     except urllib.error.HTTPError as e:
         content = e.read().decode("utf-8")
         return e.code, json.loads(content) if content else {"error": str(e)}
+    except urllib.error.URLError as e:
+        try:
+            import pytest
+            pytest.skip(f"Live server at {BASE_URL} is unreachable: {e.reason}")
+        except ImportError:
+            raise e
 
 def test_all():
     print("=== STARTING COMPREHENSIVE VERIFICATION TESTS ===")

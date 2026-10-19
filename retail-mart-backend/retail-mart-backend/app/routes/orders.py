@@ -1,8 +1,9 @@
 import logging
+import time
 from datetime import datetime, date
 from decimal import Decimal
 
-from flask import Blueprint, request, jsonify, send_file, current_app
+from flask import Blueprint, request, jsonify, send_file, current_app, g
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 
 from sqlalchemy.orm import selectinload, configure_mappers
@@ -217,6 +218,9 @@ def create_order():
         schema:
           $ref: '#/definitions/ErrorResponse'
     """
+    t_start = time.perf_counter()
+    req_id = getattr(g, "request_id", None) or request.headers.get("X-Request-ID") or "N/A"
+
     data = request.get_json(silent=True) or {}
     items = data.get("items") or []
 
@@ -236,13 +240,16 @@ def create_order():
     # Real order placement requires verified JWT with permitted role
     verify_jwt_in_request()
     claims = get_jwt()
+    user_id = claims.get("sub")
     allowed_roles = ("Admin", "Manager", "Staff", "Customer")
     if allowed_roles and claims.get("role") not in allowed_roles:
+        duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
         logger.warning(
-            "Unauthorized access attempt: user_id=%s role=%s endpoint=create_order required_roles=%s",
-            claims.get("sub"),
+            "[ORDER_FORBIDDEN] req_id=%s user_id=%s role=%s endpoint=create_order status=403 duration_ms=%.2f transaction_result=NONE",
+            req_id,
+            user_id,
             claims.get("role"),
-            allowed_roles,
+            duration_ms,
         )
         return jsonify({"error": "Forbidden: insufficient role"}), 403
 
@@ -250,17 +257,56 @@ def create_order():
     customer_email = (data.get("customerEmail") or "").strip()
 
     if not customer or not customer_email:
+        duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
+        logger.warning(
+            "[ORDER_BAD_REQUEST] req_id=%s user_id=%s reason='customer and customerEmail are required' status=400 duration_ms=%.2f transaction_result=NONE",
+            req_id, user_id, duration_ms
+        )
         return jsonify({"error": "customer and customerEmail are required"}), 400
     if not items:
+        duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
+        logger.warning(
+            "[ORDER_BAD_REQUEST] req_id=%s user_id=%s reason='at least one item is required' status=400 duration_ms=%.2f transaction_result=NONE",
+            req_id, user_id, duration_ms
+        )
         return jsonify({"error": "at least one item is required"}), 400
 
     from app.models.catalog import Product
     from app.utils.tax import calculate_order_tax_breakdown
 
-    # Independent server-side validation against real MySQL product catalog
+    # Collect incoming item IDs and quantities for structured audit logging
+    incoming_items_summary = []
+    for item in items:
+        if isinstance(item, dict):
+            p_id = (item.get("productId") or item.get("id") or "").strip()
+            qty = item.get("quantity")
+            incoming_items_summary.append({"id": p_id or "UNKNOWN", "qty": qty})
+        else:
+            incoming_items_summary.append({"id": "INVALID_OBJECT", "qty": None})
+
     validated_order_items = []
+    validated_summary = []
+
+    def _log_order_failure(reason: str, failed_item: dict | None = None, status_code: int = 400):
+        duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
+        db.session.rollback()
+        logger.warning(
+            "[ORDER_VALIDATION_FAILED] req_id=%s user_id=%s status=%d duration_ms=%.2f "
+            "incoming_items=%s validated_items=%s validation_failure=%s "
+            "safe_sql_summary='ROLLBACK executed' transaction_result=ROLLBACK",
+            req_id,
+            user_id,
+            status_code,
+            duration_ms,
+            incoming_items_summary,
+            validated_summary,
+            {"reason": reason, "failed_item": failed_item},
+        )
+
+    # Independent server-side validation against real MySQL product catalog
     for item in items:
         if not isinstance(item, dict):
+            _log_order_failure("Each item must be an object with product details", {"item": str(item)[:50]})
             return jsonify({"error": "Each item must be an object with product details"}), 400
 
         product_id = (item.get("productId") or item.get("id") or "").strip()
@@ -269,7 +315,7 @@ def create_order():
 
         # 1. Independent rejection of demo products and demo product IDs
         if is_demo or product_id.startswith("demo-"):
-            logger.warning("Order creation rejected: demo item detected id=%s name=%s", product_id, product_name)
+            _log_order_failure(f"Demo product '{product_name or product_id}' cannot be purchased", {"productId": product_id, "name": product_name})
             return jsonify({"error": f"Demo product '{product_name or product_id}' cannot be purchased or ordered."}), 400
 
         # 2. Lookup product in live MySQL database with row-level lock
@@ -287,15 +333,16 @@ def create_order():
             product = None
 
         if not product:
-            logger.warning("Order creation rejected: product not found in inventory id=%s name=%s", product_id, product_name)
+            _log_order_failure(f"Product '{product_id or product_name}' not found in live inventory", {"productId": product_id, "name": product_name})
             return jsonify({"error": f"Product '{product_id or product_name}' not found in live inventory."}), 400
 
         if product.id.startswith("demo-"):
+            _log_order_failure(f"Demo product '{product.name}' is not real inventory", {"productId": product.id, "name": product.name})
             return jsonify({"error": f"Demo product '{product.name}' is not real inventory."}), 400
 
         # 3. Check product status (reject draft / inactive / unapproved products)
         if product.status != "active":
-            logger.warning("Order creation rejected: inactive product id=%s status=%s", product.id, product.status)
+            _log_order_failure(f"Product '{product.name}' status is {product.status}", {"productId": product.id, "status": product.status})
             return jsonify({"error": f"Product '{product.name}' is not currently available for purchase (status: {product.status})."}), 400
 
         # 4. Validate quantity (must be positive integer)
@@ -305,15 +352,15 @@ def create_order():
             if quantity <= 0:
                 raise ValueError()
         except (TypeError, ValueError):
+            _log_order_failure(f"Invalid quantity for '{product.name}': {raw_quantity}", {"productId": product.id, "quantity": raw_quantity})
             return jsonify({"error": f"Invalid quantity for '{product.name}'. Quantity must be a positive integer."}), 400
 
         # 5. Check real inventory stock (reject zero-stock and insufficient stock)
         if product.stock <= 0:
-            logger.warning("Order creation rejected: zero stock for product id=%s", product.id)
+            _log_order_failure(f"Product '{product.name}' out of stock (available: 0)", {"productId": product.id, "stock": product.stock, "requested": quantity})
             return jsonify({"error": f"Product '{product.name}' is out of stock (available: 0)."}), 400
         if quantity > product.stock:
-            logger.warning("Order creation rejected: requested quantity %d exceeds stock %d for product id=%s",
-                           quantity, product.stock, product.id)
+            _log_order_failure(f"Requested quantity {quantity} exceeds stock {product.stock} for '{product.name}'", {"productId": product.id, "stock": product.stock, "requested": quantity})
             return jsonify({"error": f"Requested quantity {quantity} for '{product.name}' exceeds available stock ({product.stock})."}), 400
 
         # 6. Reject price tampering / manipulation
@@ -322,10 +369,10 @@ def create_order():
             try:
                 submitted_price = Decimal(str(item["price"]))
                 if abs(submitted_price - expected_price) > Decimal("0.01"):
-                    logger.warning("Order creation rejected: price tampering detected for product id=%s submitted=%.2f expected=%.2f",
-                                   product.id, submitted_price, expected_price)
+                    _log_order_failure(f"Price mismatch: submitted={submitted_price} expected={expected_price}", {"productId": product.id, "submitted": float(submitted_price), "expected": float(expected_price)})
                     return jsonify({"error": f"Price mismatch for '{product.name}'. Expected ₹{expected_price:.2f}, got ₹{submitted_price:.2f}."}), 400
             except (TypeError, ValueError):
+                _log_order_failure(f"Invalid price format for '{product.name}'", {"productId": product.id})
                 return jsonify({"error": f"Invalid price format for '{product.name}'."}), 400
 
         validated_order_items.append({
@@ -335,55 +382,89 @@ def create_order():
             "quantity": quantity,
             "price": float(expected_price),
         })
+        validated_summary.append({"id": product.id, "qty": quantity})
 
-    # Server-side authoritative tax & total validation using validated catalog items
-    tax_breakdown = calculate_order_tax_breakdown(
-        items=validated_order_items,
-        destination_state=data.get("destinationState") or "",
+    # Strict check: If not all incoming items validated, reject entire order
+    if len(validated_order_items) != len(items):
+        _log_order_failure("Item count mismatch between incoming and validated items", {"incoming_count": len(items), "validated_count": len(validated_order_items)})
+        return jsonify({"error": "Order rejected: All items in order must be valid. Partial order placement is not permitted."}), 400
+
+    order_id = f"ORD-{random_suffix(5)}"
+    try:
+        # Server-side authoritative tax & total validation using validated catalog items
+        tax_breakdown = calculate_order_tax_breakdown(
+            items=validated_order_items,
+            destination_state=data.get("destinationState") or "",
+        )
+        amount = tax_breakdown["total_payable"]
+
+        order = Order(
+            id=order_id,
+            user_id=get_jwt_identity(),
+            customer=customer,
+            customer_email=customer_email,
+            date=date.today(),
+            amount=amount,
+            payment_status="Pending",
+            status="Pending",
+        )
+        # Store immutable order-time tax snapshot if column exists in database
+        if has_tax_snapshot_column():
+            try:
+                order.tax_snapshot = tax_breakdown
+            except Exception:
+                pass
+
+        for i in validated_order_items:
+            order.items.append(OrderItem(product_name=i["productName"], quantity=i["quantity"], price=i["price"]))
+        order.status_history.append(OrderStatusEvent(status="Pending", date=date.today()))
+
+        db.session.add(order)
+        db.session.flush()
+
+        # Pre-create initial Pending payment record for Razorpay checkout or manual collection
+        payment = Payment(
+            id=f"PAY-{random_suffix(5)}",
+            order_id=order.id,
+            customer=customer,
+            amount=amount,
+            method="Pending",
+            status="Pending",
+            date=date.today(),
+        )
+        payment.order = order
+        payment.history.append(PaymentStatusEvent(status="Pending", date=date.today()))
+        db.session.add(payment)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
+        logger.exception(
+            "[ORDER_DB_TRANSACTION_FAILED] req_id=%s order_id=%s user_id=%s incoming_items=%s "
+            "validated_items=%s status=500 duration_ms=%.2f safe_sql_summary='ROLLBACK executed' transaction_result=ROLLBACK error=%s",
+            req_id,
+            order_id,
+            user_id,
+            incoming_items_summary,
+            validated_summary,
+            duration_ms,
+            str(exc),
+        )
+        return jsonify({"error": "Database transaction failed while creating order. Changes have been rolled back."}), 500
+
+    duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
+    logger.info(
+        "[ORDER_CREATED_SUCCESS] req_id=%s order_id=%s user_id=%s amount=%.2f "
+        "incoming_items=%s validated_items=%s status=201 duration_ms=%.2f "
+        "safe_sql_summary='INSERT orders, order_items, payments; COMMIT' transaction_result=COMMIT",
+        req_id,
+        order.id,
+        order.user_id,
+        amount,
+        incoming_items_summary,
+        validated_summary,
+        duration_ms,
     )
-    amount = tax_breakdown["total_payable"]
-
-    order = Order(
-        id=f"ORD-{random_suffix(5)}",
-        user_id=get_jwt_identity(),
-        customer=customer,
-        customer_email=customer_email,
-        date=date.today(),
-        amount=amount,
-        payment_status="Pending",
-        status="Pending",
-    )
-    # Store immutable order-time tax snapshot if column exists in database
-    if has_tax_snapshot_column():
-        try:
-            order.tax_snapshot = tax_breakdown
-        except Exception:
-            pass
-
-    for i in validated_order_items:
-        order.items.append(OrderItem(product_name=i["productName"], quantity=i["quantity"], price=i["price"]))
-    order.status_history.append(OrderStatusEvent(status="Pending", date=date.today()))
-
-    db.session.add(order)
-    db.session.flush()
-
-    # Pre-create initial Pending payment record for Razorpay checkout or manual collection
-    payment = Payment(
-        id=f"PAY-{random_suffix(5)}",
-        order_id=order.id,
-        customer=customer,
-        amount=amount,
-        method="Pending",
-        status="Pending",
-        date=date.today(),
-    )
-    payment.order = order
-    payment.history.append(PaymentStatusEvent(status="Pending", date=date.today()))
-    db.session.add(payment)
-    db.session.commit()
-
-    logger.info("Order created order_id=%s user_id=%s amount=%.2f items=%d",
-                order.id, order.user_id, amount, len(items))
 
     email_delivery = {
         "attempted": False,

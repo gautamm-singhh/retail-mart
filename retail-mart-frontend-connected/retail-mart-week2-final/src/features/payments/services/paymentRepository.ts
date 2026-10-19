@@ -21,5 +21,5 @@ export const paymentRepository = {
     }
   },
 
-  downloadReceipt: (id: string): Promise<void> => downloadPaymentReceipt(id),
+  downloadReceipt: (id: string, receiptNo?: string): Promise<void> => downloadPaymentReceipt(id, receiptNo),
 };

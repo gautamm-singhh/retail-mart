@@ -47,7 +47,7 @@
         &square; Official Receipt Attached
       </span>
       <span style="font-size: 13px; color: #15803d; line-height: 1.4;">
-        A copy of your PDF receipt (<strong>receipt-{{ payment_id }}.pdf</strong>) has been generated and attached to this email for your financial and tax records.
+        A copy of your PDF receipt (<strong>{{ receipt_no | default('receipt-' ~ payment_id) }}.pdf</strong>) has been generated and attached to this email for your financial and tax records.
       </span>
     </td>
   </tr>

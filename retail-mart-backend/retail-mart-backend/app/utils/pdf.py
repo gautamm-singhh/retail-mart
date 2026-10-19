@@ -383,21 +383,35 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         else (payment.date.strftime("%d %b %Y") if payment.date else "-")
     )
 
+    # Check if in Razorpay test mode / sandbox
+    is_test_mode = True
+    try:
+        from flask import current_app
+        if current_app:
+            key_id = (current_app.config.get("RAZORPAY_KEY_ID") or "").strip()
+            if key_id.startswith("rzp_live_"):
+                is_test_mode = False
+    except Exception:
+        pass
+
     left_header = [
         Paragraph('<b><font color="#059669">●</font> Retail Mart</b>', brand_logo_style),
-        Paragraph('OFFICIAL PAYMENT RECEIPT', brand_sub_style),
+        Paragraph('PAYMENT RECEIPT — TAX PREVIEW', brand_sub_style),
         Paragraph('Electronic Transaction Voucher & Accounting Record', brand_meta_style),
     ]
 
     is_paid = str(payment.status).strip().lower() == "paid"
-    status_label = "● PAYMENT SUCCESSFUL" if is_paid else f"● PAYMENT {payment.status.upper()}"
+    if is_paid:
+        status_label = "● TEST PAYMENT VERIFIED" if is_test_mode else "● PAYMENT SUCCESSFUL"
+    else:
+        status_label = f"● PAYMENT {payment.status.upper()}"
     status_badge_bg = BADGE_BG if is_paid else colors.HexColor("#fef3c7")
     status_badge_border = colors.HexColor("#a7f3d0") if is_paid else colors.HexColor("#fde68a")
     status_badge_text_color = BADGE_TEXT if is_paid else colors.HexColor("#92400e")
 
     badge_table = Table(
-        [[Paragraph(f'<b><font color="{status_badge_text_color.hexval()}">{status_label}</font></b>', ParagraphStyle("Badge", fontName=font_bold, fontSize=7.5, leading=9, alignment=1))]],
-        colWidths=[42 * mm],
+        [[Paragraph(f'<b><font color="{status_badge_text_color.hexval()}">{status_label}</font></b>', ParagraphStyle("Badge", fontName=font_bold, fontSize=7, leading=9, alignment=1))]],
+        colWidths=[48 * mm],
     )
     badge_table.setStyle(
         TableStyle(
@@ -406,8 +420,8 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
                 ("BOX", (0, 0), (-1, -1), 0.5, status_badge_border),
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
             ]
         )
@@ -417,7 +431,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         Paragraph(f'<b>RECEIPT NO:</b> <font color="#059669">{receipt.receipt_no}</font>', right_num_style),
         Paragraph(f'Date Issued: <b>{issued_date_str}</b>', right_date_style),
         Spacer(1, 3),
-        Table([[None, badge_table]], colWidths=[28 * mm, 42 * mm], style=[("ALIGN", (1, 0), (1, 0), "RIGHT")]),
+        Table([[None, badge_table]], colWidths=[22 * mm, 48 * mm], style=[("ALIGN", (1, 0), (1, 0), "RIGHT")]),
     ]
 
     header_table = Table(
@@ -436,7 +450,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         )
     )
     story.append(header_table)
-    story.append(HRFlowable(width="100%", thickness=1.5, color=BRAND_COLOR, spaceBefore=4, spaceAfter=12))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=BRAND_COLOR, spaceBefore=4, spaceAfter=10))
 
     # 2. Payment Summary: Amount Paid Card
     amount_label_style = ParagraphStyle(
@@ -449,15 +463,15 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     amount_num_style = ParagraphStyle(
         "AmtNum",
         fontName=font_bold,
-        fontSize=24,
-        leading=28,
+        fontSize=22,
+        leading=26,
         textColor=BRAND_DARK,
     )
     amount_sub_style = ParagraphStyle(
         "AmtSub",
         fontName=font_reg,
-        fontSize=8.5,
-        leading=11,
+        fontSize=8,
+        leading=10,
         textColor=BRAND_COLOR,
     )
 
@@ -472,8 +486,8 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     method_val_style = ParagraphStyle(
         "MethodVal",
         fontName=font_bold,
-        fontSize=12,
-        leading=15,
+        fontSize=11,
+        leading=14,
         textColor=DARK_COLOR,
         alignment=2,
     )
@@ -481,7 +495,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         "MethodSub",
         fontName=font_reg,
         fontSize=8,
-        leading=11,
+        leading=10,
         textColor=MUTED_COLOR,
         alignment=2,
     )
@@ -512,48 +526,48 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
                 ("BACKGROUND", (0, 0), (-1, -1), BRAND_TINT),
                 ("BOX", (0, 0), (-1, -1), 0.75, colors.HexColor("#a7f3d0")),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-                ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ]
         )
     )
     story.append(amount_card)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
 
     # 3. Customer and order details
     sec_title_style = ParagraphStyle(
         "SecTitle",
         fontName=font_bold,
-        fontSize=9.5,
-        leading=12,
+        fontSize=9,
+        leading=11,
         textColor=DARK_COLOR,
     )
     fld_lbl_style = ParagraphStyle(
         "FldLbl",
         fontName=font_bold,
-        fontSize=7,
-        leading=9,
+        fontSize=6.5,
+        leading=8,
         textColor=MUTED_COLOR,
     )
     fld_val_style = ParagraphStyle(
         "FldVal",
         fontName=font_reg,
-        fontSize=9,
-        leading=12,
+        fontSize=8.5,
+        leading=11,
         textColor=DARK_COLOR,
     )
     fld_val_bold_style = ParagraphStyle(
         "FldValBold",
         fontName=font_bold,
-        fontSize=9,
-        leading=12,
+        fontSize=8.5,
+        leading=11,
         textColor=DARK_COLOR,
     )
 
     story.append(Paragraph("<b>Customer & Transaction Details</b>", sec_title_style))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
 
     order = getattr(payment, "order", None)
     customer_email = getattr(order, "customer_email", None)
@@ -562,13 +576,13 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     details_left = [
         Paragraph("RECEIVED FROM / CUSTOMER", fld_lbl_style),
         Paragraph(str(payment.customer or "-"), fld_val_bold_style),
-        Spacer(1, 5),
+        Spacer(1, 4),
     ]
     if customer_email:
         details_left.extend([
             Paragraph("CUSTOMER EMAIL", fld_lbl_style),
             Paragraph(str(customer_email), fld_val_style),
-            Spacer(1, 5),
+            Spacer(1, 4),
         ])
     details_left.extend([
         Paragraph("PAYMENT METHOD", fld_lbl_style),
@@ -578,10 +592,10 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     details_right = [
         Paragraph("RELATED ORDER ID", fld_lbl_style),
         Paragraph(f'<b><font color="#059669">#{payment.order_id}</font></b>', fld_val_bold_style),
-        Spacer(1, 5),
+        Spacer(1, 4),
         Paragraph("PAYMENT ID", fld_lbl_style),
         Paragraph(str(payment.id), fld_val_style),
-        Spacer(1, 5),
+        Spacer(1, 4),
         Paragraph("TRANSACTION DATE", fld_lbl_style),
         Paragraph(payment_date_str, fld_val_style),
     ]
@@ -597,101 +611,269 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
                 ("BOX", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
                 ("LINEBEFORE", (1, 0), (1, -1), 0.5, BORDER_COLOR),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
             ]
         )
     )
     story.append(details_table)
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 10))
 
-    # 4. Order items breakdown
+    # 4. Tax Breakdown Retrieval (Original Snapshot Priority)
     order_items = getattr(order, "items", None) or []
-    if order_items:
-        story.append(Paragraph("<b>Purchased Items Breakdown</b>", sec_title_style))
-        story.append(Spacer(1, 4))
+    tax_snapshot = None
+    if order is not None:
+        from app.models.order import has_tax_snapshot_column
+        if "tax_snapshot" in getattr(order, "__dict__", {}):
+            tax_snapshot = order.__dict__["tax_snapshot"]
+        elif has_tax_snapshot_column():
+            try:
+                tax_snapshot = getattr(order, "tax_snapshot", None)
+            except Exception:
+                tax_snapshot = None
+
+    if tax_snapshot and isinstance(tax_snapshot, dict) and "items" in tax_snapshot and len(tax_snapshot["items"]) > 0:
+        breakdown = tax_snapshot
+    elif order_items:
+        dest_state = None
+        user = getattr(order, "user", None)
+        if user and getattr(user, "addresses", None) and len(user.addresses) > 0:
+            dest_state = user.addresses[0].state
+        from app.utils.tax import calculate_order_tax_breakdown
+        raw_items = [
+            {"productName": it.product_name, "quantity": it.quantity, "price": float(it.price)}
+            for it in order_items
+        ]
+        breakdown = calculate_order_tax_breakdown(items=raw_items, destination_state=dest_state)
+    else:
+        breakdown = {
+            "items": [],
+            "total_taxable": float(receipt.amount),
+            "total_cgst": 0.0,
+            "total_sgst": 0.0,
+            "total_igst": 0.0,
+            "total_tax": 0.0,
+            "total_payable": float(receipt.amount),
+            "is_intra_state": True,
+            "destination_state": "Telangana",
+            "discount_amount": 0.0,
+            "delivery_fee": 0.0,
+        }
+
+    # 5. Purchased items breakdown table (S.No | Item Description | Qty | Taxable Value | Tax | Total)
+    breakdown_items = breakdown.get("items") or []
+    if breakdown_items or order_items:
+        story.append(Paragraph("<b>Purchased Items & Tax Breakdown</b>", sec_title_style))
+        story.append(Spacer(1, 3))
 
         th_style = ParagraphStyle(
             "Th",
             fontName=font_bold,
-            fontSize=7.5,
+            fontSize=7,
             leading=9,
             textColor=DARK_COLOR,
+        )
+        th_center_style = ParagraphStyle(
+            "ThCenter",
+            fontName=font_bold,
+            fontSize=7,
+            leading=9,
+            textColor=DARK_COLOR,
+            alignment=1,
         )
         th_right_style = ParagraphStyle(
             "ThRight",
             fontName=font_bold,
-            fontSize=7.5,
+            fontSize=7,
             leading=9,
             textColor=DARK_COLOR,
             alignment=2,
         )
+        td_center_style = ParagraphStyle(
+            "TdCenter",
+            fontName=font_reg,
+            fontSize=8,
+            leading=10,
+            textColor=MUTED_COLOR,
+            alignment=1,
+        )
         td_item_style = ParagraphStyle(
             "TdItem",
             fontName=font_reg,
-            fontSize=8.5,
-            leading=11,
+            fontSize=8,
+            leading=10.5,
             textColor=BODY_COLOR,
         )
         td_right_style = ParagraphStyle(
             "TdRight",
             fontName=font_reg,
-            fontSize=8.5,
-            leading=11,
+            fontSize=8,
+            leading=10,
             textColor=DARK_COLOR,
-            alignment=2,
-        )
-        td_bold_right_style = ParagraphStyle(
-            "TdBoldRight",
-            fontName=font_bold,
-            fontSize=9.5,
-            leading=12,
-            textColor=BRAND_DARK,
             alignment=2,
         )
 
         item_rows = [
             [
+                Paragraph("S.No", th_center_style),
                 Paragraph("Item Description", th_style),
-                Paragraph("Qty", th_right_style),
-                Paragraph("Unit Price", th_right_style),
+                Paragraph("Qty", th_center_style),
+                Paragraph("Taxable Value", th_right_style),
+                Paragraph("Tax", th_right_style),
                 Paragraph("Total", th_right_style),
             ]
         ]
-        for item in order_items:
-            item_rows.append(
-                [
-                    Paragraph(item.product_name, td_item_style),
-                    Paragraph(str(item.quantity), td_right_style),
-                    Paragraph(_money_sym(item.price, supports_rupee), td_right_style),
-                    Paragraph(_money_sym(item.price * item.quantity, supports_rupee), td_right_style),
-                ]
-            )
-        # Summary Row
-        item_rows.append(
-            [
-                Paragraph("<b>Total Amount Settled</b>", ParagraphStyle("TotLbl", fontName=font_bold, fontSize=8.5, leading=11, textColor=DARK_COLOR)),
-                Paragraph("", td_right_style),
-                Paragraph("", td_right_style),
-                Paragraph(_money_sym(receipt.amount, supports_rupee), td_bold_right_style),
-            ]
-        )
+
+        if breakdown_items:
+            for idx, b_item in enumerate(breakdown_items, 1):
+                p_name = b_item.get("product_name") or b_item.get("productName") or "Item"
+                qty = b_item.get("quantity", 1)
+                taxable = b_item.get("taxable_value", 0.0)
+                tax = b_item.get("total_tax", 0.0)
+                tot = b_item.get("gross_amount", 0.0)
+                item_rows.append(
+                    [
+                        Paragraph(str(idx), td_center_style),
+                        Paragraph(p_name, td_item_style),
+                        Paragraph(str(qty), td_center_style),
+                        Paragraph(_money_sym(taxable, supports_rupee), td_right_style),
+                        Paragraph(_money_sym(tax, supports_rupee), td_right_style),
+                        Paragraph(_money_sym(tot, supports_rupee), td_right_style),
+                    ]
+                )
+        else:
+            for idx, it in enumerate(order_items, 1):
+                line_total = float(it.price) * int(it.quantity)
+                item_rows.append(
+                    [
+                        Paragraph(str(idx), td_center_style),
+                        Paragraph(it.product_name, td_item_style),
+                        Paragraph(str(it.quantity), td_center_style),
+                        Paragraph(_money_sym(line_total, supports_rupee), td_right_style),
+                        Paragraph(_money_sym(0, supports_rupee), td_right_style),
+                        Paragraph(_money_sym(line_total, supports_rupee), td_right_style),
+                    ]
+                )
 
         items_table = Table(
             item_rows,
-            colWidths=[94 * mm, 18 * mm, 31 * mm, 31 * mm],
+            colWidths=[10 * mm, 68 * mm, 14 * mm, 26 * mm, 26 * mm, 30 * mm],
         )
         items_table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), LIGHT_BG),
                     ("BOX", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-                    ("INNERGRID", (0, 0), (-1, -2), 0.5, colors.HexColor("#f1f5f9")),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#f1f5f9")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ]
+            )
+        )
+        story.append(items_table)
+        story.append(Spacer(1, 6))
+
+        # Financial Summary Block below items table
+        sum_lbl_style = ParagraphStyle("SumLbl", fontName=font_reg, fontSize=8, leading=10, textColor=MUTED_COLOR)
+        sum_val_style = ParagraphStyle("SumVal", fontName=font_reg, fontSize=8, leading=10, textColor=DARK_COLOR, alignment=2)
+        sum_tot_lbl = ParagraphStyle("SumTotLbl", fontName=font_bold, fontSize=9, leading=12, textColor=DARK_COLOR)
+        sum_tot_val = ParagraphStyle("SumTotVal", fontName=font_bold, fontSize=9.5, leading=12, textColor=BRAND_DARK, alignment=2)
+
+        taxable_val_sum = breakdown.get("taxable_value") if breakdown.get("taxable_value") is not None else breakdown.get("total_taxable")
+        if taxable_val_sum is None or (taxable_val_sum == 0.0 and (breakdown_items or order_items)):
+            if breakdown_items:
+                taxable_val_sum = sum(float(b.get("taxable_value", 0.0)) for b in breakdown_items)
+            elif order_items:
+                taxable_val_sum = sum(float(it.price) * int(it.quantity) for it in order_items)
+            else:
+                taxable_val_sum = float(receipt.amount)
+
+        cgst_val = breakdown.get("cgst_amount") if breakdown.get("cgst_amount") is not None else breakdown.get("total_cgst")
+        if (cgst_val is None or cgst_val == 0.0) and breakdown_items:
+            cgst_val = sum(float(b.get("cgst_amount", 0.0)) for b in breakdown_items)
+        cgst_val = float(cgst_val or 0.0)
+
+        sgst_val = breakdown.get("sgst_amount") if breakdown.get("sgst_amount") is not None else breakdown.get("total_sgst")
+        if (sgst_val is None or sgst_val == 0.0) and breakdown_items:
+            sgst_val = sum(float(b.get("sgst_amount", 0.0)) for b in breakdown_items)
+        sgst_val = float(sgst_val or 0.0)
+
+        igst_val = breakdown.get("igst_amount") if breakdown.get("igst_amount") is not None else breakdown.get("total_igst")
+        if (igst_val is None or igst_val == 0.0) and breakdown_items:
+            igst_val = sum(float(b.get("igst_amount", 0.0)) for b in breakdown_items)
+        igst_val = float(igst_val or 0.0)
+
+        summary_rows = [
+            [Paragraph("Taxable Value / Subtotal", sum_lbl_style), Paragraph(_money_sym(taxable_val_sum, supports_rupee), sum_val_style)],
+        ]
+        is_intra = breakdown.get("is_intra_state", True)
+        if is_intra:
+            summary_rows.append([Paragraph("Estimated CGST", sum_lbl_style), Paragraph(_money_sym(cgst_val, supports_rupee), sum_val_style)])
+            summary_rows.append([Paragraph("Estimated SGST", sum_lbl_style), Paragraph(_money_sym(sgst_val, supports_rupee), sum_val_style)])
+        else:
+            summary_rows.append([Paragraph("Estimated IGST", sum_lbl_style), Paragraph(_money_sym(igst_val, supports_rupee), sum_val_style)])
+
+        disc = float(breakdown.get("discount_amount", 0.0) or 0.0)
+        if disc > 0:
+            summary_rows.append([Paragraph("Discount", sum_lbl_style), Paragraph(f"-{_money_sym(disc, supports_rupee)}", sum_val_style)])
+
+        shipping = float(breakdown.get("delivery_fee", 0.0) or 0.0)
+        if shipping > 0:
+            summary_rows.append([Paragraph("Shipping / Delivery", sum_lbl_style), Paragraph(_money_sym(shipping, supports_rupee), sum_val_style)])
+
+        summary_rows.append([Paragraph("<b>Final Amount Paid</b>", sum_tot_lbl), Paragraph(f"<b>{_money_sym(receipt.amount, supports_rupee)}</b>", sum_tot_val)])
+
+        summary_table = Table(summary_rows, colWidths=[46 * mm, 32 * mm])
+        summary_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("LINEABOVE", (0, -1), (-1, -1), 1, BRAND_COLOR),
                     ("BACKGROUND", (0, -1), (-1, -1), BRAND_TINT),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+
+        note_title_style = ParagraphStyle("NoteTitle", fontName=font_bold, fontSize=7.5, leading=9, textColor=DARK_COLOR)
+        note_body_style = ParagraphStyle("NoteBody", fontName=font_reg, fontSize=7, leading=9, textColor=MUTED_COLOR)
+        pos_str = breakdown.get("destination_state", "Telangana")
+        supply_mode = "Intra-State (Telangana)" if is_intra else f"Inter-State ({pos_str})"
+        is_historical_reconstructed = not (tax_snapshot and isinstance(tax_snapshot, dict) and "items" in tax_snapshot and len(tax_snapshot["items"]) > 0)
+
+        left_notes = [
+            Paragraph("<b>Receipt Notes & Statutory Preview</b>", note_title_style),
+            Spacer(1, 2),
+            Paragraph("• Document: <b>Payment Receipt — Tax Preview</b> (GST_MODE=preview)", note_body_style),
+            Paragraph(f"• Place of Supply: <b>{pos_str}</b> • Supply Type: <b>{supply_mode}</b>", note_body_style),
+        ]
+        if is_historical_reconstructed:
+            left_notes.append(
+                Paragraph("• <i>Notice: Original order-time tax snapshot was unavailable. Shown taxes are estimated previews reconstructed from recorded order item values, not original collected tax.</i>", note_body_style)
+            )
+        else:
+            left_notes.append(
+                Paragraph("• Tax is derived from verified order-time tax snapshot for customer accounting & commercial preview. This is an electronic receipt, not a GST tax invoice.", note_body_style)
+            )
+
+        bottom_summary_layout = Table(
+            [[left_notes, summary_table]],
+            colWidths=[96 * mm, 78 * mm],
+        )
+        bottom_summary_layout.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BACKGROUND", (0, 0), (0, 0), LIGHT_BG),
+                    ("BOX", (0, 0), (0, 0), 0.5, BORDER_COLOR),
                     ("TOPPADDING", (0, 0), (-1, -1), 5),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                     ("LEFTPADDING", (0, 0), (-1, -1), 6),
@@ -699,35 +881,45 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
                 ]
             )
         )
-        story.append(items_table)
-        story.append(Spacer(1, 12))
+        story.append(bottom_summary_layout)
+        story.append(Spacer(1, 10))
 
-    # 5. Verification confirmation box
+    # 6. Verification confirmation box
     trust_title_style = ParagraphStyle(
         "TrustTitle",
         fontName=font_bold,
-        fontSize=8.5,
-        leading=11,
+        fontSize=8,
+        leading=10,
         textColor=BADGE_TEXT,
     )
     trust_body_style = ParagraphStyle(
         "TrustBody",
         fontName=font_reg,
-        fontSize=8,
-        leading=11,
+        fontSize=7.5,
+        leading=9.5,
         textColor=BODY_COLOR,
     )
 
-    trust_cell = [
-        Paragraph("&#10004; Payment Confirmed & Verified", trust_title_style),
-        Spacer(1, 2),
-        Paragraph(
+    trust_title = "&#10004; Test Payment Verified" if is_test_mode else "&#10004; Payment Confirmed & Verified"
+    if is_test_mode:
+        trust_body = (
+            f"This receipt confirms that the test payment of <b>{_money_sym(receipt.amount, supports_rupee)}</b> "
+            f"associated with order <b>#{payment.order_id}</b> was successfully simulated and verified in "
+            f"sandbox test mode via <b>{payment.method or 'Test Gateway'}</b>. No real money or bank settlement took place. "
+            f"This electronic document is issued by Retail Mart for customer accounting, audit, and tax preview records."
+        )
+    else:
+        trust_body = (
             f"This receipt confirms that the payment of <b>{_money_sym(receipt.amount, supports_rupee)}</b> "
-            f"associated with order <b>#{payment.order_id}</b> was successfully processed and settled via "
+            f"associated with order <b>#{payment.order_id}</b> was successfully settled via "
             f"<b>{payment.method or 'Online Gateway'}</b>. This electronic document is issued by Retail Mart "
-            f"for customer accounting, audit, and tax records.",
-            trust_body_style,
-        ),
+            f"for customer accounting, audit, and tax records."
+        )
+
+    trust_cell = [
+        Paragraph(trust_title, trust_title_style),
+        Spacer(1, 1),
+        Paragraph(trust_body, trust_body_style),
     ]
 
     trust_table = Table([[trust_cell]], colWidths=[content_width])
@@ -737,15 +929,15 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
                 ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
                 ("BOX", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
                 ("LINEBEFORE", (0, 0), (0, -1), 3, BRAND_COLOR),
-                ("TOPPADDING", (0, 0), (-1, -1), 7),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-                ("LEFTPADDING", (0, 0), (-1, -1), 9),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
             ]
         )
     )
     story.append(trust_table)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
     # 6. Footer: Corporate disclaimer and support
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_COLOR, spaceBefore=4, spaceAfter=6))

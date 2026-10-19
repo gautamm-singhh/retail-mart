@@ -115,13 +115,18 @@ SENSITIVE_PATTERNS = [
         ),
         r'\1[REDACTED]\2',
     ),
-    # Key-value fields: passwords, tokens, secrets, API keys, OTPs, CVV
+    # Key-value fields: passwords, tokens, secrets, API keys, OTPs, CVV, payment signatures
     (
         re.compile(
-            r'(["\']?(?:password|passwd|pwd|secret|api[_-]?key|token|access[_-]?token|refresh[_-]?token|jwt|otp|code|cvv|cvc)["\']?\s*[:=]\s*["\']?)([^"\'\s&,]+)(["\']?)',
+            r'(["\']?(?:password|passwd|pwd|secret|api[_-]?key|token|access[_-]?token|refresh[_-]?token|jwt|otp|code|cvv|cvc|signature|razorpay_signature|razorpay_key_secret)["\']?\s*[:=]\s*["\']?)([^"\'\s&,]+)(["\']?)',
             re.IGNORECASE,
         ),
         r'\1[REDACTED]\3',
+    ),
+    # Razorpay key/secret raw tokens (rzp_test_... or rzp_live_...)
+    (
+        re.compile(r'\brzp_(?:test|live)_[A-Za-z0-9]+\b'),
+        r'[REDACTED_RAZORPAY_KEY]',
     ),
 ]
 
@@ -292,4 +297,62 @@ def configure_logging(app, logs_dir: str | None = None, force: bool = False) -> 
         os.path.join(logs_dir, "retail_mart.log"),
     )
 
+    setup_sql_instrumentation()
+
     return logger
+
+
+_SQL_INSTRUMENTED = False
+
+
+def setup_sql_instrumentation() -> None:
+    """
+    Attaches safe, non-PII SQLAlchemy cursor event listeners when DEBUG logging is active.
+    Records operation type, safe table name, affected row counts, and duration in ms.
+    Never logs customer personal information, credentials, or sensitive parameter values.
+    """
+    global _SQL_INSTRUMENTED
+    if _SQL_INSTRUMENTED:
+        return
+    try:
+        import time
+        from sqlalchemy import event
+        from sqlalchemy.engine import Engine
+
+        sql_logger = logging.getLogger(f"{LOGGER_NAME}.sql")
+
+        @event.listens_for(Engine, "before_cursor_execute")
+        def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+            if context is not None and sql_logger.isEnabledFor(logging.DEBUG):
+                context._sql_start = time.monotonic()
+
+        @event.listens_for(Engine, "after_cursor_execute")
+        def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+            if not sql_logger.isEnabledFor(logging.DEBUG):
+                return
+            duration_ms = 0
+            if context is not None and hasattr(context, "_sql_start"):
+                duration_ms = int((time.monotonic() - context._sql_start) * 1000)
+            first_token = statement.strip().split()[0].upper() if statement else "SQL"
+            tbl_match = re.search(r'(?:FROM|INTO|UPDATE)\s+[`"]?([a-zA-Z0-9_]+)[`"]?', statement, re.IGNORECASE)
+            table_name = tbl_match.group(1) if tbl_match else "db"
+            rowcount = getattr(cursor, "rowcount", -1)
+            sql_logger.debug(
+                "[SQL_EXEC] op=%s table=%s rows=%d duration_ms=%d",
+                first_token, table_name, rowcount, duration_ms
+            )
+
+        @event.listens_for(Engine, "handle_error")
+        def _handle_sql_error(context):
+            first_token = context.statement.strip().split()[0].upper() if context.statement else "SQL"
+            tbl_match = re.search(r'(?:FROM|INTO|UPDATE)\s+[`"]?([a-zA-Z0-9_]+)[`"]?', context.statement or "", re.IGNORECASE)
+            table_name = tbl_match.group(1) if tbl_match else "db"
+            sql_logger.error(
+                "[SQL_ERROR] op=%s table=%s error=%s",
+                first_token, table_name, context.original_exception
+            )
+
+        _SQL_INSTRUMENTED = True
+    except Exception:
+        pass
+

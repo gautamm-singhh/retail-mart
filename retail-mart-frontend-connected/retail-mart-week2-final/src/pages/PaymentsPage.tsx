@@ -50,7 +50,7 @@ export default function PaymentsPage() {
   async function handleDownloadReceipt(payment: Payment) {
     setDownloadingId(payment.id);
     try {
-      await downloadReceipt(payment.id);
+      await downloadReceipt(payment.id, payment.receipt?.receiptNo);
     } catch {
       showToast("Something went wrong downloading this receipt.", "error");
     } finally {

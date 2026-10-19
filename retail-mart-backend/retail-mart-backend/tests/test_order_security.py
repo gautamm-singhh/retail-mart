@@ -11,6 +11,7 @@ Targeted security regression tests for Retail Mart backend order-creation API:
   7. Acceptance of genuine in-stock products at verified prices.
 """
 
+import logging
 import os
 import sys
 import unittest
@@ -26,6 +27,8 @@ load_dotenv(os.path.join(PROJECT_ROOT, ".env"), override=False)
 from app import create_app
 from app.extensions import db
 from app.models.catalog import Category, Product
+from app.models.order import Order
+from app.models.payment import Payment
 
 
 class TestOrderCreationSecurity(unittest.TestCase):
@@ -55,6 +58,17 @@ class TestOrderCreationSecurity(unittest.TestCase):
                 stock=240,
                 status="active",
             )
+            # p-1002: Active, in-stock (stock=80, price=1299)
+            prod_active_2 = Product(
+                id="p-1002",
+                name="Slim Fit Denim Jeans",
+                sku="APP-JNS-002",
+                category_id="c-01",
+                description="Classic blue denim",
+                price=1299.00,
+                stock=80,
+                status="active",
+            )
             # p-1003: Out of stock (stock=0, price=349, status='out-of-stock')
             prod_out_of_stock = Product(
                 id="p-1003",
@@ -77,7 +91,7 @@ class TestOrderCreationSecurity(unittest.TestCase):
                 stock=45,
                 status="draft",
             )
-            db.session.add_all([prod_active, prod_out_of_stock, prod_draft])
+            db.session.add_all([prod_active, prod_active_2, prod_out_of_stock, prod_draft])
             db.session.commit()
 
     @classmethod
@@ -270,6 +284,143 @@ class TestOrderCreationSecurity(unittest.TestCase):
         self.assertEqual(data["amount"], 499.00)
         self.assertEqual(len(data["items"]), 1)
         self.assertEqual(data["items"][0]["productName"], "Cotton Crew T-Shirt")
+
+    def test_multi_item_order_rejects_full_order_if_one_item_invalid_and_rolls_back(self):
+        """If 3 items arrive but only 2 validate, reject the full order and rollback DB."""
+        with self.app.app_context():
+            orders_before = Order.query.count()
+            payments_before = Payment.query.count()
+
+        payload = {
+            "customer": "Security Tester",
+            "customerEmail": "customer@retailmart.dev",
+            "destinationState": "Telangana",
+            "items": [
+                {
+                    "productId": "p-1001",
+                    "productName": "Cotton Crew T-Shirt",
+                    "price": 499.00,
+                    "quantity": 2,
+                },
+                {
+                    "productId": "p-1002",
+                    "productName": "Slim Fit Denim Jeans",
+                    "price": 1299.00,
+                    "quantity": 1,
+                },
+                {
+                    "productId": "p-fake-9999",
+                    "productName": "Ghost Product",
+                    "price": 500.00,
+                    "quantity": 1,
+                },
+            ],
+        }
+        resp = self.client.post("/api/orders", json=payload, headers=self.headers)
+        self.assertEqual(resp.status_code, 400)
+        data = resp.get_json()
+        self.assertIn("not found in live inventory", data.get("error", ""))
+
+        # Verify database rollback: no partial order or payment records exist
+        with self.app.app_context():
+            orders_after = Order.query.count()
+            payments_after = Payment.query.count()
+            self.assertEqual(orders_before, orders_after, "Database rollback failed: order count increased after invalid order")
+            self.assertEqual(payments_before, payments_after, "Database rollback failed: payment count increased after invalid order")
+
+    def test_multi_item_order_rejects_full_order_on_quantity_mismatch_and_rolls_back(self):
+        """If any item exceeds stock in a multi-item order, reject the entire order."""
+        with self.app.app_context():
+            orders_before = Order.query.count()
+
+        payload = {
+            "customer": "Security Tester",
+            "customerEmail": "customer@retailmart.dev",
+            "destinationState": "Telangana",
+            "items": [
+                {
+                    "productId": "p-1001",
+                    "productName": "Cotton Crew T-Shirt",
+                    "price": 499.00,
+                    "quantity": 1,
+                },
+                {
+                    "productId": "p-1002",
+                    "productName": "Slim Fit Denim Jeans",
+                    "price": 1299.00,
+                    "quantity": 99999,  # Exceeds available stock (80)
+                },
+            ],
+        }
+        resp = self.client.post("/api/orders", json=payload, headers=self.headers)
+        self.assertEqual(resp.status_code, 400)
+        data = resp.get_json()
+        self.assertIn("exceeds available stock", data.get("error", ""))
+
+        with self.app.app_context():
+            orders_after = Order.query.count()
+            self.assertEqual(orders_before, orders_after, "Database rollback failed on quantity mismatch")
+
+    def test_structured_order_failure_logging_and_safety(self):
+        """Verify structured logging format, request ID, item metrics, and data redaction."""
+        class _CapturingHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+                self.records = []
+
+            def emit(self, record):
+                self.records.append(record)
+
+        handler = _CapturingHandler()
+        target_logger = logging.getLogger("app.routes.orders")
+        target_logger.addHandler(handler)
+
+        trace_id = "test-order-trace-777"
+        headers_with_trace = dict(self.headers)
+        headers_with_trace["X-Request-ID"] = trace_id
+
+        payload = {
+            "customer": "Security Tester",
+            "customerEmail": "customer@retailmart.dev",
+            "destinationState": "Telangana",
+            "items": [
+                {
+                    "productId": "p-1001",
+                    "productName": "Cotton Crew T-Shirt",
+                    "price": 499.00,
+                    "quantity": 2,
+                },
+                {
+                    "productId": "p-fake-404",
+                    "productName": "Missing Item",
+                    "price": 100.00,
+                    "quantity": 1,
+                },
+            ],
+        }
+
+        try:
+            resp = self.client.post("/api/orders", json=payload, headers=headers_with_trace)
+            self.assertEqual(resp.status_code, 400)
+        finally:
+            target_logger.removeHandler(handler)
+
+        messages = [r.getMessage() for r in handler.records]
+        failure_log = next((m for m in messages if "[ORDER_VALIDATION_FAILED]" in m), None)
+
+        self.assertIsNotNone(failure_log, f"Expected [ORDER_VALIDATION_FAILED] log record. Captured: {messages}")
+        self.assertIn(f"req_id={trace_id}", failure_log)
+        self.assertIn("incoming_items=", failure_log)
+        self.assertIn("validated_items=", failure_log)
+        self.assertIn("p-1001", failure_log)
+        self.assertIn("p-fake-404", failure_log)
+        self.assertIn("transaction_result=ROLLBACK", failure_log)
+        self.assertIn("safe_sql_summary='ROLLBACK executed'", failure_log)
+        self.assertIn("duration_ms=", failure_log)
+
+        # Confirm sensitive data (e.g. bearer tokens or passwords) is NOT logged in plain text
+        self.assertNotIn("Bearer ", failure_log)
+        self.assertNotIn(self.auth_token, failure_log)
 
 
 if __name__ == "__main__":

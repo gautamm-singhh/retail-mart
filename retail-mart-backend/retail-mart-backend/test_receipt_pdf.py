@@ -72,8 +72,8 @@ class TestPaymentReceiptPdf(unittest.TestCase):
 
         text = reader.pages[0].extract_text()
         self.assertIn("Retail Mart", text)
-        self.assertIn("OFFICIAL PAYMENT RECEIPT", text)
-        self.assertIn("PAYMENT SUCCESSFUL", text)
+        self.assertIn("PAYMENT RECEIPT — TAX PREVIEW", text)
+        self.assertTrue("PAYMENT SUCCESSFUL" in text or "TEST PAYMENT VERIFIED" in text)
         self.assertIn("RCPT-882211", text)
         self.assertIn("Pooja Verma", text)
         self.assertIn("ORD-TEST-1001", text)
@@ -82,7 +82,7 @@ class TestPaymentReceiptPdf(unittest.TestCase):
         self.assertIn("3,499.00", text)
         self.assertIn("Noise-Cancelling Headphones", text)
         self.assertIn("USB-C Fast Charging Cable", text)
-        self.assertIn("Payment Confirmed & Verified", text)
+        self.assertTrue("Payment Confirmed & Verified" in text or "Test Payment Verified" in text)
         self.assertIn("support@retailmart.dev", text)
 
     def test_build_receipt_pdf_standalone_without_items(self):
@@ -95,7 +95,7 @@ class TestPaymentReceiptPdf(unittest.TestCase):
 
         text = reader.pages[0].extract_text()
         self.assertIn("Retail Mart", text)
-        self.assertIn("PAYMENT SUCCESSFUL", text)
+        self.assertTrue("PAYMENT SUCCESSFUL" in text or "TEST PAYMENT VERIFIED" in text)
         self.assertIn("3,499.00", text)
 
     def test_build_receipt_pdf_long_values_wrap_safely(self):
@@ -138,14 +138,78 @@ class TestPaymentReceiptPdf(unittest.TestCase):
         receipt_resp = client.get(f"/api/payments/{paid_payment['id']}/receipt", headers=headers)
         self.assertEqual(receipt_resp.status_code, 200)
         self.assertEqual(receipt_resp.mimetype, "application/pdf")
-        self.assertIn(f"receipt-{paid_payment['id']}.pdf", receipt_resp.headers.get("Content-Disposition", ""))
+        content_disp = receipt_resp.headers.get("Content-Disposition", "")
+        self.assertIn("filename=", content_disp)
+        self.assertIn(".pdf", content_disp)
+        self.assertIn("RCPT-", content_disp, f"Content-Disposition should contain receipt number (RCPT-), got {content_disp}")
 
         reader = pypdf.PdfReader(BytesIO(receipt_resp.data))
         self.assertEqual(len(reader.pages), 1)
         text = reader.pages[0].extract_text()
         self.assertIn("Retail Mart", text)
-        self.assertIn("OFFICIAL PAYMENT RECEIPT", text)
+        self.assertIn("PAYMENT RECEIPT — TAX PREVIEW", text)
         self.assertIn(paid_payment["customer"], text)
+
+    def test_tax_reconciliation_exact_decimal_arithmetic(self):
+        """Verify Excel Image 1 style reverse tax calculation: Value + Taxes == Total exactly."""
+        # Glasses @18% GST: 1199 MRP -> 1016.10 taxable + 182.90 GST = 1199.00
+        items = [
+            FakeItem("Polarized Aviator Sunglasses", 1, 1199.00),
+            FakeItem("Heavy Resistance Loop Bands (5-Pack)", 1, 599.00),
+        ]
+        payment = FakePayment(amount=1798.00, items=items)
+        receipt = FakeReceipt(receipt_no="RCPT-094447", amount=1798.00)
+
+        buf = build_receipt_pdf(payment, receipt)
+        reader = pypdf.PdfReader(buf)
+        self.assertEqual(len(reader.pages), 1)
+        text = reader.pages[0].extract_text()
+
+        self.assertIn("RCPT-094447", text)
+        self.assertIn("Polarized Aviator Sunglasses", text)
+        self.assertIn("1,016.10", text)
+        self.assertIn("182.90", text)
+        self.assertIn("1,199.00", text)
+        self.assertIn("1,798.00", text)
+        self.assertIn("Payment Receipt — Tax Preview", text)
+
+    def test_order_time_tax_snapshot_priority(self):
+        """Verify immutable order-time tax snapshot is prioritized when present on the order."""
+        fake_snapshot = {
+            "items": [
+                {
+                    "product_name": "Historic Snapshot Product",
+                    "quantity": 2,
+                    "taxable_value": 800.00,
+                    "total_tax": 100.00,
+                    "gross_amount": 900.00,
+                }
+            ],
+            "total_taxable": 800.00,
+            "total_cgst": 50.00,
+            "total_sgst": 50.00,
+            "total_igst": 0.00,
+            "total_tax": 100.00,
+            "total_payable": 900.00,
+            "is_intra_state": True,
+            "destination_state": "Telangana",
+            "discount_amount": 0.00,
+            "delivery_fee": 0.00,
+        }
+        order = FakeOrder(items=[FakeItem("Historic Snapshot Product", 2, 450.00)])
+        order.tax_snapshot = fake_snapshot
+        payment = FakePayment(amount=900.00)
+        payment.order = order
+        receipt = FakeReceipt(receipt_no="RCPT-SNAP-12345", amount=900.00)
+
+        buf = build_receipt_pdf(payment, receipt)
+        reader = pypdf.PdfReader(buf)
+        text = reader.pages[0].extract_text()
+
+        self.assertIn("Historic Snapshot Product", text)
+        self.assertIn("800.00", text)
+        self.assertIn("100.00", text)
+        self.assertIn("900.00", text)
 
 
 if __name__ == "__main__":

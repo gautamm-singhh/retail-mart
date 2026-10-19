@@ -55,7 +55,7 @@ def _email_receipt(payment: Payment) -> None:
 
     receipt = _get_or_create_receipt(payment)
     pdf_buffer = build_receipt_pdf(payment, receipt)
-    subject, body, html_body = receipt_email(payment)
+    subject, body, html_body = receipt_email(payment, receipt=receipt)
     current_app.logger.info("[EMAIL TRIGGER] Flow=PAYMENT Event=payment_receipt PaymentId=%s OrderId=%s Amount=%s", payment.id, payment.order_id, payment.amount)
     current_app.logger.info("[EMAIL RECIPIENT] %s", to)
     current_app.logger.info("[EMAIL SENDER] orders")
@@ -66,7 +66,7 @@ def _email_receipt(payment: Payment) -> None:
             body,
             html_body=html_body,
             sender="orders",
-            attachments=[(f"receipt-{payment.id}.pdf", pdf_buffer.getvalue(), "application/pdf")],
+            attachments=[(f"{receipt.receipt_no}.pdf", pdf_buffer.getvalue(), "application/pdf")],
             timeout=2.5,
         )
         result = ensure_delivery_result(raw_result)
@@ -405,7 +405,7 @@ def download_payment_receipt(payment_id):
         pdf_buffer,
         mimetype="application/pdf",
         as_attachment=True,
-        download_name=f"receipt-{payment.id}.pdf",
+        download_name=f"{receipt.receipt_no}.pdf",
     )
 
 

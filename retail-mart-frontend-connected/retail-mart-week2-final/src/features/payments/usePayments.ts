@@ -144,7 +144,7 @@ export function usePayments() {
   const payments = useMemo(() => allPayments.filter((p) => !isRefund(p)), [allPayments]);
   const refunds = useMemo(() => allPayments.filter(isRefund), [allPayments]);
 
-  const downloadReceipt = useCallback((id: string) => paymentRepository.downloadReceipt(id), []);
+  const downloadReceipt = useCallback((id: string, receiptNo?: string) => paymentRepository.downloadReceipt(id, receiptNo), []);
 
   return { payments, refunds, allPayments, isLoading, error, refresh, markRefunded, downloadReceipt };
 }

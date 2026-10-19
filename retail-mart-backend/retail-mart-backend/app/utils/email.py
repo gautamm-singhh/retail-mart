@@ -763,7 +763,7 @@ def order_confirmation_email(order) -> tuple[str, str, str]:
     return subject, text_body, html_body
 
 
-def receipt_email(payment) -> tuple[str, str, str]:
+def receipt_email(payment, receipt=None) -> tuple[str, str, str]:
     """
     Returns (subject, text_body, html_body) for payment confirmation / receipt.
     Sender: Retail Mart Orders (retailmart.orders@gmail.com).
@@ -772,6 +772,11 @@ def receipt_email(payment) -> tuple[str, str, str]:
     customer_name = getattr(payment, "customer", "") or "Valued Customer"
     order_id = getattr(payment, "order_id", "")
     payment_id = getattr(payment, "id", "")
+    receipt_no = (
+        getattr(receipt, "receipt_no", None)
+        or getattr(getattr(payment, "receipt", None), "receipt_no", None)
+        or f"RCPT-{payment_id}"
+    )
     amount = float(getattr(payment, "amount", 0))
     method = getattr(payment, "method", "Online")
     payment_date = getattr(payment, "date", None)
@@ -781,10 +786,11 @@ def receipt_email(payment) -> tuple[str, str, str]:
 
     text_body = (
         f"Hi {customer_name},\n\n"
-        f"We have received your payment for order {order_id}. Your receipt is attached.\n\n"
+        f"We have received your payment for order {order_id}. Your receipt ({receipt_no}.pdf) is attached.\n\n"
         f"Amount paid: Rs. {amount:,.2f}\n"
         f"Payment method: {method}\n"
         f"Payment ID: {payment_id}\n"
+        f"Receipt No: {receipt_no}\n"
         + (f"Payment Date: {payment_date_str}\n" if payment_date_str else "")
         + "\n— Retail Mart Orders Team"
     )
@@ -796,6 +802,7 @@ def receipt_email(payment) -> tuple[str, str, str]:
         customer_name=customer_name,
         order_id=order_id,
         payment_id=payment_id,
+        receipt_no=receipt_no,
         amount=f"{amount:,.2f}",
         method=method,
         payment_date=payment_date_str,

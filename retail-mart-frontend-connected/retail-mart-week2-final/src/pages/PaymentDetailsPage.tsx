@@ -79,7 +79,7 @@ export default function PaymentDetailsPage() {
     if (!payment) return;
     setIsDownloadingReceipt(true);
     try {
-      await downloadReceipt(payment.id);
+      await downloadReceipt(payment.id, payment.receipt?.receiptNo);
     } catch {
       showToast("Something went wrong downloading this receipt.", "error");
     } finally {

@@ -12,6 +12,7 @@ export function updatePaymentStatus(id: string, status: PaymentStatus): Promise<
   });
 }
 
-export function downloadPaymentReceipt(id: string): Promise<void> {
-  return downloadFile(`/payments/${id}/receipt`, `receipt-${id}.pdf`);
+export function downloadPaymentReceipt(id: string, receiptNo?: string): Promise<void> {
+  const fallback = receiptNo ? `${receiptNo}.pdf` : `receipt-${id}.pdf`;
+  return downloadFile(`/payments/${id}/receipt`, fallback);
 }
