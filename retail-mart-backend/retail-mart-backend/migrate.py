@@ -1,16 +1,3 @@
-"""
-Database Migration / Schema Upgrade Script for Retail Mart.
-
-Safely and idempotently applies missing schema migrations to the active database
-(MySQL or SQLite) without dropping tables or losing existing data.
-
-Specific migrations applied:
-1. Creates `couriers` table if not present.
-2. Adds `courier_id` (nullable VARCHAR(20) FK to `couriers.id`) to `shipments` if not present.
-3. Adds foreign key constraint and index on `shipments(courier_id)`.
-4. Idempotently registers initial default couriers (Bluedart, Delhivery, Ekart, DTDC)
-   without duplicating any existing rows.
-"""
 
 from dotenv import load_dotenv
 
