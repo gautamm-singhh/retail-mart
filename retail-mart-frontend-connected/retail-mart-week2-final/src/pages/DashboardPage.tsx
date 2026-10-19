@@ -16,10 +16,7 @@ export default function DashboardPage() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // Fast aggregated metrics for immediate KPI card display
   const { summaryCards, isLoading: summaryLoading } = useDashboardSummary();
-
-  // Secondary detailed entity feeds loaded in background without blocking dashboard shell
   const { users } = useUsers();
   const { products } = useProducts();
   const { payments } = usePayments();

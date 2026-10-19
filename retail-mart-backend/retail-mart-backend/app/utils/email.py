@@ -671,13 +671,6 @@ def send_bulk_email(
     return sent_count
 
 
-
-# ==============================================================================
-# EMAIL TEMPLATE FUNCTIONS
-# Each template function returns: (subject, text_body, html_body)
-# ==============================================================================
-
-
 def welcome_email(user) -> tuple[str, str, str]:
     """
     Returns (subject, text_body, html_body) for a new customer registration welcome email.

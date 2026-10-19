@@ -168,7 +168,6 @@ def configure_logging(app, logs_dir: str | None = None, force: bool = False) -> 
     log_level: int = getattr(logging, log_level_name, logging.INFO)
     backup_count: int = int(app.config.get("LOG_BACKUP_COUNT", DEFAULT_BACKUP_COUNT))
 
-    # ── 1. Build the application root logger ──────────────────────────────
     logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(log_level)
     logger.propagate = False  # prevent double-printing to the root logger
@@ -192,8 +191,6 @@ def configure_logging(app, logs_dir: str | None = None, force: bool = False) -> 
     sensitive_filter = SensitiveDataFilter()
     formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
 
-    # ── 2. Console handler ─────────────────────────────────────────────────
-    # Use sys.stdout explicitly to keep logs interleaved with Flask startup messages.
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(log_level)
     console_handler.setFormatter(formatter)
@@ -201,7 +198,6 @@ def configure_logging(app, logs_dir: str | None = None, force: bool = False) -> 
     console_handler.addFilter(sensitive_filter)
     logger.addHandler(console_handler)
 
-    # ── 3. Time-Based Rotating File Handlers (Daily Midnight Rotation) ─────
     if logs_dir is None:
         project_root = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "..", "..")
@@ -280,11 +276,9 @@ def configure_logging(app, logs_dir: str | None = None, force: bool = False) -> 
         # Console logging still works; file logging is silently skipped.
         logger.warning("Could not create logs directory at %s: %s", logs_dir, exc)
 
-    # ── 4. Suppress Werkzeug's built-in access logger ─────────────────────
     werkzeug_logger = logging.getLogger("werkzeug")
-    werkzeug_logger.setLevel(logging.WARNING)  # keeps error/warning, drops access
+    werkzeug_logger.setLevel(logging.WARNING)
 
-    # ── 5. Also configure Flask's own app.logger to use our handlers ───────
     flask_logger = logging.getLogger("flask.app")
     flask_logger.handlers = []
     flask_logger.propagate = True   # bubble up to retail_mart via getLogger chain

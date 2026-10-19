@@ -337,9 +337,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     story = []
     content_width = 174 * mm
 
-    # -------------------------------------------------------------------------
-    # 1. HEADER: Brand Mark + Document Details + Status Badge
-    # -------------------------------------------------------------------------
+    # 1. Header: Brand Mark, Document Details, Status Badge
     brand_logo_style = ParagraphStyle(
         "BrandLogo",
         fontName=font_bold,
@@ -440,9 +438,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     story.append(header_table)
     story.append(HRFlowable(width="100%", thickness=1.5, color=BRAND_COLOR, spaceBefore=4, spaceAfter=12))
 
-    # -------------------------------------------------------------------------
-    # 2. PAYMENT SUMMARY: Large Prominent Amount Paid Card
-    # -------------------------------------------------------------------------
+    # 2. Payment Summary: Amount Paid Card
     amount_label_style = ParagraphStyle(
         "AmtLabel",
         fontName=font_bold,
@@ -526,9 +522,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     story.append(amount_card)
     story.append(Spacer(1, 12))
 
-    # -------------------------------------------------------------------------
-    # 3. CUSTOMER & ORDER DETAILS: Structured Two-Column Information Box
-    # -------------------------------------------------------------------------
+    # 3. Customer and order details
     sec_title_style = ParagraphStyle(
         "SecTitle",
         fontName=font_bold,
@@ -613,9 +607,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     story.append(details_table)
     story.append(Spacer(1, 12))
 
-    # -------------------------------------------------------------------------
-    # 4. ORDER ITEMS BREAKDOWN (Rendered when legitimate order items exist)
-    # -------------------------------------------------------------------------
+    # 4. Order items breakdown
     order_items = getattr(order, "items", None) or []
     if order_items:
         story.append(Paragraph("<b>Purchased Items Breakdown</b>", sec_title_style))
@@ -710,9 +702,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
         story.append(items_table)
         story.append(Spacer(1, 12))
 
-    # -------------------------------------------------------------------------
-    # 5. VERIFICATION / TRUST CONFIRMATION BOX
-    # -------------------------------------------------------------------------
+    # 5. Verification confirmation box
     trust_title_style = ParagraphStyle(
         "TrustTitle",
         fontName=font_bold,
@@ -757,9 +747,7 @@ def build_receipt_pdf(payment, receipt) -> BytesIO:
     story.append(trust_table)
     story.append(Spacer(1, 10))
 
-    # -------------------------------------------------------------------------
-    # 6. FOOTER: Subtle corporate disclaimer & support
-    # -------------------------------------------------------------------------
+    # 6. Footer: Corporate disclaimer and support
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER_COLOR, spaceBefore=4, spaceAfter=6))
 
     ft_left_style = ParagraphStyle(

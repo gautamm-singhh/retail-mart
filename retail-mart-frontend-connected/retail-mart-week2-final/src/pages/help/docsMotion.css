@@ -3,9 +3,7 @@
    Enterprise Developer Documentation + Premium SaaS Product + Brand Motion
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   Tokens & Color Mapping
-   -------------------------------------------------------------------------- */
+/* Tokens & Color Mapping */
 :root, .official-docs-shell {
   --docs-ambient-glow1: rgba(47, 130, 80, 0.07);
   --docs-ambient-glow2: rgba(58, 148, 94, 0.06);
@@ -36,9 +34,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   --docs-hero-orb3: rgba(15, 42, 32, 0.45);
 }
 
-/* --------------------------------------------------------------------------
-   Shell Protection & Initial Page Entrance
-   -------------------------------------------------------------------------- */
+/* Shell Protection & Initial Page Entrance */
 .official-docs-shell {
   position: relative;
   min-height: 100vh;
@@ -61,9 +57,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   z-index: 1;
 }
 
-/* --------------------------------------------------------------------------
-   Ambient Background Layer (<DocumentationAmbientBackground />)
-   -------------------------------------------------------------------------- */
+/* Ambient Background Layer (<DocumentationAmbientBackground />) */
 .docs-ambient-bg {
   position: fixed;
   inset: 0;
@@ -263,9 +257,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   }
 }
 
-/* --------------------------------------------------------------------------
-   Hero Atmosphere & Motion (<DocumentationHeroAtmosphere />)
-   -------------------------------------------------------------------------- */
+/* Hero Atmosphere & Motion (<DocumentationHeroAtmosphere />) */
 .docs-hero-atmosphere {
   position: absolute;
   inset: 0;
@@ -452,9 +444,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   }
 }
 
-/* --------------------------------------------------------------------------
-   Page Load Hero Entrance Stagger
-   -------------------------------------------------------------------------- */
+/* Page Load Hero Entrance Stagger */
 .hero-inner .hero-badge {
   animation: docsHeroItemIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
 }
@@ -485,9 +475,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   }
 }
 
-/* --------------------------------------------------------------------------
-   Scroll-Reveal Motion
-   -------------------------------------------------------------------------- */
+/* Scroll-Reveal Motion */
 .docs-reveal {
   opacity: 0;
   transform: translateY(12px);
@@ -501,9 +489,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   transform: translateY(0);
 }
 
-/* --------------------------------------------------------------------------
-   Micro-Interactions: Cards, Buttons, Inputs, Chevrons
-   -------------------------------------------------------------------------- */
+/* Micro-Interactions: Cards, Buttons, Inputs, Chevrons */
 /* Cards */
 .card, .role-card, .endpoint-card {
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
@@ -645,9 +631,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   transform: translateX(2px);
 }
 
-/* --------------------------------------------------------------------------
-   Responsive Motion Adaptations
-   -------------------------------------------------------------------------- */
+/* Responsive Motion Adaptations */
 @media (max-width: 980px) {
   .docs-glow-1 { width: 65vw; height: 65vw; filter: blur(65px); }
   .docs-glow-2 { width: 55vw; height: 55vw; filter: blur(60px); }
@@ -681,9 +665,7 @@ html[data-theme="dark"], html.dark, .official-docs-shell[data-theme="dark"], htm
   .docs-hero-pt-5, .docs-hero-pt-6 { display: none; }
 }
 
-/* --------------------------------------------------------------------------
-   Accessibility: Prefers-Reduced-Motion Mode
-   -------------------------------------------------------------------------- */
+/* Accessibility: Prefers-Reduced-Motion Mode */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.001ms !important;

@@ -36,11 +36,9 @@ def create_app(config_name: str | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(get_config(config_name))
 
-    # --- logging (must come early so all downstream code has a logger) ----
     from app.utils.logging_config import configure_logging
     configure_logging(app)
 
-    # --- extensions -------------------------------------------------
     db.init_app(app)
     jwt.init_app(app)
     CORS(
@@ -55,7 +53,6 @@ def create_app(config_name: str | None = None) -> Flask:
         expose_headers=["Content-Disposition", "X-Request-ID"],
     )
 
-    # --- blueprints ---------------------------------------------------
     from app.routes.auth import auth_bp
     from app.routes.users import users_bp
     from app.routes.categories import categories_bp
@@ -91,8 +88,6 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(customer_stats_bp, url_prefix="/api/customer/stats")
     app.register_blueprint(couriers_bp, url_prefix="/api/couriers")
     app.register_blueprint(wishlist_bp, url_prefix="/api/wishlist")
-
-    # --- request / response logging hooks -----------------------------------
 
     @app.before_request
     def _before_request():
@@ -151,7 +146,6 @@ def create_app(config_name: str | None = None) -> Flask:
                 "Unhandled exception during teardown: %s", exc
             )
 
-    # --- health check ---------------------------------------------------
     @app.get("/api/health")
     def health():
         """
@@ -189,7 +183,6 @@ def create_app(config_name: str | None = None) -> Flask:
             res["db_error"] = type(exc).__name__
         return jsonify(res)
 
-    # --- safe database diagnostics --------------------------------------
     @app.get("/api/db-diagnostics")
     def db_diagnostics():
         """
@@ -275,14 +268,12 @@ def create_app(config_name: str | None = None) -> Flask:
             report["error_message"] = str(exc).split("\n")[0]
             return jsonify(report), 500
 
-    # --- swagger documentation ------------------------------------------
     try:
         from app.swagger import init_swagger
         init_swagger(app)
     except Exception as exc:
         logger.warning("Swagger documentation failed to initialise: %s", exc)
 
-    # --- error handlers ---------------------------------------------------
     @app.errorhandler(404)
     def not_found(_e):
         logger.debug("404 Not found: %s %s", request.method, request.path)

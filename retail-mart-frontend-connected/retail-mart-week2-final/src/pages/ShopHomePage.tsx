@@ -57,8 +57,6 @@ export default function ShopHomePage() {
     Promise.all([fetchProducts(), fetchCategories()])
       .then(([apiProducts, categoryData]) => {
         if (!cancelled) {
-          // Strictly preserve live inventory, verified pricing, HSN codes and GST rates
-          // Only display active, verified products in customer storefront; draft and inactive records are excluded
           const activeCatalog = (apiProducts || []).filter((p) => p.status === "active");
           setProducts(activeCatalog);
           setCategories((categoryData || []).filter((c) => c.status === "active"));
@@ -189,9 +187,6 @@ export default function ShopHomePage() {
   const isFiltered = Boolean(query || (categoryFilter && categoryFilter.toLowerCase() !== "all"));
   const isSpecificCategory = Boolean(categoryFilter && categoryFilter.toLowerCase() !== "all");
 
-  // Grid layout adapts dynamically:
-  // When a specific category is chosen (6 items): 3 equal columns on desktop (3x2 layout), 2 on tablet, 1 on mobile.
-  // For All Products: 4 columns on large desktop, 3 on medium desktop, 2 on tablet, 1 on mobile.
   const productGridClass = isSpecificCategory
     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6"
     : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 lg:gap-6";

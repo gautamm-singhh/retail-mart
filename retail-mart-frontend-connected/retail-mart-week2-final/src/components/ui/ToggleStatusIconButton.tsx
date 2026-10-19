@@ -38,33 +38,21 @@ export const ToggleStatusIconButton = forwardRef<HTMLButtonElement, ToggleStatus
           aria-label={ariaLabel || resolvedTooltip}
           disabled={disabled}
           className={cn(
-            // Sizing & Alignment
             "relative inline-flex items-center justify-center rounded-lg select-none",
             size === "sm" ? "h-8 w-8" : "h-9 w-9",
-            // Base border & background
             "border border-transparent bg-transparent",
-            // Default color: subtle dark-gray outline
             "text-slate-500 dark:text-slate-400",
-            // Transitions & motion (respects reduced motion)
             "transition-all duration-200 ease-in-out will-change-transform",
             "motion-safe:hover:scale-105 motion-safe:active:scale-95",
-
-            // Dynamic Hover states:
-            // When currently ACTIVE -> hover shows Deactivate intent (amber / orange)
-            // When currently INACTIVE -> hover shows Activate intent (emerald / green)
             isActive
               ? "hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/90 dark:hover:bg-amber-950/40 hover:border-amber-200/90 dark:hover:border-amber-900/60 hover:shadow-[0_2px_10px_rgba(245,158,11,0.18)] dark:hover:shadow-[0_2px_10px_rgba(245,158,11,0.28)] focus-visible:ring-amber-500"
               : "hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/90 dark:hover:bg-emerald-950/40 hover:border-emerald-200/90 dark:hover:border-emerald-900/60 hover:shadow-[0_2px_10px_rgba(16,185,129,0.18)] dark:hover:shadow-[0_2px_10px_rgba(16,185,129,0.28)] focus-visible:ring-emerald-500",
-
-            // Accessible Keyboard Focus Base
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900",
-            // Disabled state
             "disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none disabled:hover:scale-100",
             className,
           )}
           {...props}
         >
-          {/* Modern Outline Power Icon (Lucide Power) */}
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -83,7 +71,6 @@ export const ToggleStatusIconButton = forwardRef<HTMLButtonElement, ToggleStatus
           </svg>
         </button>
 
-        {/* Small dark tooltip displayed above the icon */}
         {resolvedTooltip && !disabled && (
           <div
             role="tooltip"
@@ -97,7 +84,6 @@ export const ToggleStatusIconButton = forwardRef<HTMLButtonElement, ToggleStatus
           >
             <div className="relative rounded bg-slate-900 px-2 py-0.5 text-[11px] font-medium tracking-wide text-white shadow-md dark:bg-slate-800 border border-slate-800/80 dark:border-slate-700/80 whitespace-nowrap">
               {resolvedTooltip}
-              {/* Tooltip triangle arrow */}
               <div
                 className="absolute left-1/2 top-full -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-900 dark:border-t-slate-800"
                 aria-hidden="true"

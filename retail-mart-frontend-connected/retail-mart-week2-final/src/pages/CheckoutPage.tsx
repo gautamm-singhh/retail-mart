@@ -35,12 +35,10 @@ export default function CheckoutPage() {
     selectedAddressId ?? addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id ?? null;
   const effectiveSelectedAddress = addresses.find((a) => a.id === effectiveSelectedId) ?? null;
 
-  // Pricing breakdown (Prices are tax-inclusive MRP standard)
-  const deliveryCharge = 0; // Free Express Delivery
-  const standardDeliveryFee = 99; // Standard carrier fee crossed out to highlight savings
-  const discountAmount = 0; // Base discount (₹0)
+  const deliveryCharge = 0;
+  const standardDeliveryFee = 99;
+  const discountAmount = 0;
 
-  // Real-time authoritative Place of Supply & Tax Calculation
   const taxBreakdown = calculateOrderTaxBreakdown(
     items,
     effectiveSelectedAddress?.state,
@@ -48,7 +46,6 @@ export default function CheckoutPage() {
     deliveryCharge,
   );
 
-  // Final Total Amount = Subtotal + Delivery Charges - Discount
   const totalAmount = taxBreakdown.totalPayable;
 
   if (items.length === 0) {

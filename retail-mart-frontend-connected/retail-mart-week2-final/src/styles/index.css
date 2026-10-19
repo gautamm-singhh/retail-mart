@@ -67,9 +67,7 @@
   }
 }
 
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
+/* REDUCED MOTION */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -86,9 +84,7 @@
   }
 }
 
-/* ============================================================
-   LOGIN PAGE — LIVING BRAND PANEL & MESH ANIMATIONS
-   ============================================================ */
+/* LOGIN PAGE — LIVING BRAND PANEL & MESH ANIMATIONS */
 
 @keyframes mv1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
@@ -183,9 +179,7 @@
   animation: wave 2.4s ease-in-out infinite;
 }
 
-/* ============================================================
-   LOGIN PAGE — FLOATING LABELS & FORM FIELDS
-   ============================================================ */
+/* LOGIN PAGE — FLOATING LABELS & FORM FIELDS */
 
 .ref-field {
   position: relative;
@@ -337,9 +331,7 @@
   max-height: 20px;
 }
 
-/* ============================================================
-   BUTTON & RIPPLE
-   ============================================================ */
+/* BUTTON & RIPPLE */
 
 .ref-btn {
   width: 100%;
@@ -450,9 +442,7 @@
   to { transform: scale(3.4); opacity: 0; }
 }
 
-/* ============================================================
-   CARD SHAKE ANIMATION
-   ============================================================ */
+/* CARD SHAKE ANIMATION */
 
 .ref-shake {
   animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
@@ -464,17 +454,13 @@
   75%  { transform: translateX(-3px); }
 }
 
-/* ============================================================
-   FONT UTILITIES
-   ============================================================ */
+/* FONT UTILITIES */
 
 .font-fraunces {
   font-family: Fraunces, Georgia, serif;
 }
 
-/* ============================================================
-   CUSTOMER AUTH — ANIMATIONS & TRANSITIONS
-   ============================================================ */
+/* CUSTOMER AUTH — ANIMATIONS & TRANSITIONS */
 
 @keyframes clLogoFloat {
   0%, 100% { transform: translateY(0); }
@@ -508,11 +494,9 @@
   animation: clFadeIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-/* ============================================================
-   STOREFRONT HERO — ENTRANCE & FLOAT ANIMATIONS
-   ============================================================ */
+/* STOREFRONT HERO — ENTRANCE & FLOAT ANIMATIONS */
 
-/* --- Entrance keyframes --- */
+/* Entrance keyframes */
 @keyframes heroFadeUpIn {
   from {
     opacity: 0;
@@ -560,7 +544,7 @@
   }
 }
 
-/* --- Perpetual float (starts from resting position) --- */
+/* Perpetual float (starts from resting position) */
 @keyframes heroFloatPerpetual {
   0%, 100% {
     transform: translateY(0);
@@ -579,7 +563,7 @@
   }
 }
 
-/* --- Entrance animation classes --- */
+/* Entrance animation classes */
 .hero-entrance-fade {
   opacity: 0;
   animation: heroFadeUpIn 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -661,9 +645,7 @@
   animation: heroBadgePopIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
 
-/* ============================================================
-   PROMOTIONAL CARDS — INFINITE MARQUEE TICKER
-   ============================================================ */
+/* PROMOTIONAL CARDS — INFINITE MARQUEE TICKER */
 
 .promo-marquee-root {
   position: relative;
@@ -804,17 +786,13 @@
   }
 }
 
-/* ============================================================
-   SHIMMER KEYFRAME (used by LoadingState)
-   ============================================================ */
+/* SHIMMER KEYFRAME (used by LoadingState) */
 
 @keyframes shimmer {
   100% { transform: translateX(100%); }
 }
 
-/* ============================================================
-   PRODUCT GRID — STAGGERED ENTRANCE
-   ============================================================ */
+/* PRODUCT GRID — STAGGERED ENTRANCE */
 
 @keyframes fadeSlideUp {
   from {
@@ -827,9 +805,7 @@
   }
 }
 
-/* ============================================================
-   WISHLIST HEART — POP ANIMATION
-   ============================================================ */
+/* WISHLIST HEART — POP ANIMATION */
 
 @keyframes heartPop {
   0%   { transform: scale(1); }
@@ -843,9 +819,7 @@
   animation: heartPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ============================================================
-   CART BADGE BUMP
-   ============================================================ */
+/* CART BADGE BUMP */
 
 @keyframes cartBump {
   0%   { transform: scale(1) rotate(0deg); }
@@ -878,7 +852,7 @@
    ============================================================ */
 
 @layer components {
-  /* ---- Page / Layout ---- */
+  /* Page / Layout */
   .ds-page {
     @apply animate-page-entrance;
   }
@@ -887,7 +861,7 @@
     @apply space-y-5;
   }
 
-  /* ---- Cards ---- */
+  /* Cards */
   /* Premium card — used for stat boxes, form panels, detail sheets */
   .ds-card {
     @apply rounded-2xl border border-slate-200/70 bg-white shadow-sm
@@ -902,7 +876,7 @@
            transition-all duration-200 ease-out;
   }
 
-  /* ---- Stat card (dashboard KPI boxes) ---- */
+  /* Stat card (dashboard KPI boxes) */
   .ds-stat {
     @apply rounded-2xl border border-slate-200/70 bg-white shadow-sm
            dark:border-slate-800/60 dark:bg-slate-900
@@ -930,7 +904,7 @@
            dark:bg-rose-950/50 dark:text-rose-300;
   }
 
-  /* ---- Form Group ---- */
+  /* Form Group */
   .ds-form-group {
     @apply space-y-4;
   }
@@ -939,24 +913,24 @@
     @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
   }
 
-  /* ---- Table wrapper ---- */
+  /* Table wrapper */
   .ds-table-wrap {
     @apply overflow-x-auto rounded-2xl border border-slate-200/70
            dark:border-slate-800/60 shadow-xs;
   }
 
-  /* ---- Dividers ---- */
+  /* Dividers */
   .ds-divider {
     @apply border-t border-slate-200/80 dark:border-slate-800/60;
   }
 
-  /* ---- Inline link ---- */
+  /* Inline link */
   .ds-link {
     @apply font-medium text-emerald-700 underline-offset-2 hover:underline
            dark:text-emerald-400 transition-colors duration-150;
   }
 
-  /* ---- Icon button (small) ---- */
+  /* Icon button (small) */
   .ds-icon-btn {
     @apply inline-flex items-center justify-center rounded-xl p-1.5
            text-slate-400 hover:bg-slate-100 hover:text-slate-700
@@ -967,7 +941,7 @@
            dark:focus-visible:ring-offset-slate-900;
   }
 
-  /* ---- Subtle scrollbar for sticky sidebars ---- */
+  /* Subtle scrollbar for sticky sidebars */
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
   }
