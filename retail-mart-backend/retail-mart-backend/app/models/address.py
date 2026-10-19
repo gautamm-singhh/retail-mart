@@ -1,7 +1,5 @@
 from datetime import datetime
-
 from app.extensions import db
-
 
 class Address(db.Model):
     """ERD: ADDRESSES + ADDRESS_DETAILS, merged into one row per address for simplicity."""
@@ -10,7 +8,7 @@ class Address(db.Model):
 
     id = db.Column(db.String(20), primary_key=True)
     user_id = db.Column(db.String(20), db.ForeignKey("users.id"), nullable=False)
-    label = db.Column(db.String(40), nullable=True)  # "Home", "Work", etc.
+    label = db.Column(db.String(40), nullable=True) 
     line1 = db.Column(db.String(200), nullable=False)
     line2 = db.Column(db.String(200), nullable=True)
     city = db.Column(db.String(100), nullable=False)
