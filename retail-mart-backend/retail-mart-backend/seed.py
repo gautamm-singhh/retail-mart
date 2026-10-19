@@ -1,13 +1,3 @@
-"""
-Seeds the database with data that mirrors the Week-2 frontend's mock data
-1:1 (src/features/*/data/*.ts), so pointing the React app at this API
-produces the exact same screens it already renders from mocks.
-
-Usage:
-    python seed.py            # create tables + seed (skips if already seeded)
-    python seed.py --reset    # drop all tables, recreate, then seed
-"""
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,12 +26,12 @@ def seed():
         print("Database already has data - skipping seed. Use --reset to start over.")
         return
 
-    # --- Roles ---
+
     roles = {name: Role(role_name=name) for name in ("Admin", "Manager", "Staff", "Customer")}
     db.session.add_all(roles.values())
     db.session.flush()
 
-    # --- Seed Users ---
+
     users_data = [
         ("u-001", "Gautam Sharma", "gautam@retailmart.dev", "Admin", "active", "2025-11-01"),
         ("u-002", "Sorav Kapoor", "sorav@retailmart.dev", "Admin", "active", "2025-11-01"),
@@ -53,10 +43,10 @@ def seed():
     ]
     for uid, name, email, role, status, created in users_data:
         u = User(id=uid, name=name, email=email, role_id=roles[role].role_id, status=status, created_at=d(created))
-        u.set_password("password123")  # Default password for development/demo
+        u.set_password("password123")  
         db.session.add(u)
 
-    # --- Seed Categories ---
+
     categories_data = [
         ("c-01", "Apparel", "active", "2025-11-02"),
         ("c-02", "Footwear", "active", "2025-11-02"),
@@ -72,7 +62,7 @@ def seed():
         categories[name] = c
         db.session.add(c)
 
-    # --- Seed Products ---
+
     products_data = [
         ("p-1001", "Cotton Crew T-Shirt", "APP-TSH-001", "Apparel", "Everyday crew neck t-shirt in 100% combed cotton.", 499, 240, "active"),
         ("p-1002", "Slim Fit Denim Jeans", "APP-JNS-014", "Apparel", "Mid-rise slim fit jeans with a slight stretch for comfort.", 1799, 58, "active"),
@@ -103,7 +93,6 @@ def seed():
             Product(id=pid, name=name, sku=sku, category_id=categories[cat].id, description=desc, price=price, stock=stock, status=status, image_url=image_url)
         )
 
-    # --- Seed Orders ---
     orders_data = [
         ("ORD-58421", "Ananya Rao", "ananya.rao@example.com", "2026-08-14", 3298, "Paid", "Processing",
          [("Wireless Earbuds Pro", 1, 2999), ("Cotton Crew T-Shirt", 1, 299)],
@@ -138,7 +127,6 @@ def seed():
             order.status_history.append(OrderStatusEvent(status=st, date=d(dt)))
         db.session.add(order)
 
-    # --- Seed Payments ---
     payments_data = [
         ("PAY-90211", "ORD-58421", "Ananya Rao", 3298, "UPI", "Paid", "2026-08-14",
          [("Pending", "2026-08-14"), ("Paid", "2026-08-14")]),
@@ -163,7 +151,6 @@ def seed():
             payment.history.append(PaymentStatusEvent(status=st, date=d(dt)))
         db.session.add(payment)
 
-    # --- Seed Couriers ---
     couriers_data = [
         ("CUR-00001", "Bluedart", "BLUEDART", "support@bluedart.com", "https://track.bluedart.com/?id={tracking_number}", True),
         ("CUR-00002", "Delhivery", "DELHIVERY", "support@delhivery.com", "https://www.delhivery.com/track/package/{tracking_number}", True),
@@ -176,7 +163,6 @@ def seed():
         db.session.add(c)
         courier_map[name] = cid
 
-    # --- Seed Shipments ---
     shipments_data = [
         ("SHP-77001", "ORD-58422", "Vikram Shah", "Bluedart", "BD3391827", "Shipped", "2026-08-19",
          [("Pending", "2026-08-14"), ("Packed", "2026-08-15"), ("Shipped", "2026-08-16")]),
@@ -206,7 +192,6 @@ def seed():
             shipment.tracking_history.append(ShipmentStatusEvent(status=st, date=d(dt)))
         db.session.add(shipment)
 
-    # --- Campaigns ---
     campaigns_data = [
         ("CMP-90001", "Festive Season Sale", "FESTIVE25", "25% off sitewide for the festive season.",
          "percentage", 25, 999, "2026-08-01", "2026-09-15", "active"),
@@ -233,7 +218,6 @@ def seed():
           f"{len(campaigns_data)} campaigns.")
     print("Default password for every seeded user: password123")
 
-    # --- Sample storefront customer (Customer portal demo account) ---
     customer = User(
         id="u-101", name="Ananya Rao", email="ananya.rao@example.com", phone="+919876543210",
         role_id=roles["Customer"].role_id, status="active", created_at=d("2026-06-01"),
