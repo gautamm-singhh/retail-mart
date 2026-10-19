@@ -1,12 +1,8 @@
 from datetime import datetime
-
 from app.extensions import db
 
 ORDER_STATUSES = ("Pending", "Processing", "Shipped", "Delivered", "Cancelled")
 ORDER_PAYMENT_STATUSES = ("Pending", "Paid", "Failed", "Refunded")
-
-# Mirrors src/types/order.ts -> ORDER_STATUS_TRANSITIONS exactly, so the
-# API enforces the same workflow the UI already assumes.
 ORDER_STATUS_TRANSITIONS = {
     "Pending": ["Processing", "Cancelled"],
     "Processing": ["Shipped", "Cancelled"],
@@ -15,9 +11,7 @@ ORDER_STATUS_TRANSITIONS = {
     "Cancelled": [],
 }
 
-
 _HAS_TAX_SNAPSHOT = None
-
 
 def has_tax_snapshot_column() -> bool:
     global _HAS_TAX_SNAPSHOT
@@ -32,9 +26,7 @@ def has_tax_snapshot_column() -> bool:
         return False
     return _HAS_TAX_SNAPSHOT
 
-
 class Order(db.Model):
-    """ERD: ORDERS"""
 
     __tablename__ = "orders"
 
@@ -49,7 +41,6 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Safe order-time tax snapshot (deferred so missing column pre-migration does not fail queries)
     tax_snapshot = db.deferred(db.Column(db.JSON, nullable=True))
 
     items = db.relationship(
@@ -62,8 +53,6 @@ class Order(db.Model):
     def to_dict(self) -> dict:
         """Matches src/types/order.ts -> Order"""
         payments = getattr(self, "payments", None) or []
-        # Include the first linked shipment's summary so the storefront
-        # "My Orders" page can show tracking status without a second API call.
         shipments = getattr(self, "shipments", None) or []
         shipment_summary = None
         if shipments:
@@ -100,10 +89,7 @@ class Order(db.Model):
             "taxSnapshot": tax_snap,
         }
 
-
 class OrderItem(db.Model):
-    """ERD: ORDER_ITEMS (denormalized product name/price for the response shape)"""
-
     __tablename__ = "order_items"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -115,17 +101,13 @@ class OrderItem(db.Model):
     order = db.relationship("Order", back_populates="items")
 
     def to_dict(self) -> dict:
-        """Matches src/types/order.ts -> OrderItem"""
         return {
             "productName": self.product_name,
             "quantity": self.quantity,
             "price": float(self.price),
         }
 
-
 class OrderStatusEvent(db.Model):
-    """ERD: ORDER_STATUS_HIST"""
-
     __tablename__ = "order_status_history"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -138,5 +120,4 @@ class OrderStatusEvent(db.Model):
     order = db.relationship("Order", back_populates="status_history")
 
     def to_dict(self) -> dict:
-        """Matches src/types/order.ts -> OrderStatusEvent"""
         return {"status": self.status, "date": self.date.strftime("%Y-%m-%d") if self.date else None}
