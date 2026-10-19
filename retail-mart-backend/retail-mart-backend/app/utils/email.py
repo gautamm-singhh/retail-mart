@@ -397,6 +397,7 @@ def send_email(
     html_body: str | None = None,
     attachments: list[tuple[str, bytes, str]] | None = None,
     sender: EmailSender = "support",
+    timeout: int | float = 7,
 ) -> EmailDeliveryResult:
     """
     Sends a single transactional email through the designated sender identity.
@@ -467,7 +468,7 @@ def send_email(
         )
 
     try:
-        with _get_smtp_connection(host, port) as server:
+        with _get_smtp_connection(host, port, timeout=timeout) as server:
             stage = "login"
             if current_app:
                 current_app.logger.info("[SMTP LOGIN][%s] Authenticating as %s...", sender.upper(), username)

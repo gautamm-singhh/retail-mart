@@ -400,8 +400,8 @@ export default function UnifiedAuthPage({
       setBtnState("done");
       redirectAfterAuth(user.role);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Invalid email or password.");
+      if (err instanceof ApiError || (err && typeof err === "object" && "status" in err)) {
+        setError((err as { message?: string }).message || "Invalid email or password.");
       } else {
         setError("Couldn't reach the server. Please verify the backend is running.");
       }

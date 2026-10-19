@@ -131,12 +131,18 @@ def customer_summary():
     last30_spent = sum(float(o.amount) for o in recent_orders)
 
     # Category breakdown — join OrderItem -> Product -> Category (best-effort)
-    # Pre-fetch products once with category_ref to avoid nested SQL queries per item
-    all_catalog_products = Product.query.options(joinedload(Product.category_ref)).all()
-    product_category_by_lower_name = {
-        p.name.strip().lower(): (p.category_ref.name if p.category_ref else "Unknown")
-        for p in all_catalog_products
-    }
+    # Only fetch products actually purchased by this customer rather than full catalog scan
+    product_category_by_lower_name = {}
+    if active_orders:
+        purchased_names = list({item.product_name.strip() for o in active_orders for item in o.items if item.product_name})
+        if purchased_names:
+            matched_products = Product.query.options(joinedload(Product.category_ref)).filter(
+                Product.name.in_(purchased_names)
+            ).all()
+            product_category_by_lower_name = {
+                p.name.strip().lower(): (p.category_ref.name if p.category_ref else "Unknown")
+                for p in matched_products
+            }
 
     category_map: dict[str, dict] = {}
     for order in active_orders:

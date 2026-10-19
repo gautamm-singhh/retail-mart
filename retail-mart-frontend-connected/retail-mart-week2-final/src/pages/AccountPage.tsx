@@ -14,14 +14,16 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/hooks/useToast";
 import { formatCurrency } from "@/utils/format";
 import { ROUTES } from "@/constants/routes";
+import { ApiError } from "@/services/api/client";
 import type { Address, AddressFormValues } from "@/types";
 
 export default function AccountPage() {
   const { currentUser } = useAuth();
   const { itemCount: wishlistCount } = useWishlist();
   const navigate = useNavigate();
-  const { addresses, isLoading, error, refresh, addAddress, editAddress, removeAddress } = useAddresses();
-  const { stats, isLoading: statsLoading, error: statsError } = useCustomerStats();
+  const isCustomer = currentUser?.role === "Customer";
+  const { addresses, isLoading, error, refresh, addAddress, editAddress, removeAddress } = useAddresses(isCustomer);
+  const { stats, isLoading: statsLoading, error: statsError } = useCustomerStats(isCustomer);
   const { showToast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -41,8 +43,12 @@ export default function AccountPage() {
       }
       setIsFormOpen(false);
       setEditingAddress(null);
-    } catch {
-      showToast("Something went wrong saving this address.", "error");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : (err as Error)?.message || "Something went wrong saving this address.";
+      showToast(msg, "error");
     }
   }
 
@@ -51,8 +57,12 @@ export default function AccountPage() {
     try {
       await removeAddress(deletingAddress.id);
       showToast("Address removed.");
-    } catch {
-      showToast("Something went wrong removing this address.", "error");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : (err as Error)?.message || "Something went wrong removing this address.";
+      showToast(msg, "error");
     } finally {
       setDeletingAddress(null);
     }

@@ -371,6 +371,7 @@ def create_order():
         status="Pending",
         date=date.today(),
     )
+    payment.order = order
     payment.history.append(PaymentStatusEvent(status="Pending", date=date.today()))
     db.session.add(payment)
     db.session.commit()
@@ -378,26 +379,64 @@ def create_order():
     logger.info("Order created order_id=%s user_id=%s amount=%.2f items=%d",
                 order.id, order.user_id, amount, len(items))
 
+    email_delivery = {
+        "attempted": False,
+        "sent": False,
+        "status": "skipped",
+        "message": "No recipient email found",
+    }
     recipient_email = (order.customer_email or "").strip() or (order.user.email.strip() if getattr(order, "user", None) and order.user.email else None)
     if recipient_email:
-        subject, body, html_body = order_confirmation_email(order)
-        current_app.logger.info("[EMAIL TRIGGER] Flow=ORDER Event=order_created OrderId=%s", order.id)
-        current_app.logger.info("[EMAIL RECIPIENT] %s", recipient_email)
-        current_app.logger.info("[EMAIL SENDER] orders")
-        raw_result = send_email(recipient_email, subject, body, html_body=html_body, sender="orders")
-        result = ensure_delivery_result(raw_result)
-        current_app.logger.info(
-            "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
-            result.get("success"),
-            result.get("stage"),
-            result.get("message"),
-            result.get("refused_recipients"),
-            result.get("message_id"),
-        )
+        email_delivery["attempted"] = True
+        try:
+            subject, body, html_body = order_confirmation_email(order)
+            current_app.logger.info("[EMAIL TRIGGER] Flow=ORDER Event=order_created OrderId=%s", order.id)
+            current_app.logger.info("[EMAIL RECIPIENT] %s", recipient_email)
+            current_app.logger.info("[EMAIL SENDER] orders")
+            raw_result = send_email(
+                recipient_email,
+                subject,
+                body,
+                html_body=html_body,
+                sender="orders",
+                timeout=2.5,
+            )
+            result = ensure_delivery_result(raw_result)
+            email_delivery = {
+                "attempted": True,
+                "sent": bool(result.get("success")),
+                "status": "delivered" if result.get("success") else "failed",
+                "message": result.get("message"),
+                "stage": result.get("stage"),
+            }
+            current_app.logger.info(
+                "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+                result.get("success"),
+                result.get("stage"),
+                result.get("message"),
+                result.get("refused_recipients"),
+                result.get("message_id"),
+            )
+        except Exception as exc:
+            current_app.logger.warning(
+                "[EMAIL EXCEPTION] Flow=ORDER Event=order_created OrderId=%s Error=%s",
+                order.id,
+                exc,
+            )
+            email_delivery = {
+                "attempted": True,
+                "sent": False,
+                "status": "failed",
+                "message": f"Email delivery timed out or failed: {str(exc)}",
+                "stage": "connect",
+            }
     else:
         current_app.logger.warning("[EMAIL TRIGGER] Flow=ORDER Event=order_created OrderId=%s - SKIPPED: No recipient email found", order.id)
 
-    return jsonify(order.to_dict()), 201
+    order_data = order.to_dict()
+    order_data["paymentId"] = payment.id
+    order_data["emailDelivery"] = email_delivery
+    return jsonify(order_data), 201
 
 
 @orders_bp.patch("/<order_id>/status")

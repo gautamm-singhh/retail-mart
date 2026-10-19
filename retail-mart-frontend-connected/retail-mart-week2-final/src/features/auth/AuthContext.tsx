@@ -43,6 +43,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authenticatedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    function handleUnauthorized() {
+      authenticatedTokenRef.current = null;
+      clearAllEntityCaches();
+      setAuthToken(null);
+      setToken(null);
+      setCurrentUser(null);
+      setIsLoadingUser(false);
+    }
+
+    window.addEventListener("retail-mart:unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("retail-mart:unauthorized", handleUnauthorized);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!token) {
       authenticatedTokenRef.current = null;
       setCurrentUser(null);
@@ -122,11 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoadingUser(false);
         return data.user;
       } catch (err) {
-        if (err instanceof ApiError) {
-          if (err.status === 401) {
-            return null;
-          }
-          throw err;
+        const status =
+          err instanceof ApiError || (err && typeof err === "object" && "status" in err)
+            ? (err as { status: number }).status
+            : undefined;
+        if (status === 401) {
+          return null;
         }
         throw err;
       }

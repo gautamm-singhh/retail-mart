@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { addressRepository } from "@/features/addresses/services/addressRepository";
+import { ApiError } from "@/services/api/client";
 import type { Address, AddressFormValues } from "@/types";
 
-export function useAddresses() {
+export function useAddresses(enabled: boolean = true) {
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setIsLoading(true);
     setError(null);
@@ -18,8 +24,14 @@ export function useAddresses() {
       .then((data) => {
         if (!cancelled) setAddresses(data);
       })
-      .catch(() => {
-        if (!cancelled) setError("We couldn't load your addresses. Please try again.");
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          const msg =
+            err instanceof ApiError
+              ? err.message
+              : (err as Error)?.message || "We couldn't load your addresses. Please try again.";
+          setError(msg);
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -28,7 +40,7 @@ export function useAddresses() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken]);
+  }, [reloadToken, enabled]);
 
   const refresh = useCallback(() => setReloadToken((t) => t + 1), []);
 

@@ -17,6 +17,7 @@ import { ROUTES } from "@/constants/routes";
 import { calculateOrderTaxBreakdown } from "@/utils/taxCalculation";
 import { SELLER_TAX_PROFILE, PRODUCT_TAX_REGISTRY } from "@/constants/taxConfig";
 import { getProductExactImage, NEUTRAL_PRODUCT_FALLBACK } from "@/features/shop/utils/productImages";
+import { ApiError } from "@/services/api/client";
 
 export default function CheckoutPage() {
   const { items, clear } = useCart();
@@ -65,9 +66,18 @@ export default function CheckoutPage() {
   }
 
   async function handleAddAddress(values: AddressFormValues) {
-    const created = await addAddress(values);
-    setSelectedAddressId(created.id);
-    setIsAddingAddress(false);
+    try {
+      const created = await addAddress(values);
+      setSelectedAddressId(created.id);
+      setIsAddingAddress(false);
+      showToast("Address saved and selected.");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : (err as Error)?.message || "Failed to save address.";
+      showToast(msg, "error");
+    }
   }
 
   async function handlePlaceOrder() {
@@ -91,19 +101,24 @@ export default function CheckoutPage() {
         try {
           await payWithRazorpay(order.paymentId, currentUser.name, currentUser.email ?? "");
           showToast("Payment successful! Your order is confirmed.");
-        } catch {
-          showToast(
-            "Order placed, but payment wasn't completed. You can pay again from My Orders.",
-            "error",
-          );
+        } catch (paymentErr: unknown) {
+          const pMsg =
+            paymentErr instanceof Error && paymentErr.message.toLowerCase().includes("cancel")
+              ? "Payment cancelled. You can complete payment anytime from My Orders."
+              : "Order placed, but payment wasn't completed. You can pay again from My Orders.";
+          showToast(pMsg, "error");
         }
       } else {
         showToast("Order placed successfully!");
       }
 
       navigate(`${ROUTES.myOrders}?justPlaced=${order.id}`);
-    } catch {
-      showToast("Something went wrong placing your order.", "error");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : (err as Error)?.message || "Something went wrong placing your order.";
+      showToast(msg, "error");
     } finally {
       setIsPlacingOrder(false);
     }

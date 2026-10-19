@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchCustomerStats } from "@/services/api/customerStats";
+import { ApiError } from "@/services/api/client";
 import type { CustomerStats } from "@/types";
 
 interface UseCustomerStatsResult {
@@ -27,8 +28,14 @@ export function useCustomerStats(enabled: boolean = true): UseCustomerStatsResul
       .then((data) => {
         if (!cancelled) setStats(data);
       })
-      .catch(() => {
-        if (!cancelled) setError("We couldn't load your purchase summary. Please try again.");
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          const msg =
+            err instanceof ApiError
+              ? err.message
+              : (err as Error)?.message || "We couldn't load your purchase summary. Please try again.";
+          setError(msg);
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);

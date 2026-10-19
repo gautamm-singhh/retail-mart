@@ -1,4 +1,4 @@
-import { getAuthToken } from "@/features/auth/authStorage";
+import { getAuthToken, setAuthToken } from "@/features/auth/authStorage";
 
 const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
 const API_BASE_URL =
@@ -22,7 +22,18 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
+}
+
+function extractErrorMessage(data: unknown, fallback: string): string {
+  if (typeof data === "object" && data !== null) {
+    const obj = data as Record<string, unknown>;
+    if (typeof obj.error === "string" && obj.error.trim()) return obj.error.trim();
+    if (typeof obj.msg === "string" && obj.msg.trim()) return obj.msg.trim();
+    if (typeof obj.message === "string" && obj.message.trim()) return obj.message.trim();
+  }
+  return fallback;
 }
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -44,10 +55,15 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message =
-      typeof data === "object" && data && "error" in data
-        ? String((data as { error: unknown }).error)
-        : `Request to ${path} failed with status ${response.status}`;
+    const message = extractErrorMessage(data, `Request to ${path} failed with status ${response.status}`);
+    if (response.status === 401) {
+      if (!path.startsWith("/auth/login") && !path.startsWith("/auth/signup")) {
+        setAuthToken(null);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("retail-mart:unauthorized", { detail: { path, message } }));
+        }
+      }
+    }
     throw new ApiError(response.status, message);
   }
 
@@ -63,10 +79,13 @@ export async function downloadFile(path: string, fallbackFilename: string): Prom
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    const message =
-      typeof data === "object" && data && "error" in data
-        ? String((data as { error: unknown }).error)
-        : `Request to ${path} failed with status ${response.status}`;
+    const message = extractErrorMessage(data, `Request to ${path} failed with status ${response.status}`);
+    if (response.status === 401) {
+      setAuthToken(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("retail-mart:unauthorized", { detail: { path, message } }));
+      }
+    }
     throw new ApiError(response.status, message);
   }
 

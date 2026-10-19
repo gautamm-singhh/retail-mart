@@ -82,6 +82,12 @@ export function useRazorpayCheckout() {
                   },
                   modal: { ondismiss: () => reject(new Error("Payment cancelled")) },
                 });
+                if (typeof (razorpay as unknown as { on?: (event: string, cb: (res: { error: { description?: string } }) => void) => void }).on === "function") {
+                  (razorpay as unknown as { on: (event: string, cb: (res: { error: { description?: string } }) => void) => void }).on(
+                    "payment.failed",
+                    (res) => reject(new Error(res?.error?.description || "Payment failed")),
+                  );
+                }
                 razorpay.open();
               }),
           );

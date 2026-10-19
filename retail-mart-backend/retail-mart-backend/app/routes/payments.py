@@ -59,23 +59,27 @@ def _email_receipt(payment: Payment) -> None:
     current_app.logger.info("[EMAIL TRIGGER] Flow=PAYMENT Event=payment_receipt PaymentId=%s OrderId=%s Amount=%s", payment.id, payment.order_id, payment.amount)
     current_app.logger.info("[EMAIL RECIPIENT] %s", to)
     current_app.logger.info("[EMAIL SENDER] orders")
-    raw_result = send_email(
-        to,
-        subject,
-        body,
-        html_body=html_body,
-        sender="orders",
-        attachments=[(f"receipt-{payment.id}.pdf", pdf_buffer.getvalue(), "application/pdf")],
-    )
-    result = ensure_delivery_result(raw_result)
-    current_app.logger.info(
-        "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
-        result.get("success"),
-        result.get("stage"),
-        result.get("message"),
-        result.get("refused_recipients"),
-        result.get("message_id"),
-    )
+    try:
+        raw_result = send_email(
+            to,
+            subject,
+            body,
+            html_body=html_body,
+            sender="orders",
+            attachments=[(f"receipt-{payment.id}.pdf", pdf_buffer.getvalue(), "application/pdf")],
+            timeout=2.5,
+        )
+        result = ensure_delivery_result(raw_result)
+        current_app.logger.info(
+            "[EMAIL RESULT] Success=%s Stage=%s Message=%s Refused=%s MessageId=%s",
+            result.get("success"),
+            result.get("stage"),
+            result.get("message"),
+            result.get("refused_recipients"),
+            result.get("message_id"),
+        )
+    except Exception as exc:
+        current_app.logger.warning("[EMAIL EXCEPTION] Flow=PAYMENT Event=payment_receipt PaymentId=%s Error=%s", payment.id, exc)
 
 
 def _is_payment_owner(payment: Payment) -> bool:
@@ -477,7 +481,11 @@ def create_razorpay_order():
 
     client = get_razorpay_client()
     amount_paise = int(round(float(payment.amount) * 100))
-    razorpay_order = client.order.create({"amount": amount_paise, "currency": "INR", "receipt": payment.id})
+    try:
+        razorpay_order = client.order.create({"amount": amount_paise, "currency": "INR", "receipt": payment.id})
+    except Exception as exc:
+        logger.error("Failed to initialize Razorpay order for payment_id=%s: %s", payment.id, exc)
+        return jsonify({"error": f"Failed to initialize payment gateway: {str(exc)}"}), 502
 
     logger.info("Razorpay order created payment_id=%s amount_paise=%d live=%s",
                 payment.id, amount_paise, is_razorpay_live())
