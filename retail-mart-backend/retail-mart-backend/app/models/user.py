@@ -1,7 +1,5 @@
 from datetime import datetime
-
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from app.extensions import db
 
 ROLE_NAMES = ("Admin", "Manager", "Staff", "Customer")
@@ -9,8 +7,6 @@ USER_STATUSES = ("active", "inactive")
 
 
 class Role(db.Model):
-    """ERD: ROLES"""
-
     __tablename__ = "roles"
 
     role_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -20,15 +16,7 @@ class Role(db.Model):
 
     users = db.relationship("User", back_populates="role")
 
-
 class User(db.Model):
-    """
-    ERD: USERS (trimmed to what the Week-2 Users/Auth screens need).
-
-    `id` is exposed as the frontend-facing string primary key (e.g. "u-003")
-    so this table serializes 1:1 with src/types/user.ts's `User` interface.
-    """
-
     __tablename__ = "users"
 
     id = db.Column(db.String(20), primary_key=True)
@@ -53,7 +41,6 @@ class User(db.Model):
         return check_password_hash(self.password_hash, raw_password)
 
     def to_dict(self) -> dict:
-        """Matches src/types/user.ts -> User"""
         return {
             "id": self.id,
             "name": self.name,
