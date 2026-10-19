@@ -1,15 +1,8 @@
 from datetime import datetime
 import uuid
-
 from app.extensions import db
 
-
 class WishlistItem(db.Model):
-    """
-    Customer Wishlist Item.
-    Persists liked/saved products per customer with strict user isolation.
-    """
-
     __tablename__ = "wishlist_items"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
