@@ -1,14 +1,10 @@
 from datetime import datetime
-
 from app.extensions import db
 
 PAYMENT_STATUSES = ("Pending", "Paid", "Failed", "Refunded")
 PAYMENT_METHODS = ("Card", "UPI", "Net Banking", "Cash on Delivery", "Wallet")
 
-
 class Payment(db.Model):
-    """ERD: PAYMENTS"""
-
     __tablename__ = "payments"
 
     id = db.Column(db.String(20), primary_key=True)
@@ -28,7 +24,6 @@ class Payment(db.Model):
     receipt = db.relationship("Receipt", back_populates="payment", uselist=False, cascade="all, delete-orphan")
 
     def to_dict(self) -> dict:
-        """Matches src/types/payment.ts -> Payment"""
         return {
             "id": self.id,
             "orderId": self.order_id,
@@ -40,10 +35,7 @@ class Payment(db.Model):
             "history": [ev.to_dict() for ev in self.history],
         }
 
-
 class PaymentStatusEvent(db.Model):
-    """ERD: PAYMENT_EVENTS (trimmed to status + date for the response shape)"""
-
     __tablename__ = "payment_status_history"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -54,13 +46,9 @@ class PaymentStatusEvent(db.Model):
     payment = db.relationship("Payment", back_populates="history")
 
     def to_dict(self) -> dict:
-        """Matches src/types/payment.ts -> PaymentStatusEvent"""
         return {"status": self.status, "date": self.date.strftime("%Y-%m-%d") if self.date else None}
 
-
 class Receipt(db.Model):
-    """ERD: RECEIPTS"""
-
     __tablename__ = "receipts"
 
     id = db.Column(db.String(20), primary_key=True)
